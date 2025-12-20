@@ -14,7 +14,7 @@ class KeyEventTest {
     @Test
     @DisplayName("ofChar creates character event")
     void ofCharCreatesCharacterEvent() {
-        var event = KeyEvent.ofChar('a');
+        KeyEvent event = KeyEvent.ofChar('a');
         assertThat(event.code()).isEqualTo(KeyCode.CHAR);
         assertThat(event.character()).isEqualTo('a');
         assertThat(event.modifiers()).isEqualTo(KeyModifiers.NONE);
@@ -23,7 +23,7 @@ class KeyEventTest {
     @Test
     @DisplayName("ofChar with modifiers creates character event with modifiers")
     void ofCharWithModifiers() {
-        var event = KeyEvent.ofChar('c', KeyModifiers.CTRL);
+        KeyEvent event = KeyEvent.ofChar('c', KeyModifiers.CTRL);
         assertThat(event.code()).isEqualTo(KeyCode.CHAR);
         assertThat(event.character()).isEqualTo('c');
         assertThat(event.modifiers()).isEqualTo(KeyModifiers.CTRL);
@@ -32,7 +32,7 @@ class KeyEventTest {
     @Test
     @DisplayName("ofKey creates key event")
     void ofKeyCreatesKeyEvent() {
-        var event = KeyEvent.ofKey(KeyCode.ENTER);
+        KeyEvent event = KeyEvent.ofKey(KeyCode.ENTER);
         assertThat(event.code()).isEqualTo(KeyCode.ENTER);
         assertThat(event.character()).isEqualTo('\0');
         assertThat(event.modifiers()).isEqualTo(KeyModifiers.NONE);
@@ -41,7 +41,7 @@ class KeyEventTest {
     @Test
     @DisplayName("ofKey with modifiers creates key event with modifiers")
     void ofKeyWithModifiers() {
-        var event = KeyEvent.ofKey(KeyCode.UP, KeyModifiers.SHIFT);
+        KeyEvent event = KeyEvent.ofKey(KeyCode.UP, KeyModifiers.SHIFT);
         assertThat(event.code()).isEqualTo(KeyCode.UP);
         assertThat(event.modifiers()).isEqualTo(KeyModifiers.SHIFT);
     }
@@ -49,7 +49,7 @@ class KeyEventTest {
     @Test
     @DisplayName("isChar returns true for matching character")
     void isCharMatchesCharacter() {
-        var event = KeyEvent.ofChar('x');
+        KeyEvent event = KeyEvent.ofChar('x');
         assertThat(event.isChar('x')).isTrue();
         assertThat(event.isChar('y')).isFalse();
     }
@@ -57,14 +57,14 @@ class KeyEventTest {
     @Test
     @DisplayName("isChar returns false for non-CHAR key codes")
     void isCharFalseForNonChar() {
-        var event = KeyEvent.ofKey(KeyCode.ENTER);
+        KeyEvent event = KeyEvent.ofKey(KeyCode.ENTER);
         assertThat(event.isChar('\n')).isFalse();
     }
 
     @Test
     @DisplayName("isKey returns true for matching key code")
     void isKeyMatchesKeyCode() {
-        var event = KeyEvent.ofKey(KeyCode.ESCAPE);
+        KeyEvent event = KeyEvent.ofKey(KeyCode.ESCAPE);
         assertThat(event.isKey(KeyCode.ESCAPE)).isTrue();
         assertThat(event.isKey(KeyCode.ENTER)).isFalse();
     }
@@ -72,7 +72,7 @@ class KeyEventTest {
     @Test
     @DisplayName("hasCtrl returns true when ctrl is pressed")
     void hasCtrlReturnsTrue() {
-        var event = KeyEvent.ofChar('c', KeyModifiers.CTRL);
+        KeyEvent event = KeyEvent.ofChar('c', KeyModifiers.CTRL);
         assertThat(event.hasCtrl()).isTrue();
         assertThat(event.hasAlt()).isFalse();
         assertThat(event.hasShift()).isFalse();
@@ -81,7 +81,7 @@ class KeyEventTest {
     @Test
     @DisplayName("hasAlt returns true when alt is pressed")
     void hasAltReturnsTrue() {
-        var event = KeyEvent.ofChar('x', KeyModifiers.ALT);
+        KeyEvent event = KeyEvent.ofChar('x', KeyModifiers.ALT);
         assertThat(event.hasAlt()).isTrue();
         assertThat(event.hasCtrl()).isFalse();
         assertThat(event.hasShift()).isFalse();
@@ -90,7 +90,7 @@ class KeyEventTest {
     @Test
     @DisplayName("hasShift returns true when shift is pressed")
     void hasShiftReturnsTrue() {
-        var event = KeyEvent.ofKey(KeyCode.UP, KeyModifiers.SHIFT);
+        KeyEvent event = KeyEvent.ofKey(KeyCode.UP, KeyModifiers.SHIFT);
         assertThat(event.hasShift()).isTrue();
         assertThat(event.hasCtrl()).isFalse();
         assertThat(event.hasAlt()).isFalse();
@@ -99,7 +99,7 @@ class KeyEventTest {
     @Test
     @DisplayName("isCtrlC returns true for Ctrl+C")
     void isCtrlCReturnsTrue() {
-        var event = KeyEvent.ofChar('c', KeyModifiers.CTRL);
+        KeyEvent event = KeyEvent.ofChar('c', KeyModifiers.CTRL);
         assertThat(event.isCtrlC()).isTrue();
     }
 

@@ -11,6 +11,7 @@ import io.github.jratatui.text.Line;
 import io.github.jratatui.text.Span;
 import io.github.jratatui.widgets.StatefulWidget;
 import io.github.jratatui.widgets.block.Block;
+import static io.github.jratatui.util.CollectionUtil.listCopyOf;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,14 +25,14 @@ import java.util.Optional;
  * The selected tab is highlighted using the highlight style.
  *
  * <pre>{@code
- * var tabs = Tabs.builder()
+ * Tabs tabs = Tabs.builder()
  *     .titles("Home", "Settings", "About")
  *     .highlightStyle(Style.EMPTY.fg(Color.YELLOW).bold())
  *     .divider(" | ")
  *     .block(Block.bordered())
  *     .build();
  *
- * var state = new TabsState(0); // Select first tab
+ * TabsState state = new TabsState(0); // Select first tab
  * frame.renderStatefulWidget(tabs, area, state);
  * }</pre>
  */
@@ -46,7 +47,7 @@ public final class Tabs implements StatefulWidget<TabsState> {
     private final String paddingRight;
 
     private Tabs(Builder builder) {
-        this.titles = List.copyOf(builder.titles);
+        this.titles = listCopyOf(builder.titles);
         this.block = Optional.ofNullable(builder.block);
         this.style = builder.style;
         this.highlightStyle = builder.highlightStyle;

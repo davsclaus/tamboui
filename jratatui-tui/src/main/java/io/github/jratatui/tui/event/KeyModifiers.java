@@ -6,12 +6,8 @@ package io.github.jratatui.tui.event;
 
 /**
  * Represents keyboard modifier keys (Ctrl, Alt, Shift).
- *
- * @param ctrl  true if Ctrl was pressed
- * @param alt   true if Alt was pressed
- * @param shift true if Shift was pressed
  */
-public record KeyModifiers(boolean ctrl, boolean alt, boolean shift) {
+public final class KeyModifiers {
 
     /** No modifiers pressed. */
     public static final KeyModifiers NONE = new KeyModifiers(false, false, false);
@@ -25,6 +21,16 @@ public record KeyModifiers(boolean ctrl, boolean alt, boolean shift) {
     /** Only Shift pressed. */
     public static final KeyModifiers SHIFT = new KeyModifiers(false, false, true);
 
+    private final boolean ctrl;
+    private final boolean alt;
+    private final boolean shift;
+
+    public KeyModifiers(boolean ctrl, boolean alt, boolean shift) {
+        this.ctrl = ctrl;
+        this.alt = alt;
+        this.shift = shift;
+    }
+
     /**
      * Creates modifiers with the specified flags.
      */
@@ -33,6 +39,18 @@ public record KeyModifiers(boolean ctrl, boolean alt, boolean shift) {
             return NONE;
         }
         return new KeyModifiers(ctrl, alt, shift);
+    }
+
+    public boolean ctrl() {
+        return ctrl;
+    }
+
+    public boolean alt() {
+        return alt;
+    }
+
+    public boolean shift() {
+        return shift;
     }
 
     /**
@@ -47,5 +65,30 @@ public record KeyModifiers(boolean ctrl, boolean alt, boolean shift) {
      */
     public boolean hasAny() {
         return ctrl || alt || shift;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof KeyModifiers)) {
+            return false;
+        }
+        KeyModifiers that = (KeyModifiers) o;
+        return ctrl == that.ctrl && alt == that.alt && shift == that.shift;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Boolean.hashCode(ctrl);
+        result = 31 * result + Boolean.hashCode(alt);
+        result = 31 * result + Boolean.hashCode(shift);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("KeyModifiers[ctrl=%s, alt=%s, shift=%s]", ctrl, alt, shift);
     }
 }

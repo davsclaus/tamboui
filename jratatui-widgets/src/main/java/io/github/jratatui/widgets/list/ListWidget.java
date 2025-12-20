@@ -10,6 +10,7 @@ import io.github.jratatui.style.Style;
 import io.github.jratatui.text.Line;
 import io.github.jratatui.widgets.StatefulWidget;
 import io.github.jratatui.widgets.block.Block;
+import static io.github.jratatui.util.CollectionUtil.listCopyOf;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +29,7 @@ public final class ListWidget implements StatefulWidget<ListState> {
     private final String highlightSymbol;
 
     private ListWidget(Builder builder) {
-        this.items = List.copyOf(builder.items);
+        this.items = listCopyOf(builder.items);
         this.block = Optional.ofNullable(builder.block);
         this.style = builder.style;
         this.highlightStyle = builder.highlightStyle;

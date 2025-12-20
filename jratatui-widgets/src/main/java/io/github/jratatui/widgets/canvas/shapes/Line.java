@@ -19,7 +19,21 @@ import io.github.jratatui.widgets.canvas.Shape;
  *
  * @see Shape
  */
-public record Line(double x1, double y1, double x2, double y2, Color color) implements Shape {
+public final class Line implements Shape {
+
+    private final double x1;
+    private final double y1;
+    private final double x2;
+    private final double y2;
+    private final Color color;
+
+    public Line(double x1, double y1, double x2, double y2, Color color) {
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+        this.color = color;
+    }
 
     /**
      * Creates a line from (x1, y1) to (x2, y2) with the given color.
@@ -30,10 +44,10 @@ public record Line(double x1, double y1, double x2, double y2, Color color) impl
 
     @Override
     public void draw(Painter painter) {
-        var p1 = painter.getPoint(x1, y1);
-        var p2 = painter.getPoint(x2, y2);
+        java.util.Optional<Painter.GridPoint> p1 = painter.getPoint(x1, y1);
+        java.util.Optional<Painter.GridPoint> p2 = painter.getPoint(x2, y2);
 
-        if (p1.isEmpty() || p2.isEmpty()) {
+        if (!p1.isPresent() || !p2.isPresent()) {
             // Fall back to drawing what we can if points are partially visible
             drawWithClipping(painter);
             return;
@@ -89,5 +103,56 @@ public record Line(double x1, double y1, double x2, double y2, Color color) impl
                 y0 += sy;
             }
         }
+    }
+
+    public double x1() {
+        return x1;
+    }
+
+    public double y1() {
+        return y1;
+    }
+
+    public double x2() {
+        return x2;
+    }
+
+    public double y2() {
+        return y2;
+    }
+
+    public Color color() {
+        return color;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Line)) {
+            return false;
+        }
+        Line line = (Line) o;
+        return Double.compare(line.x1, x1) == 0
+            && Double.compare(line.y1, y1) == 0
+            && Double.compare(line.x2, x2) == 0
+            && Double.compare(line.y2, y2) == 0
+            && color.equals(line.color);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Double.hashCode(x1);
+        result = 31 * result + Double.hashCode(y1);
+        result = 31 * result + Double.hashCode(x2);
+        result = 31 * result + Double.hashCode(y2);
+        result = 31 * result + color.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Line[x1=%s, y1=%s, x2=%s, y2=%s, color=%s]", x1, y1, x2, y2, color);
     }
 }

@@ -172,11 +172,19 @@ public final class Block implements Widget {
         int startX = area.left() + (borders.contains(Borders.LEFT) ? 1 : 0);
 
         // Calculate x position based on alignment
-        int x = switch (title.alignment()) {
-            case LEFT -> startX;
-            case CENTER -> startX + (availableWidth - titleWidth) / 2;
-            case RIGHT -> startX + availableWidth - titleWidth;
-        };
+        int x;
+        switch (title.alignment()) {
+            case LEFT:
+                x = startX;
+                break;
+            case CENTER:
+                x = startX + (availableWidth - titleWidth) / 2;
+                break;
+            case RIGHT:
+            default:
+                x = startX + availableWidth - titleWidth;
+                break;
+        }
 
         buffer.setLine(x, y, title.content());
     }

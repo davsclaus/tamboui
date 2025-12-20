@@ -7,31 +7,37 @@ package io.github.jratatui.text;
 import io.github.jratatui.layout.Alignment;
 import io.github.jratatui.style.Color;
 import io.github.jratatui.style.Style;
+import static io.github.jratatui.util.CollectionUtil.listCopyOf;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * A single line of text composed of styled spans.
  */
-public record Line(List<Span> spans, Optional<Alignment> alignment) {
+public final class Line {
 
-    public Line {
-        spans = List.copyOf(spans);
+    private final List<Span> spans;
+    private final Optional<Alignment> alignment;
+
+    public Line(List<Span> spans, Optional<Alignment> alignment) {
+        this.spans = listCopyOf(spans);
+        this.alignment = alignment != null ? alignment : Optional.empty();
     }
 
     public static Line empty() {
-        return new Line(List.of(), Optional.empty());
+        return new Line(listCopyOf(), Optional.empty());
     }
 
     public static Line from(String text) {
-        return new Line(List.of(Span.raw(text)), Optional.empty());
+        return new Line(listCopyOf(Span.raw(text)), Optional.empty());
     }
 
     public static Line from(Span span) {
-        return new Line(List.of(span), Optional.empty());
+        return new Line(listCopyOf(span), Optional.empty());
     }
 
     public static Line from(Span... spans) {
@@ -43,7 +49,7 @@ public record Line(List<Span> spans, Optional<Alignment> alignment) {
     }
 
     public static Line styled(String text, Style style) {
-        return new Line(List.of(Span.styled(text, style)), Optional.empty());
+        return new Line(listCopyOf(Span.styled(text, style)), Optional.empty());
     }
 
     /**
@@ -77,9 +83,9 @@ public record Line(List<Span> spans, Optional<Alignment> alignment) {
      * Applies a style patch to all spans.
      */
     public Line patchStyle(Style style) {
-        var newSpans = spans.stream()
+        List<Span> newSpans = spans.stream()
             .map(span -> span.patchStyle(style))
-            .toList();
+            .collect(Collectors.toList());
         return new Line(newSpans, alignment);
     }
 
@@ -107,8 +113,9 @@ public record Line(List<Span> spans, Optional<Alignment> alignment) {
      * Returns the raw text content without styling.
      */
     public String rawContent() {
-        var sb = new StringBuilder();
-        for (var span : spans) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < spans.size(); i++) {
+            Span span = spans.get(i);
             sb.append(span.content());
         }
         return sb.toString();
@@ -118,7 +125,7 @@ public record Line(List<Span> spans, Optional<Alignment> alignment) {
      * Appends another line's spans to this line.
      */
     public Line append(Line other) {
-        var newSpans = new ArrayList<>(spans);
+        List<Span> newSpans = new ArrayList<>(spans);
         newSpans.addAll(other.spans);
         return new Line(newSpans, alignment);
     }
@@ -127,8 +134,40 @@ public record Line(List<Span> spans, Optional<Alignment> alignment) {
      * Appends a span to this line.
      */
     public Line append(Span span) {
-        var newSpans = new ArrayList<>(spans);
+        List<Span> newSpans = new ArrayList<>(spans);
         newSpans.add(span);
         return new Line(newSpans, alignment);
+    }
+
+    public List<Span> spans() {
+        return spans;
+    }
+
+    public Optional<Alignment> alignment() {
+        return alignment;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Line)) {
+            return false;
+        }
+        Line line = (Line) o;
+        return spans.equals(line.spans) && alignment.equals(line.alignment);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = spans.hashCode();
+        result = 31 * result + alignment.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Line[spans=%s, alignment=%s]", spans, alignment);
     }
 }

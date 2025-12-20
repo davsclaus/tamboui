@@ -25,7 +25,7 @@ import java.util.concurrent.Callable;
  *
  *     @Override
  *     protected void runTui(TuiRunner runner) throws Exception {
- *         var state = loadState(configFile);
+ *         AppState state = loadState(configFile);
  *
  *         runner.run(
  *             (event, r) -> handleEvent(event, r, state),

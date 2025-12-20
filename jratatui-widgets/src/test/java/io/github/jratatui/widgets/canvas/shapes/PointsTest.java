@@ -18,7 +18,7 @@ class PointsTest {
     @Test
     void constructor_creates_points() {
         double[][] coords = {{1, 2}, {3, 4}, {5, 6}};
-        var points = new Points(coords, Color.RED);
+        Points points = new Points(coords, Color.RED);
 
         assertThat(points.coords()).isEqualTo(coords);
         assertThat(points.color()).isEqualTo(Color.RED);
@@ -27,7 +27,7 @@ class PointsTest {
     @Test
     void of_coords_creates_points() {
         double[][] coords = {{10, 20}, {30, 40}};
-        var points = Points.of(coords, Color.BLUE);
+        Points points = Points.of(coords, Color.BLUE);
 
         assertThat(points.coords()).isEqualTo(coords);
         assertThat(points.color()).isEqualTo(Color.BLUE);
@@ -37,7 +37,7 @@ class PointsTest {
     void of_xy_arrays_creates_points() {
         double[] x = {1, 2, 3, 4, 5};
         double[] y = {10, 20, 30, 40, 50};
-        var points = Points.of(x, y, Color.GREEN);
+        Points points = Points.of(x, y, Color.GREEN);
 
         assertThat(points.coords().length).isEqualTo(5);
         assertThat(points.coords()[0]).containsExactly(1.0, 10.0);
@@ -57,30 +57,30 @@ class PointsTest {
 
     @Test
     void draw_points() {
-        var ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
-        var points = new Points(new double[][] {{0, 0}, {5, 5}, {10, 10}}, Color.YELLOW);
+        Context ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
+        Points points = new Points(new double[][] {{0, 0}, {5, 5}, {10, 10}}, Color.YELLOW);
 
         points.draw(new Painter(ctx));
 
-        var layers = ctx.allLayers();
+        java.util.List<io.github.jratatui.style.Color[][]> layers = ctx.allLayers();
         assertThat(layers).isNotEmpty();
     }
 
     @Test
     void draw_single_point() {
-        var ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
-        var points = new Points(new double[][] {{5, 5}}, Color.CYAN);
+        Context ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
+        Points points = new Points(new double[][] {{5, 5}}, Color.CYAN);
 
         points.draw(new Painter(ctx));
 
-        var layers = ctx.allLayers();
+        java.util.List<io.github.jratatui.style.Color[][]> layers = ctx.allLayers();
         assertThat(layers).isNotEmpty();
     }
 
     @Test
     void draw_empty_points() {
-        var ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
-        var points = new Points(new double[0][], Color.MAGENTA);
+        Context ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
+        Points points = new Points(new double[0][], Color.MAGENTA);
 
         points.draw(new Painter(ctx));
         // Should not throw
@@ -88,8 +88,8 @@ class PointsTest {
 
     @Test
     void draw_null_coords() {
-        var ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
-        var points = new Points(null, Color.WHITE);
+        Context ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
+        Points points = new Points(null, Color.WHITE);
 
         points.draw(new Painter(ctx));
         // Should not throw
@@ -97,8 +97,8 @@ class PointsTest {
 
     @Test
     void draw_points_outside_bounds() {
-        var ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
-        var points = new Points(new double[][] {{-5, -5}, {15, 15}}, Color.RED);
+        Context ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
+        Points points = new Points(new double[][] {{-5, -5}, {15, 15}}, Color.RED);
 
         points.draw(new Painter(ctx));
         // Should clip and not throw
@@ -106,12 +106,12 @@ class PointsTest {
 
     @Test
     void draw_points_partial_null() {
-        var ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
+        Context ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
         double[][] coords = new double[3][];
         coords[0] = new double[] {5, 5};
         coords[1] = null;
         coords[2] = new double[] {3, 3};
-        var points = new Points(coords, Color.GREEN);
+        Points points = new Points(coords, Color.GREEN);
 
         points.draw(new Painter(ctx));
         // Should skip null entries and not throw

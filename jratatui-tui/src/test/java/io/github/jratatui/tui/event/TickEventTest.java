@@ -16,8 +16,8 @@ class TickEventTest {
     @Test
     @DisplayName("of creates tick event with frame count and elapsed time")
     void ofCreatesTickEvent() {
-        var elapsed = Duration.ofMillis(16);
-        var event = TickEvent.of(42, elapsed);
+        Duration elapsed = Duration.ofMillis(16);
+        TickEvent event = TickEvent.of(42, elapsed);
         assertThat(event.frameCount()).isEqualTo(42);
         assertThat(event.elapsed()).isEqualTo(elapsed);
     }

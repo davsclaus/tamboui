@@ -11,13 +11,13 @@ import java.util.Optional;
  * A complete style definition including foreground, background, and modifiers.
  * Styles are immutable and composable.
  */
-public record Style(
-    Optional<Color> fg,
-    Optional<Color> bg,
-    Optional<Color> underlineColor,
-    EnumSet<Modifier> addModifiers,
-    EnumSet<Modifier> subModifiers
-) {
+public final class Style {
+
+    private final Optional<Color> fg;
+    private final Optional<Color> bg;
+    private final Optional<Color> underlineColor;
+    private final EnumSet<Modifier> addModifiers;
+    private final EnumSet<Modifier> subModifiers;
 
     public static final Style EMPTY = new Style(
         Optional.empty(),
@@ -27,10 +27,19 @@ public record Style(
         EnumSet.noneOf(Modifier.class)
     );
 
-    public Style {
+    public Style(
+        Optional<Color> fg,
+        Optional<Color> bg,
+        Optional<Color> underlineColor,
+        EnumSet<Modifier> addModifiers,
+        EnumSet<Modifier> subModifiers
+    ) {
+        this.fg = fg != null ? fg : Optional.empty();
+        this.bg = bg != null ? bg : Optional.empty();
+        this.underlineColor = underlineColor != null ? underlineColor : Optional.empty();
         // Defensive copy of mutable EnumSets
-        addModifiers = EnumSet.copyOf(addModifiers);
-        subModifiers = EnumSet.copyOf(subModifiers);
+        this.addModifiers = EnumSet.copyOf(addModifiers);
+        this.subModifiers = EnumSet.copyOf(subModifiers);
     }
 
     /**
@@ -129,17 +138,17 @@ public record Style(
     // Modifier methods
 
     public Style addModifier(Modifier modifier) {
-        var newAdd = EnumSet.copyOf(addModifiers);
+        EnumSet<Modifier> newAdd = EnumSet.copyOf(addModifiers);
         newAdd.add(modifier);
-        var newSub = EnumSet.copyOf(subModifiers);
+        EnumSet<Modifier> newSub = EnumSet.copyOf(subModifiers);
         newSub.remove(modifier);
         return new Style(fg, bg, underlineColor, newAdd, newSub);
     }
 
     public Style removeModifier(Modifier modifier) {
-        var newAdd = EnumSet.copyOf(addModifiers);
+        EnumSet<Modifier> newAdd = EnumSet.copyOf(addModifiers);
         newAdd.remove(modifier);
-        var newSub = EnumSet.copyOf(subModifiers);
+        EnumSet<Modifier> newSub = EnumSet.copyOf(subModifiers);
         newSub.add(modifier);
         return new Style(fg, bg, underlineColor, newAdd, newSub);
     }
@@ -213,15 +222,15 @@ public record Style(
      * values where they are set.
      */
     public Style patch(Style other) {
-        var newFg = other.fg.isPresent() ? other.fg : this.fg;
-        var newBg = other.bg.isPresent() ? other.bg : this.bg;
-        var newUnderlineColor = other.underlineColor.isPresent() ? other.underlineColor : this.underlineColor;
+        Optional<Color> newFg = other.fg.isPresent() ? other.fg : this.fg;
+        Optional<Color> newBg = other.bg.isPresent() ? other.bg : this.bg;
+        Optional<Color> newUnderlineColor = other.underlineColor.isPresent() ? other.underlineColor : this.underlineColor;
 
-        var newAddModifiers = EnumSet.copyOf(this.addModifiers);
+        EnumSet<Modifier> newAddModifiers = EnumSet.copyOf(this.addModifiers);
         newAddModifiers.removeAll(other.subModifiers);
         newAddModifiers.addAll(other.addModifiers);
 
-        var newSubModifiers = EnumSet.copyOf(this.subModifiers);
+        EnumSet<Modifier> newSubModifiers = EnumSet.copyOf(this.subModifiers);
         newSubModifiers.removeAll(other.addModifiers);
         newSubModifiers.addAll(other.subModifiers);
 
@@ -232,8 +241,61 @@ public record Style(
      * Returns the effective set of modifiers (add - sub).
      */
     public EnumSet<Modifier> effectiveModifiers() {
-        var result = EnumSet.copyOf(addModifiers);
+        EnumSet<Modifier> result = EnumSet.copyOf(addModifiers);
         result.removeAll(subModifiers);
         return result;
+    }
+
+    public Optional<Color> fg() {
+        return fg;
+    }
+
+    public Optional<Color> bg() {
+        return bg;
+    }
+
+    public Optional<Color> underlineColor() {
+        return underlineColor;
+    }
+
+    public EnumSet<Modifier> addModifiers() {
+        return EnumSet.copyOf(addModifiers);
+    }
+
+    public EnumSet<Modifier> subModifiers() {
+        return EnumSet.copyOf(subModifiers);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Style)) {
+            return false;
+        }
+        Style style = (Style) o;
+        return fg.equals(style.fg)
+            && bg.equals(style.bg)
+            && underlineColor.equals(style.underlineColor)
+            && addModifiers.equals(style.addModifiers)
+            && subModifiers.equals(style.subModifiers);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = fg.hashCode();
+        result = 31 * result + bg.hashCode();
+        result = 31 * result + underlineColor.hashCode();
+        result = 31 * result + addModifiers.hashCode();
+        result = 31 * result + subModifiers.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+            "Style[fg=%s, bg=%s, underlineColor=%s, addModifiers=%s, subModifiers=%s]",
+            fg, bg, underlineColor, addModifiers, subModifiers);
     }
 }

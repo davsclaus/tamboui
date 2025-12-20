@@ -5,7 +5,7 @@ plugins {
 description = "High-level TUI application framework for JRatatui"
 
 dependencies {
-    api(project(":jratatui-core"))
-    api(project(":jratatui-widgets"))
-    api(project(":jratatui-jline"))
+    api(projects.jratatuiCore)
+    api(projects.jratatuiWidgets)
+    api(projects.jratatuiJline)
 }

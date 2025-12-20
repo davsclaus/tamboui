@@ -12,6 +12,7 @@ import io.github.jratatui.widgets.block.Block;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
@@ -21,9 +22,9 @@ class SparklineTest {
     @Test
     @DisplayName("Sparkline renders basic data")
     void rendersBasicData() {
-        var sparkline = Sparkline.from(0, 4, 8);
-        var area = new Rect(0, 0, 3, 1);
-        var buffer = Buffer.empty(area);
+        Sparkline sparkline = Sparkline.from(0, 4, 8);
+        Rect area = new Rect(0, 0, 3, 1);
+        Buffer buffer = Buffer.empty(area);
 
         sparkline.render(area, buffer);
 
@@ -35,12 +36,12 @@ class SparklineTest {
     @Test
     @DisplayName("Sparkline renders with max value")
     void rendersWithMaxValue() {
-        var sparkline = Sparkline.builder()
+        Sparkline sparkline = Sparkline.builder()
             .data(50, 100)
             .max(100)
             .build();
-        var area = new Rect(0, 0, 2, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 2, 1);
+        Buffer buffer = Buffer.empty(area);
 
         sparkline.render(area, buffer);
 
@@ -51,9 +52,9 @@ class SparklineTest {
     @Test
     @DisplayName("Sparkline auto-scales to data max")
     void autoScalesToDataMax() {
-        var sparkline = Sparkline.from(25, 50, 100);
-        var area = new Rect(0, 0, 3, 1);
-        var buffer = Buffer.empty(area);
+        Sparkline sparkline = Sparkline.from(25, 50, 100);
+        Rect area = new Rect(0, 0, 3, 1);
+        Buffer buffer = Buffer.empty(area);
 
         sparkline.render(area, buffer);
 
@@ -66,13 +67,13 @@ class SparklineTest {
     @Test
     @DisplayName("Sparkline renders with style")
     void rendersWithStyle() {
-        var style = Style.EMPTY.fg(Color.CYAN);
-        var sparkline = Sparkline.builder()
+        Style style = Style.EMPTY.fg(Color.CYAN);
+        Sparkline sparkline = Sparkline.builder()
             .data(5)
             .style(style)
             .build();
-        var area = new Rect(0, 0, 1, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 1, 1);
+        Buffer buffer = Buffer.empty(area);
 
         sparkline.render(area, buffer);
 
@@ -82,13 +83,13 @@ class SparklineTest {
     @Test
     @DisplayName("Sparkline renders with block")
     void rendersWithBlock() {
-        var sparkline = Sparkline.builder()
+        Sparkline sparkline = Sparkline.builder()
             .data(8)
             .max(8)
             .block(Block.bordered())
             .build();
-        var area = new Rect(0, 0, 5, 3);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 5, 3);
+        Buffer buffer = Buffer.empty(area);
 
         sparkline.render(area, buffer);
 
@@ -102,9 +103,9 @@ class SparklineTest {
     @Test
     @DisplayName("Sparkline truncates data to fit area")
     void truncatesDataToFitArea() {
-        var sparkline = Sparkline.from(1, 2, 3, 4, 5, 6, 7, 8);
-        var area = new Rect(0, 0, 3, 1);
-        var buffer = Buffer.empty(area);
+        Sparkline sparkline = Sparkline.from(1, 2, 3, 4, 5, 6, 7, 8);
+        Rect area = new Rect(0, 0, 3, 1);
+        Buffer buffer = Buffer.empty(area);
 
         sparkline.render(area, buffer);
 
@@ -118,12 +119,12 @@ class SparklineTest {
     @Test
     @DisplayName("Sparkline renders right-to-left")
     void rendersRightToLeft() {
-        var sparkline = Sparkline.builder()
+        Sparkline sparkline = Sparkline.builder()
             .data(0, 8)
             .direction(Sparkline.RenderDirection.RIGHT_TO_LEFT)
             .build();
-        var area = new Rect(0, 0, 2, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 2, 1);
+        Buffer buffer = Buffer.empty(area);
 
         sparkline.render(area, buffer);
 
@@ -135,12 +136,12 @@ class SparklineTest {
     @Test
     @DisplayName("Sparkline with THREE_LEVELS bar set")
     void withThreeLevelsBarSet() {
-        var sparkline = Sparkline.builder()
+        Sparkline sparkline = Sparkline.builder()
             .data(0, 4, 8)
             .barSet(Sparkline.BarSet.THREE_LEVELS)
             .build();
-        var area = new Rect(0, 0, 3, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 3, 1);
+        Buffer buffer = Buffer.empty(area);
 
         sparkline.render(area, buffer);
 
@@ -152,9 +153,9 @@ class SparklineTest {
     @Test
     @DisplayName("Sparkline handles empty data")
     void handlesEmptyData() {
-        var sparkline = Sparkline.from();
-        var area = new Rect(0, 0, 5, 1);
-        var buffer = Buffer.empty(area);
+        Sparkline sparkline = Sparkline.from();
+        Rect area = new Rect(0, 0, 5, 1);
+        Buffer buffer = Buffer.empty(area);
 
         // Should not throw
         sparkline.render(area, buffer);
@@ -166,9 +167,9 @@ class SparklineTest {
     @Test
     @DisplayName("Sparkline handles empty area")
     void handlesEmptyArea() {
-        var sparkline = Sparkline.from(1, 2, 3);
-        var area = new Rect(0, 0, 0, 0);
-        var buffer = Buffer.empty(new Rect(0, 0, 5, 5));
+        Sparkline sparkline = Sparkline.from(1, 2, 3);
+        Rect area = new Rect(0, 0, 0, 0);
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 5, 5));
 
         // Should not throw
         sparkline.render(area, buffer);
@@ -177,9 +178,9 @@ class SparklineTest {
     @Test
     @DisplayName("Sparkline handles all zero data")
     void handlesAllZeroData() {
-        var sparkline = Sparkline.from(0, 0, 0);
-        var area = new Rect(0, 0, 3, 1);
-        var buffer = Buffer.empty(area);
+        Sparkline sparkline = Sparkline.from(0, 0, 0);
+        Rect area = new Rect(0, 0, 3, 1);
+        Buffer buffer = Buffer.empty(area);
 
         sparkline.render(area, buffer);
 
@@ -192,9 +193,9 @@ class SparklineTest {
     @Test
     @DisplayName("Sparkline from List")
     void fromList() {
-        var sparkline = Sparkline.from(List.of(0L, 4L, 8L));
-        var area = new Rect(0, 0, 3, 1);
-        var buffer = Buffer.empty(area);
+        Sparkline sparkline = Sparkline.from(Arrays.asList(0L, 4L, 8L));
+        Rect area = new Rect(0, 0, 3, 1);
+        Buffer buffer = Buffer.empty(area);
 
         sparkline.render(area, buffer);
 
@@ -204,11 +205,11 @@ class SparklineTest {
     @Test
     @DisplayName("Sparkline builder with int array")
     void builderWithIntArray() {
-        var sparkline = Sparkline.builder()
+        Sparkline sparkline = Sparkline.builder()
             .data(0, 4, 8)
             .build();
-        var area = new Rect(0, 0, 3, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 3, 1);
+        Buffer buffer = Buffer.empty(area);
 
         sparkline.render(area, buffer);
 
@@ -218,7 +219,7 @@ class SparklineTest {
     @Test
     @DisplayName("BarSet NINE_LEVELS covers all levels")
     void barSetNineLevels() {
-        var set = Sparkline.BarSet.NINE_LEVELS;
+        Sparkline.BarSet set = Sparkline.BarSet.NINE_LEVELS;
 
         assertThat(set.symbolForLevel(0.0)).isEqualTo(" ");
         assertThat(set.symbolForLevel(0.125)).isEqualTo("▁");
@@ -234,7 +235,7 @@ class SparklineTest {
     @Test
     @DisplayName("BarSet handles edge cases")
     void barSetEdgeCases() {
-        var set = Sparkline.BarSet.NINE_LEVELS;
+        Sparkline.BarSet set = Sparkline.BarSet.NINE_LEVELS;
 
         assertThat(set.symbolForLevel(-0.5)).isEqualTo(" ");
         assertThat(set.symbolForLevel(1.5)).isEqualTo("█");
@@ -243,9 +244,9 @@ class SparklineTest {
     @Test
     @DisplayName("Sparkline renders at bottom of area")
     void rendersAtBottomOfArea() {
-        var sparkline = Sparkline.from(8);
-        var area = new Rect(0, 0, 1, 3);
-        var buffer = Buffer.empty(area);
+        Sparkline sparkline = Sparkline.from(8);
+        Rect area = new Rect(0, 0, 1, 3);
+        Buffer buffer = Buffer.empty(area);
 
         sparkline.render(area, buffer);
 
@@ -258,9 +259,9 @@ class SparklineTest {
     @Test
     @DisplayName("Sparkline with fewer data points than width")
     void fewerDataPointsThanWidth() {
-        var sparkline = Sparkline.from(4, 8);
-        var area = new Rect(0, 0, 5, 1);
-        var buffer = Buffer.empty(area);
+        Sparkline sparkline = Sparkline.from(4, 8);
+        Rect area = new Rect(0, 0, 5, 1);
+        Buffer buffer = Buffer.empty(area);
 
         sparkline.render(area, buffer);
 
@@ -273,13 +274,13 @@ class SparklineTest {
     @Test
     @DisplayName("autoMax clears explicit max")
     void autoMaxClearsExplicitMax() {
-        var sparkline = Sparkline.builder()
+        Sparkline sparkline = Sparkline.builder()
             .data(50, 100)
             .max(200)
             .autoMax()
             .build();
-        var area = new Rect(0, 0, 2, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 2, 1);
+        Buffer buffer = Buffer.empty(area);
 
         sparkline.render(area, buffer);
 

@@ -15,6 +15,7 @@ import io.github.jratatui.widgets.Widget;
 import io.github.jratatui.widgets.block.Block;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -94,11 +95,19 @@ public final class Paragraph implements Widget {
 
             // Calculate x position based on alignment
             int lineWidth = line.width();
-            int x = switch (alignment) {
-                case LEFT -> textArea.left();
-                case CENTER -> textArea.left() + (textArea.width() - lineWidth) / 2;
-                case RIGHT -> textArea.right() - lineWidth;
-            };
+            int x;
+            switch (alignment) {
+                case LEFT:
+                    x = textArea.left();
+                    break;
+                case CENTER:
+                    x = textArea.left() + (textArea.width() - lineWidth) / 2;
+                    break;
+                case RIGHT:
+                default:
+                    x = textArea.right() - lineWidth;
+                    break;
+            }
 
             buffer.setLine(x, y, line);
         }
@@ -106,7 +115,7 @@ public final class Paragraph implements Widget {
 
     private List<Line> wrapLines(List<Line> lines, int maxWidth) {
         if (maxWidth <= 0) {
-            return List.of();
+            return Collections.emptyList();
         }
 
         List<Line> wrapped = new ArrayList<>();

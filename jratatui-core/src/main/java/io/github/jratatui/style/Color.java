@@ -7,42 +7,133 @@ package io.github.jratatui.style;
 /**
  * Terminal colors supporting ANSI 16, 256-color indexed, and RGB true color modes.
  */
-public sealed interface Color permits
-    Color.Reset,
-    Color.Ansi,
-    Color.Indexed,
-    Color.Rgb {
+public interface Color {
 
     /**
      * Reset to default terminal color.
      */
-    record Reset() implements Color {}
+    final class Reset implements Color {
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof Reset;
+        }
+
+        @Override
+        public int hashCode() {
+            return 0;
+        }
+
+        @Override
+        public String toString() {
+            return "Reset";
+        }
+    }
 
     /**
      * Standard ANSI 16 colors.
      */
-    record Ansi(AnsiColor color) implements Color {}
+    final class Ansi implements Color {
+        private final AnsiColor color;
+
+        public Ansi(AnsiColor color) {
+            this.color = color;
+        }
+
+        public AnsiColor color() {
+            return color;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof Ansi)) {
+                return false;
+            }
+            Ansi ansi = (Ansi) o;
+            return color == ansi.color;
+        }
+
+        @Override
+        public int hashCode() {
+            return color != null ? color.hashCode() : 0;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("Ansi[color=%s]", color);
+        }
+    }
 
     /**
      * 256-color palette index (0-255).
      */
-    record Indexed(int index) implements Color {
-        public Indexed {
+    final class Indexed implements Color {
+        private final int index;
+
+        public Indexed(int index) {
             if (index < 0 || index > 255) {
                 throw new IllegalArgumentException("Color index must be 0-255: " + index);
             }
+            this.index = index;
+        }
+
+        public int index() {
+            return index;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof Indexed)) {
+                return false;
+            }
+            Indexed indexed = (Indexed) o;
+            return index == indexed.index;
+        }
+
+        @Override
+        public int hashCode() {
+            return Integer.hashCode(index);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("Indexed[index=%d]", index);
         }
     }
 
     /**
      * RGB true color (24-bit).
      */
-    record Rgb(int r, int g, int b) implements Color {
-        public Rgb {
+    final class Rgb implements Color {
+        private final int r;
+        private final int g;
+        private final int b;
+
+        public Rgb(int r, int g, int b) {
             if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
                 throw new IllegalArgumentException(
                     String.format("RGB values must be 0-255: (%d, %d, %d)", r, g, b));
             }
+            this.r = r;
+            this.g = g;
+            this.b = b;
+        }
+
+        public int r() {
+            return r;
+        }
+
+        public int g() {
+            return g;
+        }
+
+        public int b() {
+            return b;
         }
 
         public static Rgb fromHex(String hex) {
@@ -54,6 +145,31 @@ public sealed interface Color permits
             int g = Integer.parseInt(h.substring(2, 4), 16);
             int b = Integer.parseInt(h.substring(4, 6), 16);
             return new Rgb(r, g, b);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof Rgb)) {
+                return false;
+            }
+            Rgb rgb = (Rgb) o;
+            return r == rgb.r && g == rgb.g && b == rgb.b;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Integer.hashCode(r);
+            result = 31 * result + Integer.hashCode(g);
+            result = 31 * result + Integer.hashCode(b);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("Rgb[r=%d, g=%d, b=%d]", r, g, b);
         }
     }
 

@@ -11,6 +11,7 @@ import io.github.jratatui.style.Style;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
@@ -20,18 +21,18 @@ class ListWidgetTest {
     @Test
     @DisplayName("ListWidget renders items")
     void rendersItems() {
-        var items = List.of(
+        List<ListItem> items = Arrays.asList(
             ListItem.from("Item 1"),
             ListItem.from("Item 2"),
             ListItem.from("Item 3")
         );
-        var list = ListWidget.builder()
+        ListWidget list = ListWidget.builder()
             .items(items)
             .highlightSymbol("") // No highlight symbol for simple rendering
             .build();
-        var area = new Rect(0, 0, 20, 3);
-        var buffer = Buffer.empty(area);
-        var state = new ListState();
+        Rect area = new Rect(0, 0, 20, 3);
+        Buffer buffer = Buffer.empty(area);
+        ListState state = new ListState();
 
         list.render(area, buffer, state);
 
@@ -43,18 +44,18 @@ class ListWidgetTest {
     @Test
     @DisplayName("ListWidget with selection")
     void withSelection() {
-        var items = List.of(
+        List<ListItem> items = Arrays.asList(
             ListItem.from("Item 1"),
             ListItem.from("Item 2")
         );
-        var highlightStyle = Style.EMPTY.fg(Color.YELLOW);
-        var list = ListWidget.builder()
+        Style highlightStyle = Style.EMPTY.fg(Color.YELLOW);
+        ListWidget list = ListWidget.builder()
             .items(items)
             .highlightStyle(highlightStyle)
             .build();
-        var area = new Rect(0, 0, 20, 2);
-        var buffer = Buffer.empty(area);
-        var state = new ListState();
+        Rect area = new Rect(0, 0, 20, 2);
+        Buffer buffer = Buffer.empty(area);
+        ListState state = new ListState();
         state.select(1);
 
         list.render(area, buffer, state);
@@ -66,17 +67,17 @@ class ListWidgetTest {
     @Test
     @DisplayName("ListWidget with highlight symbol")
     void withHighlightSymbol() {
-        var items = List.of(
+        List<ListItem> items = Arrays.asList(
             ListItem.from("Item 1"),
             ListItem.from("Item 2")
         );
-        var list = ListWidget.builder()
+        ListWidget list = ListWidget.builder()
             .items(items)
             .highlightSymbol("> ")
             .build();
-        var area = new Rect(0, 0, 20, 2);
-        var buffer = Buffer.empty(area);
-        var state = new ListState();
+        Rect area = new Rect(0, 0, 20, 2);
+        Buffer buffer = Buffer.empty(area);
+        ListState state = new ListState();
         state.select(0);
 
         list.render(area, buffer, state);
@@ -89,7 +90,7 @@ class ListWidgetTest {
     @Test
     @DisplayName("ListState selection navigation")
     void stateNavigation() {
-        var state = new ListState();
+        ListState state = new ListState();
 
         assertThat(state.selected()).isNull();
 
@@ -110,7 +111,7 @@ class ListWidgetTest {
     @Test
     @DisplayName("ListState selectNext wraps or stops at end")
     void selectNextAtEnd() {
-        var state = new ListState();
+        ListState state = new ListState();
         state.select(4);
 
         state.selectNext(5);

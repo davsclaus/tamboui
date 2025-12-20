@@ -13,6 +13,7 @@ import io.github.jratatui.widgets.block.Block;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
@@ -22,8 +23,8 @@ class TableTest {
     @Test
     @DisplayName("Table renders basic content")
     void rendersBasicContent() {
-        var table = Table.builder()
-            .rows(List.of(
+        Table table = Table.builder()
+            .rows(Arrays.asList(
                 Row.from("Alice", "30"),
                 Row.from("Bob", "25")
             ))
@@ -31,9 +32,9 @@ class TableTest {
             .highlightSymbol("")
             .build();
 
-        var area = new Rect(0, 0, 20, 3);
-        var buffer = Buffer.empty(area);
-        var state = new TableState();
+        Rect area = new Rect(0, 0, 20, 3);
+        Buffer buffer = Buffer.empty(area);
+        TableState state = new TableState();
 
         table.render(area, buffer, state);
 
@@ -47,16 +48,16 @@ class TableTest {
     @Test
     @DisplayName("Table renders header")
     void rendersHeader() {
-        var table = Table.builder()
+        Table table = Table.builder()
             .header(Row.from("Name", "Age"))
-            .rows(List.of(Row.from("Alice", "30")))
+            .rows(Arrays.asList(Row.from("Alice", "30")))
             .widths(Constraint.length(10), Constraint.length(5))
             .highlightSymbol("")
             .build();
 
-        var area = new Rect(0, 0, 20, 3);
-        var buffer = Buffer.empty(area);
-        var state = new TableState();
+        Rect area = new Rect(0, 0, 20, 3);
+        Buffer buffer = Buffer.empty(area);
+        TableState state = new TableState();
 
         table.render(area, buffer, state);
 
@@ -69,9 +70,9 @@ class TableTest {
     @Test
     @DisplayName("Table renders with selection")
     void rendersWithSelection() {
-        var highlightStyle = Style.EMPTY.bg(Color.BLUE);
-        var table = Table.builder()
-            .rows(List.of(
+        Style highlightStyle = Style.EMPTY.bg(Color.BLUE);
+        Table table = Table.builder()
+            .rows(Arrays.asList(
                 Row.from("Alice", "30"),
                 Row.from("Bob", "25")
             ))
@@ -81,9 +82,9 @@ class TableTest {
             .highlightSpacing(Table.HighlightSpacing.ALWAYS)
             .build();
 
-        var area = new Rect(0, 0, 20, 3);
-        var buffer = Buffer.empty(area);
-        var state = new TableState();
+        Rect area = new Rect(0, 0, 20, 3);
+        Buffer buffer = Buffer.empty(area);
+        TableState state = new TableState();
         state.select(1); // Select second row
 
         table.render(area, buffer, state);
@@ -96,16 +97,16 @@ class TableTest {
     @Test
     @DisplayName("Table with block")
     void withBlock() {
-        var table = Table.builder()
-            .rows(List.of(Row.from("Data")))
+        Table table = Table.builder()
+            .rows(Arrays.asList(Row.from("Data")))
             .widths(Constraint.length(10))
             .block(Block.bordered())
             .highlightSymbol("")
             .build();
 
-        var area = new Rect(0, 0, 15, 5);
-        var buffer = Buffer.empty(area);
-        var state = new TableState();
+        Rect area = new Rect(0, 0, 15, 5);
+        Buffer buffer = Buffer.empty(area);
+        TableState state = new TableState();
 
         table.render(area, buffer, state);
 
@@ -118,16 +119,16 @@ class TableTest {
     @Test
     @DisplayName("Table column spacing")
     void columnSpacing() {
-        var table = Table.builder()
-            .rows(List.of(Row.from("A", "B")))
+        Table table = Table.builder()
+            .rows(Arrays.asList(Row.from("A", "B")))
             .widths(Constraint.length(3), Constraint.length(3))
             .columnSpacing(2)
             .highlightSymbol("")
             .build();
 
-        var area = new Rect(0, 0, 10, 1);
-        var buffer = Buffer.empty(area);
-        var state = new TableState();
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
+        TableState state = new TableState();
 
         table.render(area, buffer, state);
 
@@ -140,16 +141,16 @@ class TableTest {
     @Test
     @DisplayName("Table with footer")
     void withFooter() {
-        var table = Table.builder()
-            .rows(List.of(Row.from("Data")))
+        Table table = Table.builder()
+            .rows(Arrays.asList(Row.from("Data")))
             .footer(Row.from("Total: 1"))
             .widths(Constraint.length(15))
             .highlightSymbol("")
             .build();
 
-        var area = new Rect(0, 0, 20, 3);
-        var buffer = Buffer.empty(area);
-        var state = new TableState();
+        Rect area = new Rect(0, 0, 20, 3);
+        Buffer buffer = Buffer.empty(area);
+        TableState state = new TableState();
 
         table.render(area, buffer, state);
 
@@ -162,8 +163,8 @@ class TableTest {
     @Test
     @DisplayName("Table rows accessor")
     void rowsAccessor() {
-        var rows = List.of(Row.from("A"), Row.from("B"));
-        var table = Table.builder()
+        List<Row> rows = Arrays.asList(Row.from("A"), Row.from("B"));
+        Table table = Table.builder()
             .rows(rows)
             .widths(Constraint.length(5))
             .build();
@@ -174,15 +175,15 @@ class TableTest {
     @Test
     @DisplayName("Table with percentage constraints")
     void percentageConstraints() {
-        var table = Table.builder()
-            .rows(List.of(Row.from("Left", "Right")))
+        Table table = Table.builder()
+            .rows(Arrays.asList(Row.from("Left", "Right")))
             .widths(Constraint.percentage(50), Constraint.percentage(50))
             .highlightSymbol("")
             .build();
 
-        var area = new Rect(0, 0, 20, 1);
-        var buffer = Buffer.empty(area);
-        var state = new TableState();
+        Rect area = new Rect(0, 0, 20, 1);
+        Buffer buffer = Buffer.empty(area);
+        TableState state = new TableState();
 
         table.render(area, buffer, state);
 
@@ -195,16 +196,16 @@ class TableTest {
     @Test
     @DisplayName("Table highlight spacing NEVER does not reserve space")
     void highlightSpacingNever() {
-        var table = Table.builder()
-            .rows(List.of(Row.from("Data")))
+        Table table = Table.builder()
+            .rows(Arrays.asList(Row.from("Data")))
             .widths(Constraint.length(10))
             .highlightSymbol(">> ")
             .highlightSpacing(Table.HighlightSpacing.NEVER)
             .build();
 
-        var area = new Rect(0, 0, 15, 1);
-        var buffer = Buffer.empty(area);
-        var state = new TableState();
+        Rect area = new Rect(0, 0, 15, 1);
+        Buffer buffer = Buffer.empty(area);
+        TableState state = new TableState();
         state.select(0);
 
         table.render(area, buffer, state);
@@ -216,16 +217,16 @@ class TableTest {
     @Test
     @DisplayName("Table highlight spacing ALWAYS reserves space")
     void highlightSpacingAlways() {
-        var table = Table.builder()
-            .rows(List.of(Row.from("Data")))
+        Table table = Table.builder()
+            .rows(Arrays.asList(Row.from("Data")))
             .widths(Constraint.length(10))
             .highlightSymbol(">> ")
             .highlightSpacing(Table.HighlightSpacing.ALWAYS)
             .build();
 
-        var area = new Rect(0, 0, 15, 1);
-        var buffer = Buffer.empty(area);
-        var state = new TableState();
+        Rect area = new Rect(0, 0, 15, 1);
+        Buffer buffer = Buffer.empty(area);
+        TableState state = new TableState();
         // No selection
 
         table.render(area, buffer, state);
@@ -238,13 +239,13 @@ class TableTest {
     @Test
     @DisplayName("Empty table renders nothing")
     void emptyTable() {
-        var table = Table.builder()
+        Table table = Table.builder()
             .widths(Constraint.length(10))
             .build();
 
-        var area = new Rect(0, 0, 15, 3);
-        var buffer = Buffer.empty(area);
-        var state = new TableState();
+        Rect area = new Rect(0, 0, 15, 3);
+        Buffer buffer = Buffer.empty(area);
+        TableState state = new TableState();
 
         table.render(area, buffer, state);
 
@@ -255,13 +256,13 @@ class TableTest {
     @Test
     @DisplayName("Table without widths renders nothing")
     void noWidths() {
-        var table = Table.builder()
-            .rows(List.of(Row.from("Data")))
+        Table table = Table.builder()
+            .rows(Arrays.asList(Row.from("Data")))
             .build();
 
-        var area = new Rect(0, 0, 15, 3);
-        var buffer = Buffer.empty(area);
-        var state = new TableState();
+        Rect area = new Rect(0, 0, 15, 3);
+        Buffer buffer = Buffer.empty(area);
+        TableState state = new TableState();
 
         table.render(area, buffer, state);
 

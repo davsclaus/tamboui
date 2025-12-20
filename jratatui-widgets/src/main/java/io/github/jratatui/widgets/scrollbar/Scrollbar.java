@@ -9,6 +9,8 @@ import io.github.jratatui.layout.Rect;
 import io.github.jratatui.style.Style;
 import io.github.jratatui.widgets.StatefulWidget;
 
+import java.util.Objects;
+
 /**
  * A scrollbar widget for displaying scroll position.
  * <p>
@@ -22,13 +24,13 @@ import io.github.jratatui.widgets.StatefulWidget;
  *
  * <pre>{@code
  * // Create a vertical scrollbar
- * var scrollbar = Scrollbar.builder()
+ * Scrollbar scrollbar = Scrollbar.builder()
  *     .orientation(ScrollbarOrientation.VERTICAL_RIGHT)
  *     .thumbStyle(Style.EMPTY.fg(Color.YELLOW))
  *     .build();
  *
  * // Create state for 100 items
- * var state = new ScrollbarState()
+ * ScrollbarState state = new ScrollbarState()
  *     .contentLength(100)
  *     .position(currentScrollPosition);
  *
@@ -51,7 +53,18 @@ public final class Scrollbar implements StatefulWidget<ScrollbarState> {
      * @param begin the optional character for the start marker (can be null)
      * @param end the optional character for the end marker (can be null)
      */
-    public record SymbolSet(String track, String thumb, String begin, String end) {
+    public static final class SymbolSet {
+        private final String track;
+        private final String thumb;
+        private final String begin;
+        private final String end;
+
+        public SymbolSet(String track, String thumb, String begin, String end) {
+            this.track = track;
+            this.thumb = thumb;
+            this.begin = begin;
+            this.end = end;
+        }
         /**
          * Vertical scrollbar with single-line track and arrows.
          */
@@ -91,6 +104,51 @@ public final class Scrollbar implements StatefulWidget<ScrollbarState> {
          */
         public boolean hasMarkers() {
             return begin != null && end != null;
+        }
+
+        public String track() {
+            return track;
+        }
+
+        public String thumb() {
+            return thumb;
+        }
+
+        public String begin() {
+            return begin;
+        }
+
+        public String end() {
+            return end;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof SymbolSet)) {
+                return false;
+            }
+            SymbolSet symbolSet = (SymbolSet) o;
+            return track.equals(symbolSet.track)
+                && thumb.equals(symbolSet.thumb)
+                && Objects.equals(begin, symbolSet.begin)
+                && Objects.equals(end, symbolSet.end);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = track.hashCode();
+            result = 31 * result + thumb.hashCode();
+            result = 31 * result + (begin != null ? begin.hashCode() : 0);
+            result = 31 * result + (end != null ? end.hashCode() : 0);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("SymbolSet[track=%s, thumb=%s, begin=%s, end=%s]", track, thumb, begin, end);
         }
     }
 
@@ -283,12 +341,17 @@ public final class Scrollbar implements StatefulWidget<ScrollbarState> {
     }
 
     private Rect calculateTrackArea(Rect area) {
-        return switch (orientation) {
-            case VERTICAL_RIGHT -> new Rect(area.right() - 1, area.y(), 1, area.height());
-            case VERTICAL_LEFT -> new Rect(area.x(), area.y(), 1, area.height());
-            case HORIZONTAL_BOTTOM -> new Rect(area.x(), area.bottom() - 1, area.width(), 1);
-            case HORIZONTAL_TOP -> new Rect(area.x(), area.y(), area.width(), 1);
-        };
+        switch (orientation) {
+            case VERTICAL_RIGHT:
+                return new Rect(area.right() - 1, area.y(), 1, area.height());
+            case VERTICAL_LEFT:
+                return new Rect(area.x(), area.y(), 1, area.height());
+            case HORIZONTAL_BOTTOM:
+                return new Rect(area.x(), area.bottom() - 1, area.width(), 1);
+            case HORIZONTAL_TOP:
+            default:
+                return new Rect(area.x(), area.y(), area.width(), 1);
+        }
     }
 
     private String getDefaultThumb() {

@@ -17,19 +17,19 @@ class ChartTest {
 
     @Test
     void builder_creates_chart_with_defaults() {
-        var chart = Chart.builder().build();
+        Chart chart = Chart.builder().build();
 
         assertThat(chart).isNotNull();
     }
 
     @Test
     void builder_accepts_datasets() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .name("Test")
             .data(new double[][] {{0, 0}, {1, 1}})
             .build();
 
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .datasets(dataset)
             .build();
 
@@ -38,19 +38,19 @@ class ChartTest {
 
     @Test
     void builder_accepts_x_and_y_axes() {
-        var xAxis = Axis.builder()
+        Axis xAxis = Axis.builder()
             .title("X")
             .bounds(0, 10)
             .labels("0", "5", "10")
             .build();
 
-        var yAxis = Axis.builder()
+        Axis yAxis = Axis.builder()
             .title("Y")
             .bounds(0, 100)
             .labels("0", "50", "100")
             .build();
 
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .xAxis(xAxis)
             .yAxis(yAxis)
             .build();
@@ -60,7 +60,7 @@ class ChartTest {
 
     @Test
     void builder_accepts_block() {
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .block(Block.bordered())
             .build();
 
@@ -69,7 +69,7 @@ class ChartTest {
 
     @Test
     void builder_accepts_style() {
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .style(Style.EMPTY.fg(Color.CYAN))
             .build();
 
@@ -78,7 +78,7 @@ class ChartTest {
 
     @Test
     void builder_accepts_legend_position() {
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .legendPosition(LegendPosition.BOTTOM_LEFT)
             .build();
 
@@ -87,7 +87,7 @@ class ChartTest {
 
     @Test
     void builder_hide_legend() {
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .hideLegend()
             .build();
 
@@ -96,16 +96,16 @@ class ChartTest {
 
     @Test
     void of_creates_chart_with_datasets() {
-        var dataset = Dataset.of(new double[][] {{0, 1}, {1, 2}});
-        var chart = Chart.of(dataset);
+        Dataset dataset = Dataset.of(new double[][] {{0, 1}, {1, 2}});
+        Chart chart = Chart.of(dataset);
 
         assertThat(chart).isNotNull();
     }
 
     @Test
     void render_empty_area_does_nothing() {
-        var chart = Chart.builder().build();
-        var buffer = Buffer.empty(new Rect(0, 0, 0, 0));
+        Chart chart = Chart.builder().build();
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 0, 0));
 
         chart.render(new Rect(0, 0, 0, 0), buffer);
         // Should not throw
@@ -113,9 +113,9 @@ class ChartTest {
 
     @Test
     void render_with_no_datasets_clears_area() {
-        var chart = Chart.builder().build();
-        var area = new Rect(0, 0, 20, 10);
-        var buffer = Buffer.empty(area);
+        Chart chart = Chart.builder().build();
+        Rect area = new Rect(0, 0, 20, 10);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
         // Should not throw
@@ -123,20 +123,20 @@ class ChartTest {
 
     @Test
     void render_scatter_plot() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .data(new double[][] {{0, 0}, {5, 5}, {10, 10}})
             .graphType(GraphType.SCATTER)
             .marker(Dataset.Marker.DOT)
             .build();
 
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .datasets(dataset)
             .xAxis(Axis.builder().bounds(0, 10).build())
             .yAxis(Axis.builder().bounds(0, 10).build())
             .build();
 
-        var area = new Rect(0, 0, 20, 10);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 20, 10);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -147,20 +147,20 @@ class ChartTest {
 
     @Test
     void render_line_chart() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .data(new double[][] {{0, 0}, {10, 10}})
             .graphType(GraphType.LINE)
             .style(Style.EMPTY.fg(Color.CYAN))
             .build();
 
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .datasets(dataset)
             .xAxis(Axis.builder().bounds(0, 10).build())
             .yAxis(Axis.builder().bounds(0, 10).build())
             .build();
 
-        var area = new Rect(0, 0, 20, 10);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 20, 10);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -170,20 +170,20 @@ class ChartTest {
 
     @Test
     void render_bar_chart() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .data(new double[][] {{0, 5}, {5, 8}, {10, 3}})
             .graphType(GraphType.BAR)
             .style(Style.EMPTY.fg(Color.GREEN))
             .build();
 
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .datasets(dataset)
             .xAxis(Axis.builder().bounds(0, 10).build())
             .yAxis(Axis.builder().bounds(0, 10).build())
             .build();
 
-        var area = new Rect(0, 0, 20, 10);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 20, 10);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -192,7 +192,7 @@ class ChartTest {
 
     @Test
     void render_with_x_axis_labels() {
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .datasets(Dataset.of(new double[][] {{0, 0}}))
             .xAxis(Axis.builder()
                 .bounds(0, 10)
@@ -201,8 +201,8 @@ class ChartTest {
             .yAxis(Axis.builder().bounds(0, 10).build())
             .build();
 
-        var area = new Rect(0, 0, 30, 12);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 30, 12);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -213,7 +213,7 @@ class ChartTest {
 
     @Test
     void render_with_y_axis_labels() {
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .datasets(Dataset.of(new double[][] {{0, 0}}))
             .xAxis(Axis.builder().bounds(0, 10).build())
             .yAxis(Axis.builder()
@@ -222,19 +222,19 @@ class ChartTest {
                 .build())
             .build();
 
-        var area = new Rect(0, 0, 30, 12);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 30, 12);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
         // Y-axis labels should be rendered on the left
-        var leftColumn = buffer.get(0, 0).symbol() + buffer.get(1, 0).symbol();
+        String leftColumn = buffer.get(0, 0).symbol() + buffer.get(1, 0).symbol();
         // Should contain at least one label
     }
 
     @Test
     void render_with_axis_titles() {
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .datasets(Dataset.of(new double[][] {{0, 0}}))
             .xAxis(Axis.builder()
                 .title("Time")
@@ -246,8 +246,8 @@ class ChartTest {
                 .build())
             .build();
 
-        var area = new Rect(0, 0, 30, 15);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 30, 15);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -257,21 +257,21 @@ class ChartTest {
 
     @Test
     void render_with_legend() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .name("Series 1")
             .data(new double[][] {{0, 0}, {1, 1}})
             .marker(Dataset.Marker.DOT)
             .build();
 
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .datasets(dataset)
             .xAxis(Axis.builder().bounds(0, 10).build())
             .yAxis(Axis.builder().bounds(0, 10).build())
             .legendPosition(LegendPosition.TOP_LEFT)
             .build();
 
-        var area = new Rect(0, 0, 30, 15);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 30, 15);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -282,13 +282,13 @@ class ChartTest {
 
     @Test
     void render_with_block() {
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .datasets(Dataset.of(new double[][] {{0, 0}}))
             .block(Block.bordered())
             .build();
 
-        var area = new Rect(0, 0, 20, 10);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 20, 10);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -301,28 +301,28 @@ class ChartTest {
 
     @Test
     void render_multiple_datasets() {
-        var dataset1 = Dataset.builder()
+        Dataset dataset1 = Dataset.builder()
             .name("Data 1")
             .data(new double[][] {{0, 0}, {5, 5}})
             .graphType(GraphType.LINE)
             .style(Style.EMPTY.fg(Color.RED))
             .build();
 
-        var dataset2 = Dataset.builder()
+        Dataset dataset2 = Dataset.builder()
             .name("Data 2")
             .data(new double[][] {{0, 10}, {5, 5}})
             .graphType(GraphType.LINE)
             .style(Style.EMPTY.fg(Color.BLUE))
             .build();
 
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .datasets(dataset1, dataset2)
             .xAxis(Axis.builder().bounds(0, 10).build())
             .yAxis(Axis.builder().bounds(0, 10).build())
             .build();
 
-        var area = new Rect(0, 0, 20, 10);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 20, 10);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
         // Should render both datasets
@@ -330,13 +330,13 @@ class ChartTest {
 
     @Test
     void render_with_style() {
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .datasets(Dataset.of(new double[][] {{0, 0}}))
             .style(Style.EMPTY.fg(Color.YELLOW))
             .build();
 
-        var area = new Rect(0, 0, 20, 10);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 20, 10);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -346,14 +346,14 @@ class ChartTest {
 
     @Test
     void render_very_small_area() {
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .datasets(Dataset.of(new double[][] {{0, 0}, {1, 1}}))
             .xAxis(Axis.builder().bounds(0, 10).labels("0", "10").build())
             .yAxis(Axis.builder().bounds(0, 10).labels("0", "10").build())
             .build();
 
-        var area = new Rect(0, 0, 5, 3);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 5, 3);
+        Buffer buffer = Buffer.empty(area);
 
         // Should not throw on very small area
         chart.render(area, buffer);
@@ -361,9 +361,9 @@ class ChartTest {
 
     @Test
     void builder_addDataset_adds_single_dataset() {
-        var dataset = Dataset.of(new double[][] {{0, 0}});
+        Dataset dataset = Dataset.of(new double[][] {{0, 0}});
 
-        var chart = Chart.builder()
+        Chart chart = Chart.builder()
             .addDataset(dataset)
             .addDataset(dataset)
             .build();

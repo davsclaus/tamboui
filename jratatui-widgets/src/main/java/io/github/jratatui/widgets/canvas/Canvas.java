@@ -9,6 +9,7 @@ import io.github.jratatui.layout.Rect;
 import io.github.jratatui.style.Color;
 import io.github.jratatui.style.Style;
 import io.github.jratatui.text.Line;
+import io.github.jratatui.text.Span;
 import io.github.jratatui.widgets.Widget;
 import io.github.jratatui.widgets.block.Block;
 
@@ -23,7 +24,7 @@ import java.util.function.Consumer;
  * handles the transformation from canvas space to terminal cells.
  *
  * <pre>{@code
- * var canvas = Canvas.builder()
+ * Canvas canvas = Canvas.builder()
  *     .xBounds(-180, 180)
  *     .yBounds(-90, 90)
  *     .marker(Marker.BRAILLE)
@@ -122,11 +123,23 @@ public final class Canvas implements Widget {
         List<Color[][]> layers = ctx.allLayers();
 
         switch (marker) {
-            case BRAILLE -> renderBraille(buffer, area, layers);
-            case HALF_BLOCK -> renderHalfBlock(buffer, area, layers);
-            case DOT -> renderSimple(buffer, area, layers, "•");
-            case BLOCK -> renderSimple(buffer, area, layers, "█");
-            case BAR -> renderSimple(buffer, area, layers, "▄");
+            case BRAILLE:
+                renderBraille(buffer, area, layers);
+                break;
+            case HALF_BLOCK:
+                renderHalfBlock(buffer, area, layers);
+                break;
+            case DOT:
+                renderSimple(buffer, area, layers, "•");
+                break;
+            case BLOCK:
+                renderSimple(buffer, area, layers, "█");
+                break;
+            case BAR:
+                renderSimple(buffer, area, layers, "▄");
+                break;
+            default:
+                break;
         }
     }
 
@@ -238,7 +251,9 @@ public final class Canvas implements Widget {
             // Render the line
             Line line = label.line();
             int x = screenX;
-            for (var span : line.spans()) {
+            List<Span> spans = line.spans();
+            for (int i = 0; i < spans.size(); i++) {
+                Span span = spans.get(i);
                 buffer.setString(x, screenY, span.content(), span.style());
                 x += span.width();
             }

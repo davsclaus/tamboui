@@ -12,9 +12,21 @@ import java.util.stream.Stream;
 /**
  * A rectangular area defined by its position and size.
  */
-public record Rect(int x, int y, int width, int height) {
+public final class Rect {
 
     public static final Rect ZERO = new Rect(0, 0, 0, 0);
+
+    private final int x;
+    private final int y;
+    private final int width;
+    private final int height;
+
+    public Rect(int x, int y, int width, int height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
 
     public static Rect of(int width, int height) {
         return new Rect(0, 0, width, height);
@@ -22,6 +34,22 @@ public record Rect(int x, int y, int width, int height) {
 
     public static Rect of(Position position, Size size) {
         return new Rect(position.x(), position.y(), size.width(), size.height());
+    }
+
+    public int x() {
+        return x;
+    }
+
+    public int y() {
+        return y;
+    }
+
+    public int width() {
+        return width;
+    }
+
+    public int height() {
+        return height;
     }
 
     public int left() {
@@ -122,7 +150,7 @@ public record Rect(int x, int y, int width, int height) {
      * Returns an iterator over rows in this rectangle.
      */
     public Iterable<Rect> rows() {
-        return () -> new Iterator<>() {
+        return () -> new Iterator<Rect>() {
             private int currentY = y;
 
             @Override
@@ -135,7 +163,7 @@ public record Rect(int x, int y, int width, int height) {
                 if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
-                var row = new Rect(x, currentY, width, 1);
+                Rect row = new Rect(x, currentY, width, 1);
                 currentY++;
                 return row;
             }
@@ -146,7 +174,7 @@ public record Rect(int x, int y, int width, int height) {
      * Returns an iterator over columns in this rectangle.
      */
     public Iterable<Rect> columns() {
-        return () -> new Iterator<>() {
+        return () -> new Iterator<Rect>() {
             private int currentX = x;
 
             @Override
@@ -159,7 +187,7 @@ public record Rect(int x, int y, int width, int height) {
                 if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
-                var col = new Rect(currentX, y, 1, height);
+                Rect col = new Rect(currentX, y, 1, height);
                 currentX++;
                 return col;
             }
@@ -175,5 +203,34 @@ public record Rect(int x, int y, int width, int height) {
         int clampedWidth = Math.min(inner.width, width);
         int clampedHeight = Math.min(inner.height, height);
         return new Rect(clampedX, clampedY, clampedWidth, clampedHeight);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Rect)) {
+            return false;
+        }
+        Rect rect = (Rect) o;
+        return x == rect.x
+            && y == rect.y
+            && width == rect.width
+            && height == rect.height;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Integer.hashCode(x);
+        result = 31 * result + Integer.hashCode(y);
+        result = 31 * result + Integer.hashCode(width);
+        result = 31 * result + Integer.hashCode(height);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Rect[x=%d, y=%d, width=%d, height=%d]", x, y, width, height);
     }
 }

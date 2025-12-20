@@ -16,7 +16,7 @@ class LineTest {
     @Test
     @DisplayName("Line.from(String) creates line with single raw span")
     void fromString() {
-        var line = Line.from("Hello");
+        Line line = Line.from("Hello");
         assertThat(line.spans()).hasSize(1);
         assertThat(line.spans().get(0).content()).isEqualTo("Hello");
     }
@@ -24,7 +24,7 @@ class LineTest {
     @Test
     @DisplayName("Line.from(Span...) creates line with multiple spans")
     void fromSpans() {
-        var line = Line.from(
+        Line line = Line.from(
             Span.raw("Hello "),
             Span.styled("World", io.github.jratatui.style.Style.EMPTY.fg(Color.RED))
         );
@@ -34,7 +34,7 @@ class LineTest {
     @Test
     @DisplayName("Line width is sum of span widths")
     void width() {
-        var line = Line.from(
+        Line line = Line.from(
             Span.raw("Hello"),
             Span.raw(" "),
             Span.raw("World")
@@ -45,28 +45,28 @@ class LineTest {
     @Test
     @DisplayName("Line alignment can be set")
     void alignment() {
-        var line = Line.from("Text").alignment(Alignment.CENTER);
+        Line line = Line.from("Text").alignment(Alignment.CENTER);
         assertThat(line.alignment()).contains(Alignment.CENTER);
     }
 
     @Test
     @DisplayName("Line default has no alignment")
     void defaultAlignment() {
-        var line = Line.from("Text");
+        Line line = Line.from("Text");
         assertThat(line.alignment()).isEmpty();
     }
 
     @Test
     @DisplayName("Line fg applies to all spans")
     void fg() {
-        var line = Line.from("Text").fg(Color.RED);
+        Line line = Line.from("Text").fg(Color.RED);
         assertThat(line.spans().get(0).style().fg()).contains(Color.RED);
     }
 
     @Test
     @DisplayName("Line bg applies to all spans")
     void bg() {
-        var line = Line.from("Text").bg(Color.BLUE);
+        Line line = Line.from("Text").bg(Color.BLUE);
         assertThat(line.spans().get(0).style().bg()).contains(Color.BLUE);
     }
 }

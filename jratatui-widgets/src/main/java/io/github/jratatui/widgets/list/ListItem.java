@@ -11,7 +11,15 @@ import io.github.jratatui.text.Text;
 /**
  * An item in a list widget.
  */
-public record ListItem(Text content, Style style) {
+public final class ListItem {
+
+    private final Text content;
+    private final Style style;
+
+    public ListItem(Text content, Style style) {
+        this.content = content;
+        this.style = style;
+    }
 
     public static ListItem from(String text) {
         return new ListItem(Text.from(text), Style.EMPTY);
@@ -31,5 +39,37 @@ public record ListItem(Text content, Style style) {
 
     public int height() {
         return content.height();
+    }
+
+    public Text content() {
+        return content;
+    }
+
+    public Style style() {
+        return style;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof ListItem)) {
+            return false;
+        }
+        ListItem listItem = (ListItem) o;
+        return content.equals(listItem.content) && style.equals(listItem.style);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = content.hashCode();
+        result = 31 * result + style.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("ListItem[content=%s, style=%s]", content, style);
     }
 }

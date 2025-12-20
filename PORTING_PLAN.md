@@ -1458,7 +1458,7 @@ class BufferTest {
 
     @Test
     void setStringWritesToBuffer() {
-        var buffer = Buffer.empty(new Rect(0, 0, 10, 1));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 10, 1));
         buffer.setString(0, 0, "Hello", Style.EMPTY);
 
         assertThat(buffer.get(0, 0).symbol()).isEqualTo("H");
@@ -1467,7 +1467,7 @@ class BufferTest {
 
     @Test
     void diffReturnsChangedCells() {
-        var area = new Rect(0, 0, 5, 1);
+        Rect area = new Rect(0, 0, 5, 1);
         var prev = Buffer.empty(area);
         var curr = Buffer.empty(area);
 
@@ -1493,8 +1493,8 @@ class BlockTest {
 
     @Test
     void borderedBlockRendersCorners() {
-        var area = new Rect(0, 0, 5, 3);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 5, 3);
+        Buffer buffer = Buffer.empty(area);
 
         Block.bordered().render(area, buffer);
 
@@ -1507,7 +1507,7 @@ class BlockTest {
 
     @Test
     void innerAreaCalculation() {
-        var area = new Rect(0, 0, 10, 10);
+        Rect area = new Rect(0, 0, 10, 10);
         var block = Block.bordered();
 
         var inner = block.inner(area);

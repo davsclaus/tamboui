@@ -31,6 +31,17 @@ public final class Frame {
     }
 
     /**
+     * Creates a frame for testing purposes.
+     * This allows tests to create frames without going through Terminal.
+     *
+     * @param buffer the buffer to render to
+     * @return a new frame backed by the given buffer
+     */
+    public static Frame forTesting(Buffer buffer) {
+        return new Frame(buffer);
+    }
+
+    /**
      * Returns the area available for rendering.
      */
     public Rect area() {

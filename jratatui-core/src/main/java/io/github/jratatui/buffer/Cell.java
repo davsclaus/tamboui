@@ -9,9 +9,25 @@ import io.github.jratatui.style.Style;
 /**
  * A single cell in the terminal buffer.
  */
-public record Cell(String symbol, Style style) {
+public final class Cell {
 
     public static final Cell EMPTY = new Cell(" ", Style.EMPTY);
+
+    private final String symbol;
+    private final Style style;
+
+    public Cell(String symbol, Style style) {
+        this.symbol = symbol;
+        this.style = style;
+    }
+
+    public String symbol() {
+        return symbol;
+    }
+
+    public Style style() {
+        return style;
+    }
 
     public Cell reset() {
         return EMPTY;
@@ -31,5 +47,29 @@ public record Cell(String symbol, Style style) {
 
     public boolean isEmpty() {
         return " ".equals(symbol) && style.equals(Style.EMPTY);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Cell)) {
+            return false;
+        }
+        Cell cell = (Cell) o;
+        return symbol.equals(cell.symbol) && style.equals(cell.style);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = symbol.hashCode();
+        result = 31 * result + style.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Cell[symbol=%s, style=%s]", symbol, style);
     }
 }

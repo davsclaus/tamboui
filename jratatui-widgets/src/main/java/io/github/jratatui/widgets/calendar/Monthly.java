@@ -24,9 +24,9 @@ import java.util.Locale;
  * with customizable styling for headers, weekdays, and individual dates.
  *
  * <pre>{@code
- * var events = CalendarEventStore.today(Style.EMPTY.fg(Color.RED).bold());
+ * CalendarEventStore events = CalendarEventStore.today(Style.EMPTY.fg(Color.RED).bold());
  *
- * var calendar = Monthly.of(LocalDate.now(), events)
+ * Monthly calendar = Monthly.of(LocalDate.now(), events)
  *     .showMonthHeader(Style.EMPTY.bold())
  *     .showWeekdaysHeader(Style.EMPTY.fg(Color.CYAN))
  *     .showSurrounding(Style.EMPTY.dim())

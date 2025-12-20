@@ -4,6 +4,8 @@
  */
 package io.github.jratatui.layout;
 
+import static io.github.jratatui.util.CollectionUtil.listCopyOf;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,18 +25,18 @@ public final class Layout {
     private Layout(Direction direction, List<Constraint> constraints,
                    Margin margin, int spacing, Flex flex) {
         this.direction = direction;
-        this.constraints = List.copyOf(constraints);
+        this.constraints = listCopyOf(constraints);
         this.margin = margin;
         this.spacing = spacing;
         this.flex = flex;
     }
 
     public static Layout vertical() {
-        return new Layout(Direction.VERTICAL, List.of(), Margin.NONE, 0, Flex.START);
+        return new Layout(Direction.VERTICAL, listCopyOf(), Margin.NONE, 0, Flex.START);
     }
 
     public static Layout horizontal() {
-        return new Layout(Direction.HORIZONTAL, List.of(), Margin.NONE, 0, Flex.START);
+        return new Layout(Direction.HORIZONTAL, listCopyOf(), Margin.NONE, 0, Flex.START);
     }
 
     public Layout constraints(Constraint... constraints) {
@@ -86,7 +88,7 @@ public final class Layout {
      */
     public List<Rect> split(Rect area) {
         if (constraints.isEmpty()) {
-            return List.of();
+            return listCopyOf();
         }
 
         // Apply margin first
@@ -108,49 +110,49 @@ public final class Layout {
         // First pass: calculate fixed sizes and collect fill weights
         for (int i = 0; i < constraints.size(); i++) {
             Constraint c = constraints.get(i);
-            switch (c) {
-                case Constraint.Length(int v) -> {
-                    sizes[i] = Math.min(v, distributable);
-                    remaining -= sizes[i];
-                }
-                case Constraint.Percentage(int p) -> {
-                    sizes[i] = distributable * p / 100;
-                    remaining -= sizes[i];
-                }
-                case Constraint.Ratio(int num, int den) -> {
-                    sizes[i] = distributable * num / den;
-                    remaining -= sizes[i];
-                }
-                case Constraint.Min(int v) -> {
-                    mins[i] = v;
-                    isFill[i] = true;
-                    fillWeight += 1;
-                }
-                case Constraint.Max(int v) -> {
-                    maxs[i] = v;
-                    isFill[i] = true;
-                    fillWeight += 1;
-                }
-                case Constraint.Fill(int w) -> {
-                    isFill[i] = true;
-                    fillWeight += w;
-                }
+            if (c instanceof Constraint.Length) {
+                int v = ((Constraint.Length) c).value();
+                sizes[i] = Math.min(v, distributable);
+                remaining -= sizes[i];
+            } else if (c instanceof Constraint.Percentage) {
+                int p = ((Constraint.Percentage) c).value();
+                sizes[i] = distributable * p / 100;
+                remaining -= sizes[i];
+            } else if (c instanceof Constraint.Ratio) {
+                Constraint.Ratio ratio = (Constraint.Ratio) c;
+                sizes[i] = distributable * ratio.numerator() / ratio.denominator();
+                remaining -= sizes[i];
+            } else if (c instanceof Constraint.Min) {
+                int v = ((Constraint.Min) c).value();
+                mins[i] = v;
+                isFill[i] = true;
+                fillWeight += 1;
+            } else if (c instanceof Constraint.Max) {
+                int v = ((Constraint.Max) c).value();
+                maxs[i] = v;
+                isFill[i] = true;
+                fillWeight += 1;
+            } else if (c instanceof Constraint.Fill) {
+                int w = ((Constraint.Fill) c).weight();
+                isFill[i] = true;
+                fillWeight += w;
             }
         }
 
         // Second pass: distribute remaining space to Fill/Min/Max constraints
         if (fillWeight > 0 && remaining > 0) {
-            int weightIndex = 0;
             for (int i = 0; i < constraints.size(); i++) {
                 if (isFill[i]) {
-                    int weight = switch (constraints.get(i)) {
-                        case Constraint.Fill(int w) -> w;
-                        case Constraint.Min ignored -> 1;
-                        case Constraint.Max ignored -> 1;
-                        default -> 0;
-                    };
+                    Constraint c = constraints.get(i);
+                    int weight;
+                    if (c instanceof Constraint.Fill) {
+                        weight = ((Constraint.Fill) c).weight();
+                    } else if (c instanceof Constraint.Min || c instanceof Constraint.Max) {
+                        weight = 1;
+                    } else {
+                        weight = 0;
+                    }
                     sizes[i] = remaining * weight / fillWeight;
-                    weightIndex++;
                 }
             }
         }

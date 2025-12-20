@@ -7,8 +7,10 @@ package io.github.jratatui.terminal;
 import io.github.jratatui.buffer.Buffer;
 import io.github.jratatui.layout.Rect;
 import io.github.jratatui.layout.Size;
+import io.github.jratatui.buffer.CellUpdate;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -69,7 +71,7 @@ public final class Terminal<B extends Backend> implements AutoCloseable {
         renderer.accept(frame);
 
         // Calculate diff and draw
-        var updates = previousBuffer.diff(currentBuffer);
+        List<CellUpdate> updates = previousBuffer.diff(currentBuffer);
         if (!updates.isEmpty()) {
             backend.draw(updates);
         }

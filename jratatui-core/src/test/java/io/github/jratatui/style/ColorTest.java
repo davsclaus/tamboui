@@ -24,14 +24,14 @@ class ColorTest {
     @Test
     @DisplayName("Color.Ansi wraps AnsiColor")
     void ansiColor() {
-        var color = new Color.Ansi(AnsiColor.CYAN);
+        Color.Ansi color = new Color.Ansi(AnsiColor.CYAN);
         assertThat(color.color()).isEqualTo(AnsiColor.CYAN);
     }
 
     @Test
     @DisplayName("Color.Rgb holds RGB values")
     void rgbColor() {
-        var color = new Color.Rgb(255, 128, 64);
+        Color.Rgb color = new Color.Rgb(255, 128, 64);
         assertThat(color.r()).isEqualTo(255);
         assertThat(color.g()).isEqualTo(128);
         assertThat(color.b()).isEqualTo(64);
@@ -40,22 +40,22 @@ class ColorTest {
     @Test
     @DisplayName("Color.Indexed holds palette index")
     void indexedColor() {
-        var color = new Color.Indexed(42);
+        Color.Indexed color = new Color.Indexed(42);
         assertThat(color.index()).isEqualTo(42);
     }
 
     @Test
     @DisplayName("Color.Reset is a singleton-like type")
     void resetColor() {
-        var reset1 = new Color.Reset();
-        var reset2 = new Color.Reset();
+        Color.Reset reset1 = new Color.Reset();
+        Color.Reset reset2 = new Color.Reset();
         assertThat(reset1).isEqualTo(reset2);
     }
 
     @Test
     @DisplayName("Color.rgb factory method")
     void rgbFactory() {
-        var color = Color.rgb(100, 150, 200);
+        Color color = Color.rgb(100, 150, 200);
         assertThat(color).isInstanceOf(Color.Rgb.class);
         assertThat(((Color.Rgb) color).r()).isEqualTo(100);
     }
@@ -63,7 +63,7 @@ class ColorTest {
     @Test
     @DisplayName("Color.indexed factory method")
     void indexedFactory() {
-        var color = Color.indexed(128);
+        Color color = Color.indexed(128);
         assertThat(color).isInstanceOf(Color.Indexed.class);
         assertThat(((Color.Indexed) color).index()).isEqualTo(128);
     }

@@ -18,9 +18,9 @@ class BlockTest {
     @Test
     @DisplayName("Block.bordered creates block with all borders")
     void bordered() {
-        var block = Block.bordered();
-        var area = new Rect(0, 0, 10, 5);
-        var buffer = Buffer.empty(area);
+        Block block = Block.bordered();
+        Rect area = new Rect(0, 0, 10, 5);
+        Buffer buffer = Buffer.empty(area);
 
         block.render(area, buffer);
 
@@ -34,10 +34,10 @@ class BlockTest {
     @Test
     @DisplayName("Block inner area calculation with borders")
     void innerWithBorders() {
-        var block = Block.bordered();
-        var area = new Rect(0, 0, 10, 10);
+        Block block = Block.bordered();
+        Rect area = new Rect(0, 0, 10, 10);
 
-        var inner = block.inner(area);
+        Rect inner = block.inner(area);
 
         assertThat(inner).isEqualTo(new Rect(1, 1, 8, 8));
     }
@@ -45,13 +45,13 @@ class BlockTest {
     @Test
     @DisplayName("Block inner area with padding")
     void innerWithPadding() {
-        var block = Block.builder()
+        Block block = Block.builder()
             .borders(Borders.ALL)
             .padding(Padding.uniform(2))
             .build();
-        var area = new Rect(0, 0, 20, 20);
+        Rect area = new Rect(0, 0, 20, 20);
 
-        var inner = block.inner(area);
+        Rect inner = block.inner(area);
 
         // 1 for border + 2 for padding on each side
         assertThat(inner.x()).isEqualTo(3);
@@ -63,9 +63,9 @@ class BlockTest {
     @Test
     @DisplayName("Block without borders")
     void noBorders() {
-        var block = Block.builder().build();
-        var area = new Rect(0, 0, 10, 5);
-        var buffer = Buffer.empty(area);
+        Block block = Block.builder().build();
+        Rect area = new Rect(0, 0, 10, 5);
+        Buffer buffer = Buffer.empty(area);
 
         block.render(area, buffer);
 
@@ -76,12 +76,12 @@ class BlockTest {
     @Test
     @DisplayName("Block with title")
     void withTitle() {
-        var block = Block.builder()
+        Block block = Block.builder()
             .borders(Borders.ALL)
             .title(Title.from("Test"))
             .build();
-        var area = new Rect(0, 0, 20, 5);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 20, 5);
+        Buffer buffer = Buffer.empty(area);
 
         block.render(area, buffer);
 
@@ -95,13 +95,13 @@ class BlockTest {
     @Test
     @DisplayName("Block with border style")
     void withBorderStyle() {
-        var style = Style.EMPTY.fg(Color.RED);
-        var block = Block.builder()
+        Style style = Style.EMPTY.fg(Color.RED);
+        Block block = Block.builder()
             .borders(Borders.ALL)
             .borderStyle(style)
             .build();
-        var area = new Rect(0, 0, 10, 5);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 10, 5);
+        Buffer buffer = Buffer.empty(area);
 
         block.render(area, buffer);
 
@@ -111,23 +111,23 @@ class BlockTest {
     @Test
     @DisplayName("Block with different border types")
     void borderTypes() {
-        var area = new Rect(0, 0, 5, 3);
+        Rect area = new Rect(0, 0, 5, 3);
 
         // Plain border
-        var plainBlock = Block.builder()
+        Block plainBlock = Block.builder()
             .borders(Borders.ALL)
             .borderType(BorderType.PLAIN)
             .build();
-        var plainBuffer = Buffer.empty(area);
+        Buffer plainBuffer = Buffer.empty(area);
         plainBlock.render(area, plainBuffer);
         assertThat(plainBuffer.get(0, 0).symbol()).isEqualTo("┌");
 
         // Double border
-        var doubleBlock = Block.builder()
+        Block doubleBlock = Block.builder()
             .borders(Borders.ALL)
             .borderType(BorderType.DOUBLE)
             .build();
-        var doubleBuffer = Buffer.empty(area);
+        Buffer doubleBuffer = Buffer.empty(area);
         doubleBlock.render(area, doubleBuffer);
         assertThat(doubleBuffer.get(0, 0).symbol()).isEqualTo("╔");
     }

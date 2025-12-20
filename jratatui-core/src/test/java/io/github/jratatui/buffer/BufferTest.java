@@ -10,6 +10,8 @@ import io.github.jratatui.style.Style;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.*;
 
 class BufferTest {
@@ -17,7 +19,7 @@ class BufferTest {
     @Test
     @DisplayName("Buffer.empty creates buffer filled with empty cells")
     void emptyBuffer() {
-        var buffer = Buffer.empty(new Rect(0, 0, 10, 5));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 10, 5));
         assertThat(buffer.area()).isEqualTo(new Rect(0, 0, 10, 5));
         assertThat(buffer.get(0, 0)).isEqualTo(Cell.EMPTY);
         assertThat(buffer.get(9, 4)).isEqualTo(Cell.EMPTY);
@@ -26,8 +28,8 @@ class BufferTest {
     @Test
     @DisplayName("Buffer.filled creates buffer with specified cell")
     void filledBuffer() {
-        var cell = new Cell("X", Style.EMPTY);
-        var buffer = Buffer.filled(new Rect(0, 0, 5, 5), cell);
+        Cell cell = new Cell("X", Style.EMPTY);
+        Buffer buffer = Buffer.filled(new Rect(0, 0, 5, 5), cell);
         assertThat(buffer.get(0, 0)).isEqualTo(cell);
         assertThat(buffer.get(4, 4)).isEqualTo(cell);
     }
@@ -35,8 +37,8 @@ class BufferTest {
     @Test
     @DisplayName("Buffer set and get")
     void setAndGet() {
-        var buffer = Buffer.empty(new Rect(0, 0, 10, 10));
-        var cell = new Cell("A", Style.EMPTY.fg(Color.RED));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 10, 10));
+        Cell cell = new Cell("A", Style.EMPTY.fg(Color.RED));
 
         buffer.set(5, 5, cell);
 
@@ -47,7 +49,7 @@ class BufferTest {
     @Test
     @DisplayName("Buffer setString writes characters")
     void setString() {
-        var buffer = Buffer.empty(new Rect(0, 0, 10, 1));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 10, 1));
         buffer.setString(0, 0, "Hello", Style.EMPTY);
 
         assertThat(buffer.get(0, 0).symbol()).isEqualTo("H");
@@ -61,8 +63,8 @@ class BufferTest {
     @Test
     @DisplayName("Buffer setString with style")
     void setStringWithStyle() {
-        var buffer = Buffer.empty(new Rect(0, 0, 10, 1));
-        var style = Style.EMPTY.fg(Color.GREEN);
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 10, 1));
+        Style style = Style.EMPTY.fg(Color.GREEN);
         buffer.setString(0, 0, "Hi", style);
 
         assertThat(buffer.get(0, 0).style()).isEqualTo(style);
@@ -72,13 +74,13 @@ class BufferTest {
     @Test
     @DisplayName("Buffer diff returns changed cells")
     void diff() {
-        var area = new Rect(0, 0, 5, 1);
-        var prev = Buffer.empty(area);
-        var curr = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 5, 1);
+        Buffer prev = Buffer.empty(area);
+        Buffer curr = Buffer.empty(area);
 
         curr.setString(0, 0, "Hi", Style.EMPTY);
         // diff returns cells from `other` (curr) where they differ from `this` (prev)
-        var updates = prev.diff(curr);
+        List<CellUpdate> updates = prev.diff(curr);
 
         assertThat(updates).hasSize(2);
         assertThat(updates.get(0).x()).isEqualTo(0);
@@ -89,9 +91,9 @@ class BufferTest {
     @Test
     @DisplayName("Buffer diff with no changes returns empty list")
     void diffNoChanges() {
-        var area = new Rect(0, 0, 5, 5);
-        var a = Buffer.empty(area);
-        var b = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 5, 5);
+        Buffer a = Buffer.empty(area);
+        Buffer b = Buffer.empty(area);
 
         assertThat(a.diff(b)).isEmpty();
     }
@@ -99,7 +101,7 @@ class BufferTest {
     @Test
     @DisplayName("Buffer set outside bounds is ignored")
     void setOutsideBounds() {
-        var buffer = Buffer.empty(new Rect(0, 0, 5, 5));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 5, 5));
         buffer.set(10, 10, new Cell("X", Style.EMPTY));
         // Should not throw, cell is simply ignored
         assertThat(buffer.get(0, 0)).isEqualTo(Cell.EMPTY);
@@ -108,8 +110,8 @@ class BufferTest {
     @Test
     @DisplayName("Buffer with offset area")
     void offsetArea() {
-        var buffer = Buffer.empty(new Rect(5, 5, 10, 10));
-        var cell = new Cell("X", Style.EMPTY);
+        Buffer buffer = Buffer.empty(new Rect(5, 5, 10, 10));
+        Cell cell = new Cell("X", Style.EMPTY);
 
         buffer.set(5, 5, cell);
         assertThat(buffer.get(5, 5)).isEqualTo(cell);

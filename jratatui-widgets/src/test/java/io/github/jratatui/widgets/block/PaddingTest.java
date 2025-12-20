@@ -23,7 +23,7 @@ class PaddingTest {
     @Test
     @DisplayName("Padding.uniform creates equal padding")
     void uniform() {
-        var padding = Padding.uniform(5);
+        Padding padding = Padding.uniform(5);
         assertThat(padding.top()).isEqualTo(5);
         assertThat(padding.right()).isEqualTo(5);
         assertThat(padding.bottom()).isEqualTo(5);
@@ -33,7 +33,7 @@ class PaddingTest {
     @Test
     @DisplayName("Padding.symmetric creates vertical/horizontal padding")
     void symmetric() {
-        var padding = Padding.symmetric(2, 4);
+        Padding padding = Padding.symmetric(2, 4);
         assertThat(padding.top()).isEqualTo(2);
         assertThat(padding.bottom()).isEqualTo(2);
         assertThat(padding.left()).isEqualTo(4);
@@ -43,7 +43,7 @@ class PaddingTest {
     @Test
     @DisplayName("Padding.horizontal creates left/right padding")
     void horizontal() {
-        var padding = Padding.horizontal(3);
+        Padding padding = Padding.horizontal(3);
         assertThat(padding.top()).isEqualTo(0);
         assertThat(padding.bottom()).isEqualTo(0);
         assertThat(padding.left()).isEqualTo(3);
@@ -53,7 +53,7 @@ class PaddingTest {
     @Test
     @DisplayName("Padding.vertical creates top/bottom padding")
     void vertical() {
-        var padding = Padding.vertical(3);
+        Padding padding = Padding.vertical(3);
         assertThat(padding.top()).isEqualTo(3);
         assertThat(padding.bottom()).isEqualTo(3);
         assertThat(padding.left()).isEqualTo(0);

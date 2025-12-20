@@ -16,7 +16,7 @@ class RectangleTest {
 
     @Test
     void constructor_creates_rectangle() {
-        var rect = new Rectangle(10, 20, 30, 40, Color.RED);
+        Rectangle rect = new Rectangle(10, 20, 30, 40, Color.RED);
 
         assertThat(rect.x()).isEqualTo(10);
         assertThat(rect.y()).isEqualTo(20);
@@ -27,7 +27,7 @@ class RectangleTest {
 
     @Test
     void of_creates_rectangle() {
-        var rect = Rectangle.of(5, 10, 15, 20, Color.BLUE);
+        Rectangle rect = Rectangle.of(5, 10, 15, 20, Color.BLUE);
 
         assertThat(rect.x()).isEqualTo(5);
         assertThat(rect.y()).isEqualTo(10);
@@ -38,30 +38,30 @@ class RectangleTest {
 
     @Test
     void draw_rectangle() {
-        var ctx = new Context(20, 20, new double[] {0, 20}, new double[] {0, 20}, Marker.DOT);
-        var rect = new Rectangle(5, 5, 10, 10, Color.GREEN);
+        Context ctx = new Context(20, 20, new double[] {0, 20}, new double[] {0, 20}, Marker.DOT);
+        Rectangle rect = new Rectangle(5, 5, 10, 10, Color.GREEN);
 
         rect.draw(new Painter(ctx));
 
-        var layers = ctx.allLayers();
+        java.util.List<io.github.jratatui.style.Color[][]> layers = ctx.allLayers();
         assertThat(layers).isNotEmpty();
     }
 
     @Test
     void draw_small_rectangle() {
-        var ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
-        var rect = new Rectangle(2, 2, 2, 2, Color.YELLOW);
+        Context ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
+        Rectangle rect = new Rectangle(2, 2, 2, 2, Color.YELLOW);
 
         rect.draw(new Painter(ctx));
 
-        var layers = ctx.allLayers();
+        java.util.List<io.github.jratatui.style.Color[][]> layers = ctx.allLayers();
         assertThat(layers).isNotEmpty();
     }
 
     @Test
     void draw_rectangle_at_origin() {
-        var ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
-        var rect = new Rectangle(0, 0, 5, 5, Color.CYAN);
+        Context ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
+        Rectangle rect = new Rectangle(0, 0, 5, 5, Color.CYAN);
 
         rect.draw(new Painter(ctx));
         // Should not throw
@@ -69,8 +69,8 @@ class RectangleTest {
 
     @Test
     void draw_rectangle_partial_visible() {
-        var ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
-        var rect = new Rectangle(-5, -5, 10, 10, Color.MAGENTA);
+        Context ctx = new Context(10, 10, new double[] {0, 10}, new double[] {0, 10}, Marker.DOT);
+        Rectangle rect = new Rectangle(-5, -5, 10, 10, Color.MAGENTA);
 
         rect.draw(new Painter(ctx));
         // Should clip and not throw

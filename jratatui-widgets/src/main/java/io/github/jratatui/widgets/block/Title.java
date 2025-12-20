@@ -11,7 +11,15 @@ import io.github.jratatui.text.Span;
 /**
  * A title for a block, with optional alignment.
  */
-public record Title(Line content, Alignment alignment) {
+public final class Title {
+
+    private final Line content;
+    private final Alignment alignment;
+
+    public Title(Line content, Alignment alignment) {
+        this.content = content;
+        this.alignment = alignment;
+    }
 
     public static Title from(String text) {
         return new Title(Line.from(text), Alignment.LEFT);
@@ -39,5 +47,37 @@ public record Title(Line content, Alignment alignment) {
 
     public Title right() {
         return alignment(Alignment.RIGHT);
+    }
+
+    public Line content() {
+        return content;
+    }
+
+    public Alignment alignment() {
+        return alignment;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Title)) {
+            return false;
+        }
+        Title title = (Title) o;
+        return content.equals(title.content) && alignment == title.alignment;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = content.hashCode();
+        result = 31 * result + alignment.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Title[content=%s, alignment=%s]", content, alignment);
     }
 }

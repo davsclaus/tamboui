@@ -19,8 +19,8 @@ class ClearTest {
     @Test
     @DisplayName("Clear resets cells to empty")
     void clearsToEmpty() {
-        var area = new Rect(0, 0, 5, 3);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 5, 3);
+        Buffer buffer = Buffer.empty(area);
 
         // Fill buffer with content
         buffer.setString(0, 0, "Hello", Style.EMPTY);
@@ -41,11 +41,11 @@ class ClearTest {
     @Test
     @DisplayName("Clear resets styled cells")
     void clearsStyledCells() {
-        var area = new Rect(0, 0, 5, 3);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 5, 3);
+        Buffer buffer = Buffer.empty(area);
 
         // Fill buffer with styled content
-        var style = Style.EMPTY.fg(Color.RED).bg(Color.BLUE);
+        Style style = Style.EMPTY.fg(Color.RED).bg(Color.BLUE);
         buffer.setString(0, 0, "Hello", style);
 
         // Clear the area
@@ -59,9 +59,9 @@ class ClearTest {
     @Test
     @DisplayName("Clear only affects specified area")
     void clearsOnlySpecifiedArea() {
-        var fullArea = new Rect(0, 0, 10, 5);
-        var clearArea = new Rect(2, 1, 3, 2);
-        var buffer = Buffer.empty(fullArea);
+        Rect fullArea = new Rect(0, 0, 10, 5);
+        Rect clearArea = new Rect(2, 1, 3, 2);
+        Buffer buffer = Buffer.empty(fullArea);
 
         // Fill entire buffer
         for (int y = 0; y < 5; y++) {
@@ -86,8 +86,8 @@ class ClearTest {
     @Test
     @DisplayName("Clear handles empty area")
     void handlesEmptyArea() {
-        var area = new Rect(0, 0, 0, 0);
-        var buffer = Buffer.empty(new Rect(0, 0, 5, 5));
+        Rect area = new Rect(0, 0, 0, 0);
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 5, 5));
 
         // Should not throw
         Clear.INSTANCE.render(area, buffer);
@@ -96,8 +96,8 @@ class ClearTest {
     @Test
     @DisplayName("Clear handles zero width")
     void handlesZeroWidth() {
-        var area = new Rect(0, 0, 0, 5);
-        var buffer = Buffer.empty(new Rect(0, 0, 5, 5));
+        Rect area = new Rect(0, 0, 0, 5);
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 5, 5));
 
         // Fill buffer
         buffer.setString(0, 0, "Hello", Style.EMPTY);
@@ -112,8 +112,8 @@ class ClearTest {
     @Test
     @DisplayName("Clear handles zero height")
     void handlesZeroHeight() {
-        var area = new Rect(0, 0, 5, 0);
-        var buffer = Buffer.empty(new Rect(0, 0, 5, 5));
+        Rect area = new Rect(0, 0, 5, 0);
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 5, 5));
 
         // Fill buffer
         buffer.setString(0, 0, "Hello", Style.EMPTY);
@@ -134,9 +134,9 @@ class ClearTest {
     @Test
     @DisplayName("Clear works with offset area")
     void worksWithOffsetArea() {
-        var fullArea = new Rect(0, 0, 10, 10);
-        var clearArea = new Rect(5, 5, 3, 3);
-        var buffer = Buffer.empty(fullArea);
+        Rect fullArea = new Rect(0, 0, 10, 10);
+        Rect clearArea = new Rect(5, 5, 3, 3);
+        Buffer buffer = Buffer.empty(fullArea);
 
         // Fill buffer
         for (int y = 0; y < 10; y++) {

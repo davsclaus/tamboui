@@ -7,7 +7,7 @@ publishing {
     repositories {
         maven {
             name = "build"
-            url = uri("${rootProject.buildDir}/repo")
+            url = uri("${rootProject.layout.buildDirectory.get().asFile}/repo")
         }
     }
     publications {

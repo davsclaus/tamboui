@@ -18,5 +18,5 @@ package io.github.jratatui.tui.event;
  *
  * @see io.github.jratatui.tui.EventHandler
  */
-public sealed interface Event permits KeyEvent, MouseEvent, ResizeEvent, TickEvent {
+public interface Event {
 }

@@ -21,7 +21,21 @@ import io.github.jratatui.widgets.canvas.Shape;
  *
  * @see Shape
  */
-public record Rectangle(double x, double y, double width, double height, Color color) implements Shape {
+public final class Rectangle implements Shape {
+
+    private final double x;
+    private final double y;
+    private final double width;
+    private final double height;
+    private final Color color;
+
+    public Rectangle(double x, double y, double width, double height, Color color) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.color = color;
+    }
 
     /**
      * Creates a rectangle at (x, y) with the given dimensions and color.
@@ -49,8 +63,8 @@ public record Rectangle(double x, double y, double width, double height, Color c
     }
 
     private void drawLine(Painter painter, double x1, double y1, double x2, double y2) {
-        var p1 = painter.getPoint(x1, y1);
-        var p2 = painter.getPoint(x2, y2);
+        java.util.Optional<Painter.GridPoint> p1 = painter.getPoint(x1, y1);
+        java.util.Optional<Painter.GridPoint> p2 = painter.getPoint(x2, y2);
 
         if (p1.isPresent() && p2.isPresent()) {
             drawBresenham(painter, p1.get().x(), p1.get().y(), p2.get().x(), p2.get().y());
@@ -95,5 +109,58 @@ public record Rectangle(double x, double y, double width, double height, Color c
                 y0 += sy;
             }
         }
+    }
+
+    public double x() {
+        return x;
+    }
+
+    public double y() {
+        return y;
+    }
+
+    public double width() {
+        return width;
+    }
+
+    public double height() {
+        return height;
+    }
+
+    public Color color() {
+        return color;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Rectangle)) {
+            return false;
+        }
+        Rectangle rectangle = (Rectangle) o;
+        return Double.compare(rectangle.x, x) == 0
+            && Double.compare(rectangle.y, y) == 0
+            && Double.compare(rectangle.width, width) == 0
+            && Double.compare(rectangle.height, height) == 0
+            && color.equals(rectangle.color);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Double.hashCode(x);
+        result = 31 * result + Double.hashCode(y);
+        result = 31 * result + Double.hashCode(width);
+        result = 31 * result + Double.hashCode(height);
+        result = 31 * result + color.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+            "Rectangle[x=%s, y=%s, width=%s, height=%s, color=%s]",
+            x, y, width, height, color);
     }
 }

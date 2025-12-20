@@ -1,0 +1,123 @@
+/*
+ * Copyright (c) 2025 JRatatui Contributors
+ * SPDX-License-Identifier: MIT
+ */
+package io.github.jratatui.dsl.element;
+
+import io.github.jratatui.dsl.event.EventResult;
+import io.github.jratatui.dsl.event.KeyEventHandler;
+import io.github.jratatui.dsl.event.MouseEventHandler;
+import io.github.jratatui.layout.Constraint;
+import io.github.jratatui.layout.Rect;
+import io.github.jratatui.terminal.Frame;
+import io.github.jratatui.tui.event.KeyEvent;
+import io.github.jratatui.tui.event.MouseEvent;
+
+/**
+ * Base interface for all DSL elements.
+ * Elements represent UI components that can be rendered to a frame.
+ * <p>
+ * Elements can handle events by implementing event handler methods or
+ * by registering handler lambdas. Events propagate through the element
+ * tree and can be consumed to stop propagation.
+ */
+public interface Element {
+
+    /**
+     * Renders this element to the given frame within the specified area.
+     *
+     * @param frame the frame to render to
+     * @param area the area to render within
+     * @param context the render context providing focus and state information
+     */
+    void render(Frame frame, Rect area, RenderContext context);
+
+    /**
+     * Returns the layout constraint for this element, if any.
+     * Used by container elements to determine sizing.
+     *
+     * @return the constraint, or null if the element should use default sizing
+     */
+    default Constraint constraint() {
+        return null;
+    }
+
+    /**
+     * Returns whether this element can receive focus.
+     *
+     * @return true if focusable, false otherwise
+     */
+    default boolean isFocusable() {
+        return false;
+    }
+
+    /**
+     * Returns the unique ID of this element, if set.
+     * Used for focus management and state tracking.
+     *
+     * @return the element ID, or null if not set
+     */
+    default String id() {
+        return null;
+    }
+
+    /**
+     * Handles a key event on this element.
+     * Override to handle key events directly on the element.
+     *
+     * @param event the key event
+     * @param focused whether this element is currently focused
+     * @return HANDLED if the event was handled, UNHANDLED otherwise
+     */
+    default EventResult handleKeyEvent(KeyEvent event, boolean focused) {
+        return EventResult.UNHANDLED;
+    }
+
+    /**
+     * Handles a mouse event on this element.
+     * Override to handle mouse events directly on the element.
+     *
+     * @param event the mouse event
+     * @return HANDLED if the event was handled, UNHANDLED otherwise
+     */
+    default EventResult handleMouseEvent(MouseEvent event) {
+        return EventResult.UNHANDLED;
+    }
+
+    /**
+     * Returns the key event handler, if any.
+     *
+     * @return the handler or null
+     */
+    default KeyEventHandler keyEventHandler() {
+        return null;
+    }
+
+    /**
+     * Returns the mouse event handler, if any.
+     *
+     * @return the handler or null
+     */
+    default MouseEventHandler mouseEventHandler() {
+        return null;
+    }
+
+    /**
+     * Returns whether this element is draggable.
+     *
+     * @return true if draggable
+     */
+    default boolean isDraggable() {
+        return false;
+    }
+
+    /**
+     * Returns the last rendered area of this element.
+     * Used for hit testing and event routing.
+     *
+     * @return the last rendered area, or null if not yet rendered
+     */
+    default Rect renderedArea() {
+        return null;
+    }
+}

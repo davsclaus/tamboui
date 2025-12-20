@@ -14,7 +14,7 @@ class ResizeEventTest {
     @Test
     @DisplayName("of creates resize event with dimensions")
     void ofCreatesResizeEvent() {
-        var event = ResizeEvent.of(80, 24);
+        ResizeEvent event = ResizeEvent.of(80, 24);
         assertThat(event.width()).isEqualTo(80);
         assertThat(event.height()).isEqualTo(24);
     }

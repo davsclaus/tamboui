@@ -19,7 +19,7 @@ class CellTest {
     @Test
     @DisplayName("Cell.from(String) creates cell with text content")
     void fromString() {
-        var cell = Cell.from("Hello");
+        Cell cell = Cell.from("Hello");
         assertThat(cell.content().width()).isEqualTo(5);
         assertThat(cell.height()).isEqualTo(1);
         assertThat(cell.style()).isEqualTo(Style.EMPTY);
@@ -28,24 +28,24 @@ class CellTest {
     @Test
     @DisplayName("Cell.from(Span) creates cell with styled span")
     void fromSpan() {
-        var span = Span.raw("Styled").bold();
-        var cell = Cell.from(span);
+        Span span = Span.raw("Styled").bold();
+        Cell cell = Cell.from(span);
         assertThat(cell.content().width()).isEqualTo(6);
     }
 
     @Test
     @DisplayName("Cell.from(Line) creates cell with line content")
     void fromLine() {
-        var line = Line.from(Span.raw("First"), Span.raw("Second"));
-        var cell = Cell.from(line);
+        Line line = Line.from(Span.raw("First"), Span.raw("Second"));
+        Cell cell = Cell.from(line);
         assertThat(cell.content().width()).isEqualTo(11);
     }
 
     @Test
     @DisplayName("Cell.from(Text) creates cell with multi-line content")
     void fromText() {
-        var text = Text.from("Line 1\nLine 2\nLine 3");
-        var cell = Cell.from(text);
+        Text text = Text.from("Line 1\nLine 2\nLine 3");
+        Cell cell = Cell.from(text);
         assertThat(cell.height()).isEqualTo(3);
         assertThat(cell.width()).isEqualTo(6);
     }
@@ -53,7 +53,7 @@ class CellTest {
     @Test
     @DisplayName("Cell.empty creates empty cell")
     void emptyCell() {
-        var cell = Cell.empty();
+        Cell cell = Cell.empty();
         assertThat(cell.width()).isEqualTo(0);
         assertThat(cell.height()).isEqualTo(1);
     }
@@ -61,8 +61,8 @@ class CellTest {
     @Test
     @DisplayName("Cell.style returns new cell with style")
     void withStyle() {
-        var cell = Cell.from("Test");
-        var styled = cell.style(Style.EMPTY.fg(Color.RED));
+        Cell cell = Cell.from("Test");
+        Cell styled = cell.style(Style.EMPTY.fg(Color.RED));
 
         assertThat(styled.style().fg()).contains(Color.RED);
         // Original is unchanged

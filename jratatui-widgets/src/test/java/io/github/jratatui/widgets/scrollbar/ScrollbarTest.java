@@ -5,6 +5,7 @@
 package io.github.jratatui.widgets.scrollbar;
 
 import io.github.jratatui.buffer.Buffer;
+import io.github.jratatui.buffer.Cell;
 import io.github.jratatui.layout.Rect;
 import io.github.jratatui.style.Color;
 import io.github.jratatui.style.Style;
@@ -18,12 +19,12 @@ class ScrollbarTest {
     @Test
     @DisplayName("Vertical scrollbar renders on right edge")
     void verticalRightRendersOnRightEdge() {
-        var scrollbar = Scrollbar.builder()
+        Scrollbar scrollbar = Scrollbar.builder()
             .orientation(ScrollbarOrientation.VERTICAL_RIGHT)
             .build();
-        var state = new ScrollbarState(100).position(0);
-        var area = new Rect(0, 0, 10, 5);
-        var buffer = Buffer.empty(area);
+        ScrollbarState state = new ScrollbarState(100).position(0);
+        Rect area = new Rect(0, 0, 10, 5);
+        Buffer buffer = Buffer.empty(area);
 
         scrollbar.render(area, buffer, state);
 
@@ -36,12 +37,12 @@ class ScrollbarTest {
     @Test
     @DisplayName("Vertical scrollbar renders on left edge")
     void verticalLeftRendersOnLeftEdge() {
-        var scrollbar = Scrollbar.builder()
+        Scrollbar scrollbar = Scrollbar.builder()
             .orientation(ScrollbarOrientation.VERTICAL_LEFT)
             .build();
-        var state = new ScrollbarState(100).position(0);
-        var area = new Rect(0, 0, 10, 5);
-        var buffer = Buffer.empty(area);
+        ScrollbarState state = new ScrollbarState(100).position(0);
+        Rect area = new Rect(0, 0, 10, 5);
+        Buffer buffer = Buffer.empty(area);
 
         scrollbar.render(area, buffer, state);
 
@@ -52,12 +53,12 @@ class ScrollbarTest {
     @Test
     @DisplayName("Horizontal scrollbar renders on bottom edge")
     void horizontalBottomRendersOnBottomEdge() {
-        var scrollbar = Scrollbar.builder()
+        Scrollbar scrollbar = Scrollbar.builder()
             .orientation(ScrollbarOrientation.HORIZONTAL_BOTTOM)
             .build();
-        var state = new ScrollbarState(100).position(0);
-        var area = new Rect(0, 0, 10, 5);
-        var buffer = Buffer.empty(area);
+        ScrollbarState state = new ScrollbarState(100).position(0);
+        Rect area = new Rect(0, 0, 10, 5);
+        Buffer buffer = Buffer.empty(area);
 
         scrollbar.render(area, buffer, state);
 
@@ -68,12 +69,12 @@ class ScrollbarTest {
     @Test
     @DisplayName("Horizontal scrollbar renders on top edge")
     void horizontalTopRendersOnTopEdge() {
-        var scrollbar = Scrollbar.builder()
+        Scrollbar scrollbar = Scrollbar.builder()
             .orientation(ScrollbarOrientation.HORIZONTAL_TOP)
             .build();
-        var state = new ScrollbarState(100).position(0);
-        var area = new Rect(0, 0, 10, 5);
-        var buffer = Buffer.empty(area);
+        ScrollbarState state = new ScrollbarState(100).position(0);
+        Rect area = new Rect(0, 0, 10, 5);
+        Buffer buffer = Buffer.empty(area);
 
         scrollbar.render(area, buffer, state);
 
@@ -84,21 +85,21 @@ class ScrollbarTest {
     @Test
     @DisplayName("Thumb moves with scroll position")
     void thumbMovesWithPosition() {
-        var scrollbar = Scrollbar.builder()
+        Scrollbar scrollbar = Scrollbar.builder()
             .orientation(ScrollbarOrientation.VERTICAL_RIGHT)
             .build();
-        var area = new Rect(0, 0, 5, 10);
-        var state = new ScrollbarState(100).viewportContentLength(10);
+        Rect area = new Rect(0, 0, 5, 10);
+        ScrollbarState state = new ScrollbarState(100).viewportContentLength(10);
 
         // At start
         state.position(0);
-        var buffer1 = Buffer.empty(area);
+        Buffer buffer1 = Buffer.empty(area);
         scrollbar.render(area, buffer1, state);
         assertThat(buffer1.get(4, 0).symbol()).isEqualTo("█");
 
         // At end
         state.position(90);
-        var buffer2 = Buffer.empty(area);
+        Buffer buffer2 = Buffer.empty(area);
         scrollbar.render(area, buffer2, state);
         assertThat(buffer2.get(4, 9).symbol()).isEqualTo("█");
     }
@@ -106,14 +107,14 @@ class ScrollbarTest {
     @Test
     @DisplayName("Scrollbar renders with begin and end symbols")
     void rendersWithBeginEndSymbols() {
-        var scrollbar = Scrollbar.builder()
+        Scrollbar scrollbar = Scrollbar.builder()
             .orientation(ScrollbarOrientation.VERTICAL_RIGHT)
             .beginSymbol("↑")
             .endSymbol("↓")
             .build();
-        var state = new ScrollbarState(100).position(50);
-        var area = new Rect(0, 0, 5, 5);
-        var buffer = Buffer.empty(area);
+        ScrollbarState state = new ScrollbarState(100).position(50);
+        Rect area = new Rect(0, 0, 5, 5);
+        Buffer buffer = Buffer.empty(area);
 
         scrollbar.render(area, buffer, state);
 
@@ -124,14 +125,14 @@ class ScrollbarTest {
     @Test
     @DisplayName("Scrollbar renders with custom symbols")
     void rendersWithCustomSymbols() {
-        var scrollbar = Scrollbar.builder()
+        Scrollbar scrollbar = Scrollbar.builder()
             .orientation(ScrollbarOrientation.VERTICAL_RIGHT)
             .trackSymbol("░")
             .thumbSymbol("▓")
             .build();
-        var state = new ScrollbarState(10).position(0);
-        var area = new Rect(0, 0, 5, 5);
-        var buffer = Buffer.empty(area);
+        ScrollbarState state = new ScrollbarState(10).position(0);
+        Rect area = new Rect(0, 0, 5, 5);
+        Buffer buffer = Buffer.empty(area);
 
         scrollbar.render(area, buffer, state);
 
@@ -150,12 +151,12 @@ class ScrollbarTest {
     @Test
     @DisplayName("Scrollbar with symbol set")
     void withSymbolSet() {
-        var scrollbar = Scrollbar.builder()
+        Scrollbar scrollbar = Scrollbar.builder()
             .symbols(Scrollbar.SymbolSet.DOUBLE_VERTICAL)
             .build();
-        var state = new ScrollbarState(100).position(0);
-        var area = new Rect(0, 0, 5, 5);
-        var buffer = Buffer.empty(area);
+        ScrollbarState state = new ScrollbarState(100).position(0);
+        Rect area = new Rect(0, 0, 5, 5);
+        Buffer buffer = Buffer.empty(area);
 
         scrollbar.render(area, buffer, state);
 
@@ -166,21 +167,21 @@ class ScrollbarTest {
     @Test
     @DisplayName("Scrollbar applies thumb style")
     void appliesThumbStyle() {
-        var thumbStyle = Style.EMPTY.fg(Color.YELLOW);
-        var scrollbar = Scrollbar.builder()
+        Style thumbStyle = Style.EMPTY.fg(Color.YELLOW);
+        Scrollbar scrollbar = Scrollbar.builder()
             .orientation(ScrollbarOrientation.VERTICAL_RIGHT)
             .thumbStyle(thumbStyle)
             .build();
-        var state = new ScrollbarState(10).position(0);
-        var area = new Rect(0, 0, 5, 5);
-        var buffer = Buffer.empty(area);
+        ScrollbarState state = new ScrollbarState(10).position(0);
+        Rect area = new Rect(0, 0, 5, 5);
+        Buffer buffer = Buffer.empty(area);
 
         scrollbar.render(area, buffer, state);
 
         // Find the thumb and check its style
         boolean foundThumb = false;
         for (int y = 0; y < 5; y++) {
-            var cell = buffer.get(4, y);
+            Cell cell = buffer.get(4, y);
             if (cell.symbol().equals("█")) {
                 assertThat(cell.style().fg()).contains(Color.YELLOW);
                 foundThumb = true;
@@ -193,21 +194,21 @@ class ScrollbarTest {
     @Test
     @DisplayName("Scrollbar applies track style")
     void appliesTrackStyle() {
-        var trackStyle = Style.EMPTY.fg(Color.DARK_GRAY);
-        var scrollbar = Scrollbar.builder()
+        Style trackStyle = Style.EMPTY.fg(Color.DARK_GRAY);
+        Scrollbar scrollbar = Scrollbar.builder()
             .orientation(ScrollbarOrientation.VERTICAL_RIGHT)
             .trackStyle(trackStyle)
             .build();
-        var state = new ScrollbarState(100).position(50);
-        var area = new Rect(0, 0, 5, 10);
-        var buffer = Buffer.empty(area);
+        ScrollbarState state = new ScrollbarState(100).position(50);
+        Rect area = new Rect(0, 0, 5, 10);
+        Buffer buffer = Buffer.empty(area);
 
         scrollbar.render(area, buffer, state);
 
         // Find track cells and check their style
         boolean foundTrack = false;
         for (int y = 0; y < 10; y++) {
-            var cell = buffer.get(4, y);
+            Cell cell = buffer.get(4, y);
             if (cell.symbol().equals("│")) {
                 assertThat(cell.style().fg()).contains(Color.DARK_GRAY);
                 foundTrack = true;
@@ -220,10 +221,10 @@ class ScrollbarTest {
     @Test
     @DisplayName("Empty area renders nothing")
     void emptyAreaRendersNothing() {
-        var scrollbar = Scrollbar.vertical();
-        var state = new ScrollbarState(100);
-        var area = new Rect(0, 0, 0, 0);
-        var buffer = Buffer.empty(new Rect(0, 0, 10, 10));
+        Scrollbar scrollbar = Scrollbar.vertical();
+        ScrollbarState state = new ScrollbarState(100);
+        Rect area = new Rect(0, 0, 0, 0);
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 10, 10));
 
         // Should not crash
         scrollbar.render(area, buffer, state);
@@ -232,10 +233,10 @@ class ScrollbarTest {
     @Test
     @DisplayName("Zero content length renders nothing")
     void zeroContentRendersNothing() {
-        var scrollbar = Scrollbar.vertical();
-        var state = new ScrollbarState(0);
-        var area = new Rect(0, 0, 5, 10);
-        var buffer = Buffer.empty(area);
+        Scrollbar scrollbar = Scrollbar.vertical();
+        ScrollbarState state = new ScrollbarState(0);
+        Rect area = new Rect(0, 0, 5, 10);
+        Buffer buffer = Buffer.empty(area);
 
         scrollbar.render(area, buffer, state);
 
@@ -248,14 +249,14 @@ class ScrollbarTest {
     @Test
     @DisplayName("Factory method vertical() creates right-aligned scrollbar")
     void factoryVertical() {
-        var scrollbar = Scrollbar.vertical();
+        Scrollbar scrollbar = Scrollbar.vertical();
         assertThat(scrollbar.orientation()).isEqualTo(ScrollbarOrientation.VERTICAL_RIGHT);
     }
 
     @Test
     @DisplayName("Factory method horizontal() creates bottom-aligned scrollbar")
     void factoryHorizontal() {
-        var scrollbar = Scrollbar.horizontal();
+        Scrollbar scrollbar = Scrollbar.horizontal();
         assertThat(scrollbar.orientation()).isEqualTo(ScrollbarOrientation.HORIZONTAL_BOTTOM);
     }
 
@@ -277,7 +278,7 @@ class ScrollbarTest {
     @Test
     @DisplayName("SymbolSet.of creates custom symbol set")
     void symbolSetOf() {
-        var set = Scrollbar.SymbolSet.of("|", "#");
+        Scrollbar.SymbolSet set = Scrollbar.SymbolSet.of("|", "#");
         assertThat(set.track()).isEqualTo("|");
         assertThat(set.thumb()).isEqualTo("#");
         assertThat(set.begin()).isNull();
@@ -295,10 +296,10 @@ class ScrollbarTest {
     @Test
     @DisplayName("Thumb size proportional to viewport")
     void thumbSizeProportionalToViewport() {
-        var scrollbar = Scrollbar.vertical();
-        var state = new ScrollbarState(100).viewportContentLength(50);
-        var area = new Rect(0, 0, 5, 10);
-        var buffer = Buffer.empty(area);
+        Scrollbar scrollbar = Scrollbar.vertical();
+        ScrollbarState state = new ScrollbarState(100).viewportContentLength(50);
+        Rect area = new Rect(0, 0, 5, 10);
+        Buffer buffer = Buffer.empty(area);
 
         scrollbar.render(area, buffer, state);
 

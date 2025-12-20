@@ -21,11 +21,11 @@ class ParagraphTest {
     @Test
     @DisplayName("Paragraph renders text")
     void rendersText() {
-        var paragraph = Paragraph.builder()
+        Paragraph paragraph = Paragraph.builder()
             .text(Text.from("Hello"))
             .build();
-        var area = new Rect(0, 0, 10, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
 
         paragraph.render(area, buffer);
 
@@ -39,13 +39,13 @@ class ParagraphTest {
     @Test
     @DisplayName("Paragraph with style applies to background")
     void withStyle() {
-        var style = Style.EMPTY.fg(Color.RED);
-        var paragraph = Paragraph.builder()
+        Style style = Style.EMPTY.fg(Color.RED);
+        Paragraph paragraph = Paragraph.builder()
             .text(Text.from("Hi"))
             .style(style)
             .build();
-        var area = new Rect(0, 0, 10, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
 
         paragraph.render(area, buffer);
 
@@ -58,12 +58,12 @@ class ParagraphTest {
     @Test
     @DisplayName("Paragraph with block")
     void withBlock() {
-        var paragraph = Paragraph.builder()
+        Paragraph paragraph = Paragraph.builder()
             .text(Text.from("Hi"))
             .block(Block.bordered())
             .build();
-        var area = new Rect(0, 0, 10, 3);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 10, 3);
+        Buffer buffer = Buffer.empty(area);
 
         paragraph.render(area, buffer);
 
@@ -76,12 +76,12 @@ class ParagraphTest {
     @Test
     @DisplayName("Paragraph with center alignment")
     void centerAlignment() {
-        var paragraph = Paragraph.builder()
+        Paragraph paragraph = Paragraph.builder()
             .text(Text.from("Hi"))
             .alignment(Alignment.CENTER)
             .build();
-        var area = new Rect(0, 0, 10, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
 
         paragraph.render(area, buffer);
 
@@ -93,12 +93,12 @@ class ParagraphTest {
     @Test
     @DisplayName("Paragraph with right alignment")
     void rightAlignment() {
-        var paragraph = Paragraph.builder()
+        Paragraph paragraph = Paragraph.builder()
             .text(Text.from("Hi"))
             .alignment(Alignment.RIGHT)
             .build();
-        var area = new Rect(0, 0, 10, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
 
         paragraph.render(area, buffer);
 
@@ -110,11 +110,11 @@ class ParagraphTest {
     @Test
     @DisplayName("Paragraph with multi-line text")
     void multiLine() {
-        var paragraph = Paragraph.builder()
+        Paragraph paragraph = Paragraph.builder()
             .text(Text.from("Line1\nLine2"))
             .build();
-        var area = new Rect(0, 0, 10, 2);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 10, 2);
+        Buffer buffer = Buffer.empty(area);
 
         paragraph.render(area, buffer);
 

@@ -9,6 +9,7 @@ import io.github.jratatui.style.Style;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
@@ -18,7 +19,7 @@ class RowTest {
     @Test
     @DisplayName("Row.from(Cell...) creates row with cells")
     void fromCells() {
-        var row = Row.from(Cell.from("A"), Cell.from("B"), Cell.from("C"));
+        Row row = Row.from(Cell.from("A"), Cell.from("B"), Cell.from("C"));
         assertThat(row.cells()).hasSize(3);
         assertThat(row.height()).isEqualTo(1);
     }
@@ -26,7 +27,7 @@ class RowTest {
     @Test
     @DisplayName("Row.from(String...) creates row from strings")
     void fromStrings() {
-        var row = Row.from("Name", "Age", "City");
+        Row row = Row.from("Name", "Age", "City");
         assertThat(row.cells()).hasSize(3);
         assertThat(row.cells().get(0).content().width()).isEqualTo(4);
     }
@@ -34,15 +35,15 @@ class RowTest {
     @Test
     @DisplayName("Row.from(List<Cell>) creates row from list")
     void fromList() {
-        var cells = List.of(Cell.from("X"), Cell.from("Y"));
-        var row = Row.from(cells);
+        List<Cell> cells = Arrays.asList(Cell.from("X"), Cell.from("Y"));
+        Row row = Row.from(cells);
         assertThat(row.cells()).hasSize(2);
     }
 
     @Test
     @DisplayName("Row.empty creates empty row")
     void emptyRow() {
-        var row = Row.empty();
+        Row row = Row.empty();
         assertThat(row.cells()).isEmpty();
         assertThat(row.height()).isEqualTo(1);
     }
@@ -50,29 +51,29 @@ class RowTest {
     @Test
     @DisplayName("Row height is calculated from cell content")
     void heightFromContent() {
-        var multiLineCell = Cell.from(io.github.jratatui.text.Text.from("Line1\nLine2\nLine3"));
-        var row = Row.from(Cell.from("Single"), multiLineCell);
+        Cell multiLineCell = Cell.from(io.github.jratatui.text.Text.from("Line1\nLine2\nLine3"));
+        Row row = Row.from(Cell.from("Single"), multiLineCell);
         assertThat(row.height()).isEqualTo(3);
     }
 
     @Test
     @DisplayName("Row.height sets explicit height")
     void explicitHeight() {
-        var row = Row.from("A", "B").height(5);
+        Row row = Row.from("A", "B").height(5);
         assertThat(row.height()).isEqualTo(5);
     }
 
     @Test
     @DisplayName("Row.style sets row style")
     void withStyle() {
-        var row = Row.from("A", "B").style(Style.EMPTY.bold());
+        Row row = Row.from("A", "B").style(Style.EMPTY.bold());
         assertThat(row.style().addModifiers()).contains(io.github.jratatui.style.Modifier.BOLD);
     }
 
     @Test
     @DisplayName("Row.bottomMargin sets margin below row")
     void withBottomMargin() {
-        var row = Row.from("A", "B").bottomMargin(2);
+        Row row = Row.from("A", "B").bottomMargin(2);
         assertThat(row.bottomMargin()).isEqualTo(2);
         assertThat(row.totalHeight()).isEqualTo(3); // 1 height + 2 margin
     }
@@ -80,14 +81,14 @@ class RowTest {
     @Test
     @DisplayName("Row height minimum is 1")
     void minimumHeight() {
-        var row = Row.from("A").height(0);
+        Row row = Row.from("A").height(0);
         assertThat(row.height()).isEqualTo(1);
     }
 
     @Test
     @DisplayName("Row bottom margin minimum is 0")
     void minimumMargin() {
-        var row = Row.from("A").bottomMargin(-5);
+        Row row = Row.from("A").bottomMargin(-5);
         assertThat(row.bottomMargin()).isEqualTo(0);
     }
 }

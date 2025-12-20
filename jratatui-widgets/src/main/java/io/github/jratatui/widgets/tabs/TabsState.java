@@ -10,7 +10,7 @@ package io.github.jratatui.widgets.tabs;
  * Tracks the currently selected tab index.
  *
  * <pre>{@code
- * var state = new TabsState();
+ * TabsState state = new TabsState();
  * state.select(0); // Select first tab
  *
  * // In event handling:

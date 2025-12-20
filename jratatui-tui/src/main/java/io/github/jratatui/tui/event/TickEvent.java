@@ -11,11 +11,16 @@ import java.time.Duration;
  * <p>
  * Tick events are generated at regular intervals when animation mode is enabled
  * via {@link io.github.jratatui.tui.TuiConfig#tickRate()}.
- *
- * @param frameCount the number of frames since the application started
- * @param elapsed    the time elapsed since the last tick
  */
-public record TickEvent(long frameCount, Duration elapsed) implements Event {
+public final class TickEvent implements Event {
+
+    private final long frameCount;
+    private final Duration elapsed;
+
+    public TickEvent(long frameCount, Duration elapsed) {
+        this.frameCount = frameCount;
+        this.elapsed = elapsed;
+    }
 
     /**
      * Creates a tick event with the given frame count and elapsed time.
@@ -36,5 +41,37 @@ public record TickEvent(long frameCount, Duration elapsed) implements Event {
      */
     public double elapsedSeconds() {
         return elapsed.toNanos() / 1_000_000_000.0;
+    }
+
+    public long frameCount() {
+        return frameCount;
+    }
+
+    public Duration elapsed() {
+        return elapsed;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof TickEvent)) {
+            return false;
+        }
+        TickEvent tickEvent = (TickEvent) o;
+        return frameCount == tickEvent.frameCount && elapsed.equals(tickEvent.elapsed);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Long.hashCode(frameCount);
+        result = 31 * result + elapsed.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("TickEvent[frameCount=%d, elapsed=%s]", frameCount, elapsed);
     }
 }

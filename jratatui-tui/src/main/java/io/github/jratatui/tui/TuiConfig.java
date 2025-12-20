@@ -8,37 +8,47 @@ import java.time.Duration;
 
 /**
  * Configuration options for {@link TuiRunner}.
- *
- * @param rawMode          whether to enable raw mode (default: true)
- * @param alternateScreen  whether to use alternate screen buffer (default: true)
- * @param hideCursor       whether to hide the cursor (default: true)
- * @param mouseCapture     whether to capture mouse events (default: false)
- * @param pollTimeout      timeout for polling events (default: 100ms)
- * @param tickRate         interval between tick events, or null to disable (default: null)
- * @param shutdownHook     whether to register a shutdown hook for terminal cleanup (default: true)
  */
-public record TuiConfig(
-    boolean rawMode,
-    boolean alternateScreen,
-    boolean hideCursor,
-    boolean mouseCapture,
-    Duration pollTimeout,
-    Duration tickRate,
-    boolean shutdownHook
-) {
+public final class TuiConfig {
+
+    private final boolean rawMode;
+    private final boolean alternateScreen;
+    private final boolean hideCursor;
+    private final boolean mouseCapture;
+    private final Duration pollTimeout;
+    private final Duration tickRate;
+    private final boolean shutdownHook;
+
+    public TuiConfig(
+            boolean rawMode,
+            boolean alternateScreen,
+            boolean hideCursor,
+            boolean mouseCapture,
+            Duration pollTimeout,
+            Duration tickRate,
+            boolean shutdownHook
+    ) {
+        this.rawMode = rawMode;
+        this.alternateScreen = alternateScreen;
+        this.hideCursor = hideCursor;
+        this.mouseCapture = mouseCapture;
+        this.pollTimeout = pollTimeout;
+        this.tickRate = tickRate;
+        this.shutdownHook = shutdownHook;
+    }
 
     /**
      * Returns the default configuration.
      */
     public static TuiConfig defaults() {
         return new TuiConfig(
-            true,                        // rawMode
-            true,                        // alternateScreen
-            true,                        // hideCursor
-            false,                       // mouseCapture
-            Duration.ofMillis(100),      // pollTimeout
-            null,                        // tickRate (disabled)
-            true                         // shutdownHook
+                true,                        // rawMode
+                true,                        // alternateScreen
+                true,                        // hideCursor
+                false,                       // mouseCapture
+                Duration.ofMillis(100),      // pollTimeout
+                null,                         // tickRate (disabled),
+                true
         );
     }
 
@@ -65,6 +75,76 @@ public record TuiConfig(
         return tickRate != null;
     }
 
+    public boolean rawMode() {
+        return rawMode;
+    }
+
+    public boolean alternateScreen() {
+        return alternateScreen;
+    }
+
+    public boolean hideCursor() {
+        return hideCursor;
+    }
+
+    public boolean mouseCapture() {
+        return mouseCapture;
+    }
+
+    public Duration pollTimeout() {
+        return pollTimeout;
+    }
+
+    public Duration tickRate() {
+        return tickRate;
+    }
+
+    public boolean shutdownHook() {
+        return shutdownHook;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof TuiConfig)) {
+            return false;
+        }
+        TuiConfig that = (TuiConfig) o;
+        return rawMode == that.rawMode
+                && alternateScreen == that.alternateScreen
+                && hideCursor == that.hideCursor
+                && mouseCapture == that.mouseCapture
+                && pollTimeout.equals(that.pollTimeout)
+                && (tickRate != null ? tickRate.equals(that.tickRate) : that.tickRate == null);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Boolean.hashCode(rawMode);
+        result = 31 * result + Boolean.hashCode(alternateScreen);
+        result = 31 * result + Boolean.hashCode(hideCursor);
+        result = 31 * result + Boolean.hashCode(mouseCapture);
+        result = 31 * result + pollTimeout.hashCode();
+        result = 31 * result + (tickRate != null ? tickRate.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+                "TuiConfig[rawMode=%s, alternateScreen=%s, hideCursor=%s, mouseCapture=%s, pollTimeout=%s, tickRate=%s, shutdownHook=%s]",
+                rawMode,
+                alternateScreen,
+                hideCursor,
+                mouseCapture,
+                pollTimeout,
+                tickRate,
+                shutdownHook
+        );
+    }
+
     /**
      * Builder for {@link TuiConfig}.
      */
@@ -77,7 +157,13 @@ public record TuiConfig(
         private Duration tickRate = null;
         private boolean shutdownHook = true;
 
-        private Builder() {}
+        private Builder() {
+        }
+
+        public Builder shutdownHook(boolean shutdownHook) {
+            this.shutdownHook = shutdownHook;
+            return this;
+        }
 
         /**
          * Sets whether to enable raw mode.
@@ -131,29 +217,17 @@ public record TuiConfig(
         }
 
         /**
-         * Sets whether to register a shutdown hook for terminal cleanup.
-         * When enabled (default), the terminal state will be restored even if
-         * the application is terminated with Ctrl+C or other signals.
-         *
-         * @param shutdownHook true to enable shutdown hook (default), false to disable
-         */
-        public Builder shutdownHook(boolean shutdownHook) {
-            this.shutdownHook = shutdownHook;
-            return this;
-        }
-
-        /**
          * Builds the configuration.
          */
         public TuiConfig build() {
             return new TuiConfig(
-                rawMode,
-                alternateScreen,
-                hideCursor,
-                mouseCapture,
-                pollTimeout,
-                tickRate,
-                shutdownHook
+                    rawMode,
+                    alternateScreen,
+                    hideCursor,
+                    mouseCapture,
+                    pollTimeout,
+                    tickRate,
+                    shutdownHook
             );
         }
     }

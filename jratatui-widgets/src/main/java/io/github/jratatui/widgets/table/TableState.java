@@ -11,7 +11,7 @@ package io.github.jratatui.widgets.table;
  * that don't fit in the display area.
  *
  * <pre>{@code
- * var state = new TableState();
+ * TableState state = new TableState();
  * state.select(0); // Select first row
  *
  * // In event handling:

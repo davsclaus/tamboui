@@ -10,9 +10,11 @@ import io.github.jratatui.style.Style;
 import io.github.jratatui.text.Span;
 import io.github.jratatui.widgets.Widget;
 import io.github.jratatui.widgets.block.Block;
+import static io.github.jratatui.util.CollectionUtil.listCopyOf;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A chart widget for plotting datasets in a cartesian coordinate system.
@@ -21,7 +23,7 @@ import java.util.List;
  * axes, legends, and styling.
  *
  * <pre>{@code
- * var chart = Chart.builder()
+ * Chart chart = Chart.builder()
  *     .datasets(
  *         Dataset.builder()
  *             .name("Series 1")
@@ -58,7 +60,7 @@ public final class Chart implements Widget {
     private final LegendPosition legendPosition;
 
     private Chart(Builder builder) {
-        this.datasets = List.copyOf(builder.datasets);
+        this.datasets = listCopyOf(builder.datasets);
         this.xAxis = builder.xAxis;
         this.yAxis = builder.yAxis;
         this.block = builder.block;
@@ -257,9 +259,17 @@ public final class Chart implements Widget {
 
         // Render based on graph type
         switch (dataset.graphType()) {
-            case SCATTER -> renderScatter(buffer, graphArea, screenX, screenY, marker, dataStyle);
-            case LINE -> renderLine(buffer, graphArea, screenX, screenY, marker, dataStyle);
-            case BAR -> renderBars(buffer, graphArea, screenX, screenY, dataStyle);
+            case SCATTER:
+                renderScatter(buffer, graphArea, screenX, screenY, marker, dataStyle);
+                break;
+            case LINE:
+                renderLine(buffer, graphArea, screenX, screenY, marker, dataStyle);
+                break;
+            case BAR:
+                renderBars(buffer, graphArea, screenX, screenY, dataStyle);
+                break;
+            default:
+                break;
         }
     }
 
@@ -347,7 +357,7 @@ public final class Chart implements Widget {
         // Count datasets with names
         List<Dataset> namedDatasets = datasets.stream()
             .filter(Dataset::hasName)
-            .toList();
+            .collect(Collectors.toList());
 
         if (namedDatasets.isEmpty()) {
             return;
@@ -365,26 +375,26 @@ public final class Chart implements Widget {
         // Position legend
         int legendX, legendY;
         switch (legendPosition) {
-            case TOP_LEFT -> {
+            case TOP_LEFT:
                 legendX = graphArea.x() + 1;
                 legendY = graphArea.y();
-            }
-            case TOP_RIGHT -> {
+                break;
+            case TOP_RIGHT:
                 legendX = graphArea.right() - legendWidth - 1;
                 legendY = graphArea.y();
-            }
-            case BOTTOM_LEFT -> {
+                break;
+            case BOTTOM_LEFT:
                 legendX = graphArea.x() + 1;
                 legendY = graphArea.bottom() - legendHeight;
-            }
-            case BOTTOM_RIGHT -> {
+                break;
+            case BOTTOM_RIGHT:
                 legendX = graphArea.right() - legendWidth - 1;
                 legendY = graphArea.bottom() - legendHeight;
-            }
-            default -> {
+                break;
+            default:
                 legendX = graphArea.right() - legendWidth - 1;
                 legendY = graphArea.y();
-            }
+                break;
         }
 
         // Render legend entries
@@ -431,7 +441,7 @@ public final class Chart implements Widget {
         public Builder datasets(Dataset... datasets) {
             this.datasets.clear();
             if (datasets != null) {
-                this.datasets.addAll(List.of(datasets));
+                this.datasets.addAll(listCopyOf(datasets));
             }
             return this;
         }

@@ -6,12 +6,18 @@ package io.github.jratatui.tui.event;
 
 /**
  * Represents a keyboard input event.
- *
- * @param code      the key code (for special keys) or {@link KeyCode#CHAR} for printable characters
- * @param modifiers the modifier keys that were pressed
- * @param character the character for {@link KeyCode#CHAR} events, or '\0' otherwise
  */
-public record KeyEvent(KeyCode code, KeyModifiers modifiers, char character) implements Event {
+public final class KeyEvent implements Event {
+
+    private final KeyCode code;
+    private final KeyModifiers modifiers;
+    private final char character;
+
+    public KeyEvent(KeyCode code, KeyModifiers modifiers, char character) {
+        this.code = code;
+        this.modifiers = modifiers;
+        this.character = character;
+    }
 
     /**
      * Creates a key event for a printable character.
@@ -81,5 +87,44 @@ public record KeyEvent(KeyCode code, KeyModifiers modifiers, char character) imp
      */
     public boolean isCtrlC() {
         return hasCtrl() && isChar('c');
+    }
+
+    public KeyCode code() {
+        return code;
+    }
+
+    public KeyModifiers modifiers() {
+        return modifiers;
+    }
+
+    public char character() {
+        return character;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof KeyEvent)) {
+            return false;
+        }
+        KeyEvent keyEvent = (KeyEvent) o;
+        return character == keyEvent.character
+            && code == keyEvent.code
+            && modifiers.equals(keyEvent.modifiers);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = code != null ? code.hashCode() : 0;
+        result = 31 * result + modifiers.hashCode();
+        result = 31 * result + Character.hashCode(character);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("KeyEvent[code=%s, modifiers=%s, character=%s]", code, modifiers, character);
     }
 }

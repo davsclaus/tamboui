@@ -1,0 +1,34 @@
+/*
+ * Copyright (c) 2025 JRatatui Contributors
+ * SPDX-License-Identifier: MIT
+ */
+package io.github.jratatui.demo;
+
+import io.github.jratatui.dsl.element.Element;
+import io.github.jratatui.style.Color;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+
+import static io.github.jratatui.dsl.Dsl.*;
+
+/**
+ * A panel displaying the current time and date.
+ */
+final class ClockPanel extends PanelContent {
+
+    ClockPanel() {
+        super("[Clock]", 22, 4, Color.CYAN);
+    }
+
+    @Override
+    Element render(boolean focused) {
+        var time = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+        var date = LocalDate.now().format(DateTimeFormatter.ofPattern("EEE, MMM d"));
+        return column(
+            text(time).bold().cyan(),
+            text(date).dim()
+        );
+    }
+}

@@ -5,6 +5,7 @@
 package io.github.jratatui.widgets.calendar;
 
 import io.github.jratatui.style.Style;
+import static io.github.jratatui.util.CollectionUtil.mapCopyOf;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -17,11 +18,11 @@ import java.util.Map;
  * calendar rendering.
  *
  * <pre>{@code
- * var events = CalendarEventStore.today(Style.EMPTY.fg(Color.RED).bold())
+ * CalendarEventStore events = CalendarEventStore.today(Style.EMPTY.fg(Color.RED).bold())
  *     .add(LocalDate.of(2025, 12, 25), Style.EMPTY.fg(Color.GREEN))
  *     .add(LocalDate.of(2025, 1, 1), Style.EMPTY.fg(Color.YELLOW));
  *
- * var calendar = Monthly.of(LocalDate.now(), events);
+ * Monthly calendar = Monthly.of(LocalDate.now(), events);
  * }</pre>
  *
  * @see DateStyler
@@ -39,7 +40,7 @@ public final class CalendarEventStore implements DateStyler {
      * Creates an empty event store.
      */
     public static CalendarEventStore empty() {
-        return new CalendarEventStore(Map.of());
+        return new CalendarEventStore(mapCopyOf());
     }
 
     /**

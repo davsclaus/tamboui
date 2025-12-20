@@ -7,29 +7,38 @@ package io.github.jratatui.text;
 import io.github.jratatui.layout.Alignment;
 import io.github.jratatui.style.Color;
 import io.github.jratatui.style.Style;
+import static io.github.jratatui.util.CollectionUtil.listCopyOf;
 
+import java.io.BufferedReader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Multi-line styled text, composed of Lines.
  */
-public record Text(List<Line> lines, Optional<Alignment> alignment) {
+public final class Text {
 
-    public Text {
-        lines = List.copyOf(lines);
+    private final List<Line> lines;
+    private final Optional<Alignment> alignment;
+
+    public Text(List<Line> lines, Optional<Alignment> alignment) {
+        this.lines = listCopyOf(lines);
+        this.alignment = alignment != null ? alignment : Optional.empty();
     }
 
     public static Text empty() {
-        return new Text(List.of(), Optional.empty());
+        return new Text(listCopyOf(), Optional.empty());
     }
 
     public static Text raw(String text) {
-        var linesList = text.lines()
+        List<Line> linesList = new BufferedReader(new StringReader(text))
+            .lines()
             .map(Line::from)
-            .toList();
+            .collect(Collectors.toList());
         return new Text(linesList, Optional.empty());
     }
 
@@ -38,7 +47,7 @@ public record Text(List<Line> lines, Optional<Alignment> alignment) {
     }
 
     public static Text from(Line line) {
-        return new Text(List.of(line), Optional.empty());
+        return new Text(listCopyOf(line), Optional.empty());
     }
 
     public static Text from(Line... lines) {
@@ -50,13 +59,14 @@ public record Text(List<Line> lines, Optional<Alignment> alignment) {
     }
 
     public static Text from(Span span) {
-        return new Text(List.of(Line.from(span)), Optional.empty());
+        return new Text(listCopyOf(Line.from(span)), Optional.empty());
     }
 
     public static Text styled(String text, Style style) {
-        var linesList = text.lines()
+        List<Line> linesList = new BufferedReader(new StringReader(text))
+            .lines()
             .map(line -> Line.styled(line, style))
-            .toList();
+            .collect(Collectors.toList());
         return new Text(linesList, Optional.empty());
     }
 
@@ -101,9 +111,9 @@ public record Text(List<Line> lines, Optional<Alignment> alignment) {
      * Applies a style patch to all lines.
      */
     public Text patchStyle(Style style) {
-        var newLines = lines.stream()
+        List<Line> newLines = lines.stream()
             .map(line -> line.patchStyle(style))
-            .toList();
+            .collect(Collectors.toList());
         return new Text(newLines, alignment);
     }
 
@@ -131,7 +141,7 @@ public record Text(List<Line> lines, Optional<Alignment> alignment) {
      * Returns the raw text content without styling.
      */
     public String rawContent() {
-        var sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < lines.size(); i++) {
             if (i > 0) {
                 sb.append('\n');
@@ -145,7 +155,7 @@ public record Text(List<Line> lines, Optional<Alignment> alignment) {
      * Appends another text's lines to this text.
      */
     public Text append(Text other) {
-        var newLines = new ArrayList<>(lines);
+        List<Line> newLines = new ArrayList<>(lines);
         newLines.addAll(other.lines);
         return new Text(newLines, alignment);
     }
@@ -154,7 +164,7 @@ public record Text(List<Line> lines, Optional<Alignment> alignment) {
      * Appends a line to this text.
      */
     public Text append(Line line) {
-        var newLines = new ArrayList<>(lines);
+        List<Line> newLines = new ArrayList<>(lines);
         newLines.add(line);
         return new Text(newLines, alignment);
     }
@@ -166,9 +176,41 @@ public record Text(List<Line> lines, Optional<Alignment> alignment) {
         if (lines.isEmpty()) {
             return append(Line.from(span));
         }
-        var newLines = new ArrayList<>(lines);
-        var lastLine = newLines.removeLast();
+        List<Line> newLines = new ArrayList<>(lines);
+        Line lastLine = newLines.remove(newLines.size() - 1);
         newLines.add(lastLine.append(span));
         return new Text(newLines, alignment);
+    }
+
+    public List<Line> lines() {
+        return lines;
+    }
+
+    public Optional<Alignment> alignment() {
+        return alignment;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Text)) {
+            return false;
+        }
+        Text text = (Text) o;
+        return lines.equals(text.lines) && alignment.equals(text.alignment);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = lines.hashCode();
+        result = 31 * result + alignment.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Text[lines=%s, alignment=%s]", lines, alignment);
     }
 }

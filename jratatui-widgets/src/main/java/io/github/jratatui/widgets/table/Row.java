@@ -5,6 +5,7 @@
 package io.github.jratatui.widgets.table;
 
 import io.github.jratatui.style.Style;
+import static io.github.jratatui.util.CollectionUtil.listCopyOf;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,7 +38,7 @@ public final class Row {
     private final int bottomMargin;
 
     private Row(List<Cell> cells, Style style, int height, int bottomMargin) {
-        this.cells = List.copyOf(cells);
+        this.cells = listCopyOf(cells);
         this.style = style;
         this.height = height;
         this.bottomMargin = bottomMargin;
@@ -72,7 +73,7 @@ public final class Row {
      * Creates an empty row.
      */
     public static Row empty() {
-        return new Row(List.of(), Style.EMPTY, 0, 0);
+        return new Row(listCopyOf(), Style.EMPTY, 0, 0);
     }
 
     /**

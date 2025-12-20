@@ -5,6 +5,6 @@ plugins {
 description = "PicoCLI integration for JRatatui TUI applications"
 
 dependencies {
-    api(project(":jratatui-tui"))
+    api(projects.jratatuiTui)
     api(libs.picocli)
 }

@@ -16,7 +16,7 @@ class TextTest {
     @Test
     @DisplayName("Text.from(String) splits on newlines")
     void fromString() {
-        var text = Text.from("Line 1\nLine 2\nLine 3");
+        Text text = Text.from("Line 1\nLine 2\nLine 3");
         assertThat(text.lines()).hasSize(3);
         assertThat(text.lines().get(0).spans().get(0).content()).isEqualTo("Line 1");
         assertThat(text.lines().get(1).spans().get(0).content()).isEqualTo("Line 2");
@@ -26,21 +26,21 @@ class TextTest {
     @Test
     @DisplayName("Text height is number of lines")
     void height() {
-        var text = Text.from("Line 1\nLine 2\nLine 3");
+        Text text = Text.from("Line 1\nLine 2\nLine 3");
         assertThat(text.height()).isEqualTo(3);
     }
 
     @Test
     @DisplayName("Text width is max line width")
     void width() {
-        var text = Text.from("Short\nA longer line\nMedium");
+        Text text = Text.from("Short\nA longer line\nMedium");
         assertThat(text.width()).isEqualTo(13); // "A longer line"
     }
 
     @Test
     @DisplayName("Text.from(Line...) creates text from lines")
     void fromLines() {
-        var text = Text.from(
+        Text text = Text.from(
             Line.from("First"),
             Line.from("Second")
         );
@@ -50,14 +50,14 @@ class TextTest {
     @Test
     @DisplayName("Text alignment can be set")
     void alignment() {
-        var text = Text.from("Test").alignment(Alignment.CENTER);
+        Text text = Text.from("Test").alignment(Alignment.CENTER);
         assertThat(text.alignment()).contains(Alignment.CENTER);
     }
 
     @Test
     @DisplayName("Text fg applies to all lines")
     void fg() {
-        var text = Text.from("Line 1\nLine 2").fg(Color.RED);
+        Text text = Text.from("Line 1\nLine 2").fg(Color.RED);
         assertThat(text.lines().get(0).spans().get(0).style().fg()).contains(Color.RED);
         assertThat(text.lines().get(1).spans().get(0).style().fg()).contains(Color.RED);
     }
@@ -65,7 +65,7 @@ class TextTest {
     @Test
     @DisplayName("Empty text has zero height and width")
     void emptyText() {
-        var text = Text.from("");
+        Text text = Text.from("");
         // Empty string splits to empty list of lines
         assertThat(text.height()).isEqualTo(0);
         assertThat(text.width()).isEqualTo(0);

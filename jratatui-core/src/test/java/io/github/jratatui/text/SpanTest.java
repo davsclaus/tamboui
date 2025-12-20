@@ -16,7 +16,7 @@ class SpanTest {
     @Test
     @DisplayName("Span.raw creates span with empty style")
     void raw() {
-        var span = Span.raw("Hello");
+        Span span = Span.raw("Hello");
         assertThat(span.content()).isEqualTo("Hello");
         assertThat(span.style()).isEqualTo(Style.EMPTY);
     }
@@ -24,8 +24,8 @@ class SpanTest {
     @Test
     @DisplayName("Span.styled creates span with given style")
     void styled() {
-        var style = Style.EMPTY.fg(Color.RED);
-        var span = Span.styled("Hello", style);
+        Style style = Style.EMPTY.fg(Color.RED);
+        Span span = Span.styled("Hello", style);
         assertThat(span.content()).isEqualTo("Hello");
         assertThat(span.style()).isEqualTo(style);
     }
@@ -41,29 +41,29 @@ class SpanTest {
     @Test
     @DisplayName("Span fg sets foreground color")
     void fg() {
-        var span = Span.raw("Text").fg(Color.RED);
+        Span span = Span.raw("Text").fg(Color.RED);
         assertThat(span.style().fg()).contains(Color.RED);
     }
 
     @Test
     @DisplayName("Span bg sets background color")
     void bg() {
-        var span = Span.raw("Text").bg(Color.BLUE);
+        Span span = Span.raw("Text").bg(Color.BLUE);
         assertThat(span.style().bg()).contains(Color.BLUE);
     }
 
     @Test
     @DisplayName("Span bold adds bold modifier")
     void bold() {
-        var span = Span.raw("Text").bold();
+        Span span = Span.raw("Text").bold();
         assertThat(span.style().addModifiers()).contains(io.github.jratatui.style.Modifier.BOLD);
     }
 
     @Test
     @DisplayName("Span style method applies new style")
     void styleMethod() {
-        var style = Style.EMPTY.fg(Color.GREEN).bold();
-        var span = Span.raw("Text").style(style);
+        Style style = Style.EMPTY.fg(Color.GREEN).bold();
+        Span span = Span.raw("Text").style(style);
         assertThat(span.style()).isEqualTo(style);
     }
 }

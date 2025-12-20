@@ -14,15 +14,15 @@ class LayoutTest {
     @Test
     @DisplayName("Vertical layout with fixed lengths")
     void verticalFixedLengths() {
-        var area = new Rect(0, 0, 100, 100);
-        var layout = Layout.vertical()
+        Rect area = new Rect(0, 0, 100, 100);
+        Layout layout = Layout.vertical()
             .constraints(
                 Constraint.length(20),
                 Constraint.length(30),
                 Constraint.length(50)
             );
 
-        var rects = layout.split(area);
+        java.util.List<Rect> rects = layout.split(area);
 
         assertThat(rects).hasSize(3);
         assertThat(rects.get(0)).isEqualTo(new Rect(0, 0, 100, 20));
@@ -33,14 +33,14 @@ class LayoutTest {
     @Test
     @DisplayName("Horizontal layout with fixed lengths")
     void horizontalFixedLengths() {
-        var area = new Rect(0, 0, 100, 50);
-        var layout = Layout.horizontal()
+        Rect area = new Rect(0, 0, 100, 50);
+        Layout layout = Layout.horizontal()
             .constraints(
                 Constraint.length(30),
                 Constraint.length(70)
             );
 
-        var rects = layout.split(area);
+        java.util.List<Rect> rects = layout.split(area);
 
         assertThat(rects).hasSize(2);
         assertThat(rects.get(0)).isEqualTo(new Rect(0, 0, 30, 50));
@@ -50,14 +50,14 @@ class LayoutTest {
     @Test
     @DisplayName("Layout with percentages")
     void percentages() {
-        var area = new Rect(0, 0, 100, 100);
-        var layout = Layout.vertical()
+        Rect area = new Rect(0, 0, 100, 100);
+        Layout layout = Layout.vertical()
             .constraints(
                 Constraint.percentage(25),
                 Constraint.percentage(75)
             );
 
-        var rects = layout.split(area);
+        java.util.List<Rect> rects = layout.split(area);
 
         assertThat(rects).hasSize(2);
         assertThat(rects.get(0).height()).isEqualTo(25);
@@ -67,14 +67,14 @@ class LayoutTest {
     @Test
     @DisplayName("Layout with fill constraints")
     void fillConstraints() {
-        var area = new Rect(0, 0, 100, 100);
-        var layout = Layout.vertical()
+        Rect area = new Rect(0, 0, 100, 100);
+        Layout layout = Layout.vertical()
             .constraints(
                 Constraint.length(20),
                 Constraint.fill()
             );
 
-        var rects = layout.split(area);
+        java.util.List<Rect> rects = layout.split(area);
 
         assertThat(rects).hasSize(2);
         assertThat(rects.get(0).height()).isEqualTo(20);
@@ -84,12 +84,12 @@ class LayoutTest {
     @Test
     @DisplayName("Layout with margin")
     void withMargin() {
-        var area = new Rect(0, 0, 100, 100);
-        var layout = Layout.vertical()
+        Rect area = new Rect(0, 0, 100, 100);
+        Layout layout = Layout.vertical()
             .margin(Margin.uniform(10))
             .constraints(Constraint.fill());
 
-        var rects = layout.split(area);
+        java.util.List<Rect> rects = layout.split(area);
 
         assertThat(rects).hasSize(1);
         assertThat(rects.get(0)).isEqualTo(new Rect(10, 10, 80, 80));
@@ -98,15 +98,15 @@ class LayoutTest {
     @Test
     @DisplayName("Layout with spacing")
     void withSpacing() {
-        var area = new Rect(0, 0, 100, 100);
-        var layout = Layout.vertical()
+        Rect area = new Rect(0, 0, 100, 100);
+        Layout layout = Layout.vertical()
             .spacing(10)
             .constraints(
                 Constraint.length(40),
                 Constraint.length(40)
             );
 
-        var rects = layout.split(area);
+        java.util.List<Rect> rects = layout.split(area);
 
         assertThat(rects).hasSize(2);
         assertThat(rects.get(0)).isEqualTo(new Rect(0, 0, 100, 40));
@@ -116,14 +116,14 @@ class LayoutTest {
     @Test
     @DisplayName("Layout with min constraint")
     void minConstraint() {
-        var area = new Rect(0, 0, 100, 100);
-        var layout = Layout.vertical()
+        Rect area = new Rect(0, 0, 100, 100);
+        Layout layout = Layout.vertical()
             .constraints(
                 Constraint.min(30),
                 Constraint.fill()
             );
 
-        var rects = layout.split(area);
+        java.util.List<Rect> rects = layout.split(area);
 
         assertThat(rects).hasSize(2);
         assertThat(rects.get(0).height()).isGreaterThanOrEqualTo(30);
@@ -132,14 +132,14 @@ class LayoutTest {
     @Test
     @DisplayName("Layout with ratio constraint")
     void ratioConstraint() {
-        var area = new Rect(0, 0, 100, 100);
-        var layout = Layout.vertical()
+        Rect area = new Rect(0, 0, 100, 100);
+        Layout layout = Layout.vertical()
             .constraints(
                 Constraint.ratio(1, 3),
                 Constraint.ratio(2, 3)
             );
 
-        var rects = layout.split(area);
+        java.util.List<Rect> rects = layout.split(area);
 
         assertThat(rects).hasSize(2);
         assertThat(rects.get(0).height()).isEqualTo(33);

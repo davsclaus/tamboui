@@ -25,7 +25,7 @@ import java.util.Optional;
  * visual progression with 8 extra fractional parts per cell.
  *
  * <pre>{@code
- * var gauge = Gauge.builder()
+ * Gauge gauge = Gauge.builder()
  *     .percent(75)
  *     .label("75%")
  *     .gaugeStyle(Style.EMPTY.fg(Color.GREEN))

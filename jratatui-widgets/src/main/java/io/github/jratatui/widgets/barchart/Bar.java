@@ -16,13 +16,13 @@ import java.util.Optional;
  *
  * <pre>{@code
  * // Simple bar with just a value
- * var bar = Bar.of(75);
+ * Bar bar = Bar.of(75);
  *
  * // Bar with label
- * var bar = Bar.of(75, "Sales");
+ * Bar bar2 = Bar.of(75, "Sales");
  *
  * // Fully customized bar
- * var bar = Bar.builder()
+ * Bar bar3 = Bar.builder()
  *     .value(75)
  *     .label("Sales")
  *     .textValue("75%")

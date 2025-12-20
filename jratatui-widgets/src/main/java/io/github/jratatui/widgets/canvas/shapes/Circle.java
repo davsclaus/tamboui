@@ -18,7 +18,19 @@ import io.github.jratatui.widgets.canvas.Shape;
  *
  * @see Shape
  */
-public record Circle(double x, double y, double radius, Color color) implements Shape {
+public final class Circle implements Shape {
+
+    private final double x;
+    private final double y;
+    private final double radius;
+    private final Color color;
+
+    public Circle(double x, double y, double radius, Color color) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.color = color;
+    }
 
     /**
      * Creates a circle centered at (x, y) with the given radius and color.
@@ -46,5 +58,50 @@ public record Circle(double x, double y, double radius, Color color) implements 
         // Ensure we close the circle by drawing the final point
         painter.getPoint(x + radius, y).ifPresent(p ->
             painter.paint(p.x(), p.y(), color));
+    }
+
+    public double x() {
+        return x;
+    }
+
+    public double y() {
+        return y;
+    }
+
+    public double radius() {
+        return radius;
+    }
+
+    public Color color() {
+        return color;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Circle)) {
+            return false;
+        }
+        Circle circle = (Circle) o;
+        return Double.compare(circle.x, x) == 0
+            && Double.compare(circle.y, y) == 0
+            && Double.compare(circle.radius, radius) == 0
+            && color.equals(circle.color);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Double.hashCode(x);
+        result = 31 * result + Double.hashCode(y);
+        result = 31 * result + Double.hashCode(radius);
+        result = 31 * result + color.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Circle[x=%s, y=%s, radius=%s, color=%s]", x, y, radius, color);
     }
 }

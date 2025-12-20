@@ -9,6 +9,7 @@ import io.github.jratatui.style.Style;
 import io.github.jratatui.text.Line;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -17,7 +18,7 @@ class DatasetTest {
 
     @Test
     void builder_creates_dataset_with_defaults() {
-        var dataset = Dataset.builder().build();
+        Dataset dataset = Dataset.builder().build();
 
         assertThat(dataset.name()).isEmpty();
         assertThat(dataset.data()).isEmpty();
@@ -30,7 +31,7 @@ class DatasetTest {
 
     @Test
     void builder_name_string() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .name("Test Dataset")
             .build();
 
@@ -41,8 +42,8 @@ class DatasetTest {
 
     @Test
     void builder_name_line() {
-        var line = Line.from("Dataset Name");
-        var dataset = Dataset.builder()
+        Line line = Line.from("Dataset Name");
+        Dataset dataset = Dataset.builder()
             .name(line)
             .build();
 
@@ -52,7 +53,7 @@ class DatasetTest {
 
     @Test
     void builder_name_null_clears_name() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .name("Test")
             .name((String) null)
             .build();
@@ -63,8 +64,8 @@ class DatasetTest {
 
     @Test
     void builder_data_array() {
-        var data = new double[][] {{0, 0}, {1, 1}, {2, 4}};
-        var dataset = Dataset.builder()
+        double[][] data = new double[][] {{0, 0}, {1, 1}, {2, 4}};
+        Dataset dataset = Dataset.builder()
             .data(data)
             .build();
 
@@ -76,8 +77,8 @@ class DatasetTest {
 
     @Test
     void builder_data_clones_input() {
-        var data = new double[][] {{0, 0}, {1, 1}};
-        var dataset = Dataset.builder()
+        double[][] data = new double[][] {{0, 0}, {1, 1}};
+        Dataset dataset = Dataset.builder()
             .data(data)
             .build();
 
@@ -90,7 +91,7 @@ class DatasetTest {
 
     @Test
     void builder_data_null_creates_empty() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .data((double[][]) null)
             .build();
 
@@ -100,12 +101,12 @@ class DatasetTest {
 
     @Test
     void builder_data_list() {
-        var data = List.of(
+        List<double[]> data = Arrays.asList(
             new double[] {0, 0},
             new double[] {1, 2},
             new double[] {2, 4}
         );
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .data(data)
             .build();
 
@@ -114,8 +115,8 @@ class DatasetTest {
 
     @Test
     void builder_data_empty_list() {
-        var dataset = Dataset.builder()
-            .data(List.of())
+        Dataset dataset = Dataset.builder()
+            .data(Arrays.asList())
             .build();
 
         assertThat(dataset.data()).isEmpty();
@@ -123,7 +124,7 @@ class DatasetTest {
 
     @Test
     void builder_data_null_list() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .data((List<double[]>) null)
             .build();
 
@@ -132,7 +133,7 @@ class DatasetTest {
 
     @Test
     void builder_addPoint() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .addPoint(0, 0)
             .addPoint(1, 1)
             .addPoint(2, 4)
@@ -146,7 +147,7 @@ class DatasetTest {
 
     @Test
     void builder_marker_dot() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .marker(Dataset.Marker.DOT)
             .build();
 
@@ -156,7 +157,7 @@ class DatasetTest {
 
     @Test
     void builder_marker_block() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .marker(Dataset.Marker.BLOCK)
             .build();
 
@@ -166,7 +167,7 @@ class DatasetTest {
 
     @Test
     void builder_marker_bar() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .marker(Dataset.Marker.BAR)
             .build();
 
@@ -176,7 +177,7 @@ class DatasetTest {
 
     @Test
     void builder_marker_braille() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .marker(Dataset.Marker.BRAILLE)
             .build();
 
@@ -186,7 +187,7 @@ class DatasetTest {
 
     @Test
     void builder_marker_null_defaults_to_dot() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .marker(Dataset.Marker.BLOCK)
             .marker(null)
             .build();
@@ -196,7 +197,7 @@ class DatasetTest {
 
     @Test
     void builder_graphType_scatter() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .graphType(GraphType.SCATTER)
             .build();
 
@@ -205,7 +206,7 @@ class DatasetTest {
 
     @Test
     void builder_graphType_line() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .graphType(GraphType.LINE)
             .build();
 
@@ -214,7 +215,7 @@ class DatasetTest {
 
     @Test
     void builder_graphType_bar() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .graphType(GraphType.BAR)
             .build();
 
@@ -223,7 +224,7 @@ class DatasetTest {
 
     @Test
     void builder_graphType_null_defaults_to_scatter() {
-        var dataset = Dataset.builder()
+        Dataset dataset = Dataset.builder()
             .graphType(GraphType.LINE)
             .graphType(null)
             .build();
@@ -233,8 +234,8 @@ class DatasetTest {
 
     @Test
     void builder_style() {
-        var style = Style.EMPTY.fg(Color.RED).bold();
-        var dataset = Dataset.builder()
+        Style style = Style.EMPTY.fg(Color.RED).bold();
+        Dataset dataset = Dataset.builder()
             .style(style)
             .build();
 
@@ -243,15 +244,15 @@ class DatasetTest {
 
     @Test
     void style_returns_empty_when_null() {
-        var dataset = Dataset.builder().build();
+        Dataset dataset = Dataset.builder().build();
 
         assertThat(dataset.style()).isEqualTo(Style.EMPTY);
     }
 
     @Test
     void of_data_only() {
-        var data = new double[][] {{0, 0}, {1, 1}};
-        var dataset = Dataset.of(data);
+        double[][] data = new double[][] {{0, 0}, {1, 1}};
+        Dataset dataset = Dataset.of(data);
 
         assertThat(dataset.size()).isEqualTo(2);
         assertThat(dataset.hasName()).isFalse();
@@ -260,8 +261,8 @@ class DatasetTest {
 
     @Test
     void of_name_and_data() {
-        var data = new double[][] {{0, 0}, {1, 1}};
-        var dataset = Dataset.of("Test", data);
+        double[][] data = new double[][] {{0, 0}, {1, 1}};
+        Dataset dataset = Dataset.of("Test", data);
 
         assertThat(dataset.size()).isEqualTo(2);
         assertThat(dataset.hasName()).isTrue();

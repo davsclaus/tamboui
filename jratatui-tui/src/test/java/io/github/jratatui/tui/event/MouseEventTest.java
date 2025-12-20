@@ -14,7 +14,7 @@ class MouseEventTest {
     @Test
     @DisplayName("press creates press event")
     void pressCreatesPressEvent() {
-        var event = MouseEvent.press(MouseButton.LEFT, 10, 20);
+        MouseEvent event = MouseEvent.press(MouseButton.LEFT, 10, 20);
         assertThat(event.kind()).isEqualTo(MouseEventKind.PRESS);
         assertThat(event.button()).isEqualTo(MouseButton.LEFT);
         assertThat(event.x()).isEqualTo(10);
@@ -25,7 +25,7 @@ class MouseEventTest {
     @Test
     @DisplayName("release creates release event")
     void releaseCreatesReleaseEvent() {
-        var event = MouseEvent.release(MouseButton.RIGHT, 5, 15);
+        MouseEvent event = MouseEvent.release(MouseButton.RIGHT, 5, 15);
         assertThat(event.kind()).isEqualTo(MouseEventKind.RELEASE);
         assertThat(event.button()).isEqualTo(MouseButton.RIGHT);
         assertThat(event.x()).isEqualTo(5);
@@ -35,7 +35,7 @@ class MouseEventTest {
     @Test
     @DisplayName("drag creates drag event")
     void dragCreatesDragEvent() {
-        var event = MouseEvent.drag(MouseButton.LEFT, 30, 40);
+        MouseEvent event = MouseEvent.drag(MouseButton.LEFT, 30, 40);
         assertThat(event.kind()).isEqualTo(MouseEventKind.DRAG);
         assertThat(event.button()).isEqualTo(MouseButton.LEFT);
         assertThat(event.x()).isEqualTo(30);
@@ -45,7 +45,7 @@ class MouseEventTest {
     @Test
     @DisplayName("scrollUp creates scroll up event")
     void scrollUpCreatesScrollUpEvent() {
-        var event = MouseEvent.scrollUp(7, 8);
+        MouseEvent event = MouseEvent.scrollUp(7, 8);
         assertThat(event.kind()).isEqualTo(MouseEventKind.SCROLL_UP);
         assertThat(event.button()).isEqualTo(MouseButton.NONE);
         assertThat(event.x()).isEqualTo(7);
@@ -55,7 +55,7 @@ class MouseEventTest {
     @Test
     @DisplayName("scrollDown creates scroll down event")
     void scrollDownCreatesScrollDownEvent() {
-        var event = MouseEvent.scrollDown(12, 24);
+        MouseEvent event = MouseEvent.scrollDown(12, 24);
         assertThat(event.kind()).isEqualTo(MouseEventKind.SCROLL_DOWN);
         assertThat(event.button()).isEqualTo(MouseButton.NONE);
         assertThat(event.x()).isEqualTo(12);
@@ -65,7 +65,7 @@ class MouseEventTest {
     @Test
     @DisplayName("move creates move event")
     void moveCreatesMoveEvent() {
-        var event = MouseEvent.move(50, 60);
+        MouseEvent event = MouseEvent.move(50, 60);
         assertThat(event.kind()).isEqualTo(MouseEventKind.MOVE);
         assertThat(event.button()).isEqualTo(MouseButton.NONE);
         assertThat(event.x()).isEqualTo(50);

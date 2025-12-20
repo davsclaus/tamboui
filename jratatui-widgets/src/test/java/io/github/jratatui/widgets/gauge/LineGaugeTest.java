@@ -18,9 +18,9 @@ class LineGaugeTest {
     @Test
     @DisplayName("LineGauge renders at 0%")
     void rendersAtZeroPercent() {
-        var gauge = LineGauge.percent(0);
-        var area = new Rect(0, 0, 10, 1);
-        var buffer = Buffer.empty(area);
+        LineGauge gauge = LineGauge.percent(0);
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
 
         gauge.render(area, buffer);
 
@@ -32,9 +32,9 @@ class LineGaugeTest {
     @Test
     @DisplayName("LineGauge renders at 100%")
     void rendersAtHundredPercent() {
-        var gauge = LineGauge.percent(100);
-        var area = new Rect(0, 0, 10, 1);
-        var buffer = Buffer.empty(area);
+        LineGauge gauge = LineGauge.percent(100);
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
 
         gauge.render(area, buffer);
 
@@ -46,9 +46,9 @@ class LineGaugeTest {
     @Test
     @DisplayName("LineGauge renders at 50%")
     void rendersAtFiftyPercent() {
-        var gauge = LineGauge.percent(50);
-        var area = new Rect(0, 0, 10, 1);
-        var buffer = Buffer.empty(area);
+        LineGauge gauge = LineGauge.percent(50);
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
 
         gauge.render(area, buffer);
 
@@ -63,9 +63,9 @@ class LineGaugeTest {
     @Test
     @DisplayName("LineGauge with ratio")
     void withRatio() {
-        var gauge = LineGauge.ratio(0.25);
-        var area = new Rect(0, 0, 20, 1);
-        var buffer = Buffer.empty(area);
+        LineGauge gauge = LineGauge.ratio(0.25);
+        Rect area = new Rect(0, 0, 20, 1);
+        Buffer buffer = Buffer.empty(area);
 
         gauge.render(area, buffer);
 
@@ -79,12 +79,12 @@ class LineGaugeTest {
     @Test
     @DisplayName("LineGauge with label")
     void withLabel() {
-        var gauge = LineGauge.builder()
+        LineGauge gauge = LineGauge.builder()
             .percent(50)
             .label("CPU: ")
             .build();
-        var area = new Rect(0, 0, 15, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 15, 1);
+        Buffer buffer = Buffer.empty(area);
 
         gauge.render(area, buffer);
 
@@ -104,13 +104,13 @@ class LineGaugeTest {
     @Test
     @DisplayName("LineGauge with filled style")
     void withFilledStyle() {
-        var filledStyle = Style.EMPTY.fg(Color.GREEN);
-        var gauge = LineGauge.builder()
+        Style filledStyle = Style.EMPTY.fg(Color.GREEN);
+        LineGauge gauge = LineGauge.builder()
             .percent(100)
             .filledStyle(filledStyle)
             .build();
-        var area = new Rect(0, 0, 10, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
 
         gauge.render(area, buffer);
 
@@ -120,13 +120,13 @@ class LineGaugeTest {
     @Test
     @DisplayName("LineGauge with unfilled style")
     void withUnfilledStyle() {
-        var unfilledStyle = Style.EMPTY.fg(Color.DARK_GRAY);
-        var gauge = LineGauge.builder()
+        Style unfilledStyle = Style.EMPTY.fg(Color.DARK_GRAY);
+        LineGauge gauge = LineGauge.builder()
             .percent(0)
             .unfilledStyle(unfilledStyle)
             .build();
-        var area = new Rect(0, 0, 10, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
 
         gauge.render(area, buffer);
 
@@ -136,12 +136,12 @@ class LineGaugeTest {
     @Test
     @DisplayName("LineGauge with thick line set")
     void withThickLineSet() {
-        var gauge = LineGauge.builder()
+        LineGauge gauge = LineGauge.builder()
             .percent(50)
             .lineSet(LineGauge.THICK)
             .build();
-        var area = new Rect(0, 0, 10, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
 
         gauge.render(area, buffer);
 
@@ -153,12 +153,12 @@ class LineGaugeTest {
     @Test
     @DisplayName("LineGauge with double line set")
     void withDoubleLineSet() {
-        var gauge = LineGauge.builder()
+        LineGauge gauge = LineGauge.builder()
             .percent(50)
             .lineSet(LineGauge.DOUBLE)
             .build();
-        var area = new Rect(0, 0, 10, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
 
         gauge.render(area, buffer);
 
@@ -169,13 +169,13 @@ class LineGaugeTest {
     @Test
     @DisplayName("LineGauge with custom line set")
     void withCustomLineSet() {
-        var customSet = new LineGauge.LineSet(".", "#");
-        var gauge = LineGauge.builder()
+        LineGauge.LineSet customSet = new LineGauge.LineSet(".", "#");
+        LineGauge gauge = LineGauge.builder()
             .percent(50)
             .lineSet(customSet)
             .build();
-        var area = new Rect(0, 0, 10, 1);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
 
         gauge.render(area, buffer);
 
@@ -210,7 +210,7 @@ class LineGaugeTest {
         assertThatThrownBy(() -> new LineGauge.LineSet(".", ""))
             .isInstanceOf(IllegalArgumentException.class);
         // Valid LineSet should work
-        var validSet = new LineGauge.LineSet(".", "#");
+        LineGauge.LineSet validSet = new LineGauge.LineSet(".", "#");
         assertThat(validSet.unfilled()).isEqualTo(".");
         assertThat(validSet.filled()).isEqualTo("#");
     }

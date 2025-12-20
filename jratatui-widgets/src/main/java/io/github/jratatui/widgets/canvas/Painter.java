@@ -89,9 +89,46 @@ public class Painter {
 
     /**
      * A point in grid space (integer coordinates).
-     *
-     * @param x the x coordinate
-     * @param y the y coordinate
      */
-    public record GridPoint(int x, int y) {}
+    public static final class GridPoint {
+        private final int x;
+        private final int y;
+
+        public GridPoint(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        public int x() {
+            return x;
+        }
+
+        public int y() {
+            return y;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof GridPoint)) {
+                return false;
+            }
+            GridPoint gridPoint = (GridPoint) o;
+            return x == gridPoint.x && y == gridPoint.y;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Integer.hashCode(x);
+            result = 31 * result + Integer.hashCode(y);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("GridPoint[x=%d, y=%d]", x, y);
+        }
+    }
 }

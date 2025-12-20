@@ -70,20 +70,23 @@ public final class EventParser {
     }
 
     private static Event parseControlChar(int c) {
-        return switch (c) {
-            case 3 -> KeyEvent.ofChar('c', KeyModifiers.CTRL);  // Ctrl+C
-            case 9 -> KeyEvent.ofKey(KeyCode.TAB);               // Tab
-            case 10, 13 -> KeyEvent.ofKey(KeyCode.ENTER);        // Enter (LF or CR)
-            case 27 -> KeyEvent.ofKey(KeyCode.ESCAPE);           // Escape (standalone)
-            default -> {
-                // Ctrl+letter (Ctrl+A = 1, Ctrl+B = 2, etc.)
+        switch (c) {
+            case 3:
+                return KeyEvent.ofChar('c', KeyModifiers.CTRL);  // Ctrl+C
+            case 9:
+                return KeyEvent.ofKey(KeyCode.TAB);               // Tab
+            case 10:
+            case 13:
+                return KeyEvent.ofKey(KeyCode.ENTER);        // Enter (LF or CR)
+            case 27:
+                return KeyEvent.ofKey(KeyCode.ESCAPE);           // Escape (standalone)
+            default:
                 if (c >= 1 && c <= 26) {
                     char letter = (char) ('a' + c - 1);
-                    yield KeyEvent.ofChar(letter, KeyModifiers.CTRL);
+                    return KeyEvent.ofChar(letter, KeyModifiers.CTRL);
                 }
-                yield KeyEvent.ofKey(KeyCode.UNKNOWN);
-            }
-        };
+                return KeyEvent.ofKey(KeyCode.UNKNOWN);
+        }
     }
 
     private static Event parseEscapeSequence(NonBlockingReader reader) throws IOException {
@@ -128,15 +131,22 @@ public final class EventParser {
         }
 
         // Arrow keys and simple sequences
-        return switch (c) {
-            case 'A' -> KeyEvent.ofKey(KeyCode.UP);
-            case 'B' -> KeyEvent.ofKey(KeyCode.DOWN);
-            case 'C' -> KeyEvent.ofKey(KeyCode.RIGHT);
-            case 'D' -> KeyEvent.ofKey(KeyCode.LEFT);
-            case 'H' -> KeyEvent.ofKey(KeyCode.HOME);
-            case 'F' -> KeyEvent.ofKey(KeyCode.END);
-            default -> parseExtendedCSI(c, reader);
-        };
+        switch (c) {
+            case 'A':
+                return KeyEvent.ofKey(KeyCode.UP);
+            case 'B':
+                return KeyEvent.ofKey(KeyCode.DOWN);
+            case 'C':
+                return KeyEvent.ofKey(KeyCode.RIGHT);
+            case 'D':
+                return KeyEvent.ofKey(KeyCode.LEFT);
+            case 'H':
+                return KeyEvent.ofKey(KeyCode.HOME);
+            case 'F':
+                return KeyEvent.ofKey(KeyCode.END);
+            default:
+                return parseExtendedCSI(c, reader);
+        }
     }
 
     private static Event parseExtendedCSI(int first, NonBlockingReader reader) throws IOException {
@@ -182,42 +192,76 @@ public final class EventParser {
 
         KeyModifiers mods = parts.length > 1 ? parseModifierCode(parts[1]) : KeyModifiers.NONE;
 
-        return switch (code) {
-            case 1 -> KeyEvent.ofKey(KeyCode.HOME, mods);
-            case 2 -> KeyEvent.ofKey(KeyCode.INSERT, mods);
-            case 3 -> KeyEvent.ofKey(KeyCode.DELETE, mods);
-            case 4 -> KeyEvent.ofKey(KeyCode.END, mods);
-            case 5 -> KeyEvent.ofKey(KeyCode.PAGE_UP, mods);
-            case 6 -> KeyEvent.ofKey(KeyCode.PAGE_DOWN, mods);
-            case 11 -> KeyEvent.ofKey(KeyCode.F1, mods);
-            case 12 -> KeyEvent.ofKey(KeyCode.F2, mods);
-            case 13 -> KeyEvent.ofKey(KeyCode.F3, mods);
-            case 14 -> KeyEvent.ofKey(KeyCode.F4, mods);
-            case 15 -> KeyEvent.ofKey(KeyCode.F5, mods);
-            case 17 -> KeyEvent.ofKey(KeyCode.F6, mods);
-            case 18 -> KeyEvent.ofKey(KeyCode.F7, mods);
-            case 19 -> KeyEvent.ofKey(KeyCode.F8, mods);
-            case 20 -> KeyEvent.ofKey(KeyCode.F9, mods);
-            case 21 -> KeyEvent.ofKey(KeyCode.F10, mods);
-            case 23 -> KeyEvent.ofKey(KeyCode.F11, mods);
-            case 24 -> KeyEvent.ofKey(KeyCode.F12, mods);
-            default -> KeyEvent.ofKey(KeyCode.UNKNOWN);
-        };
+        switch (code) {
+            case 1:
+                return KeyEvent.ofKey(KeyCode.HOME, mods);
+            case 2:
+                return KeyEvent.ofKey(KeyCode.INSERT, mods);
+            case 3:
+                return KeyEvent.ofKey(KeyCode.DELETE, mods);
+            case 4:
+                return KeyEvent.ofKey(KeyCode.END, mods);
+            case 5:
+                return KeyEvent.ofKey(KeyCode.PAGE_UP, mods);
+            case 6:
+                return KeyEvent.ofKey(KeyCode.PAGE_DOWN, mods);
+            case 11:
+                return KeyEvent.ofKey(KeyCode.F1, mods);
+            case 12:
+                return KeyEvent.ofKey(KeyCode.F2, mods);
+            case 13:
+                return KeyEvent.ofKey(KeyCode.F3, mods);
+            case 14:
+                return KeyEvent.ofKey(KeyCode.F4, mods);
+            case 15:
+                return KeyEvent.ofKey(KeyCode.F5, mods);
+            case 17:
+                return KeyEvent.ofKey(KeyCode.F6, mods);
+            case 18:
+                return KeyEvent.ofKey(KeyCode.F7, mods);
+            case 19:
+                return KeyEvent.ofKey(KeyCode.F8, mods);
+            case 20:
+                return KeyEvent.ofKey(KeyCode.F9, mods);
+            case 21:
+                return KeyEvent.ofKey(KeyCode.F10, mods);
+            case 23:
+                return KeyEvent.ofKey(KeyCode.F11, mods);
+            case 24:
+                return KeyEvent.ofKey(KeyCode.F12, mods);
+            default:
+                return KeyEvent.ofKey(KeyCode.UNKNOWN);
+        }
     }
 
     private static Event parseModifiedArrow(String params, int terminator) {
         String[] parts = params.split(";");
         KeyModifiers mods = parts.length > 1 ? parseModifierCode(parts[1]) : KeyModifiers.NONE;
 
-        KeyCode code = switch (terminator) {
-            case 'A' -> KeyCode.UP;
-            case 'B' -> KeyCode.DOWN;
-            case 'C' -> KeyCode.RIGHT;
-            case 'D' -> KeyCode.LEFT;
-            case 'H' -> KeyCode.HOME;
-            case 'F' -> KeyCode.END;
-            default -> KeyCode.UNKNOWN;
-        };
+        KeyCode code;
+        switch (terminator) {
+            case 'A':
+                code = KeyCode.UP;
+                break;
+            case 'B':
+                code = KeyCode.DOWN;
+                break;
+            case 'C':
+                code = KeyCode.RIGHT;
+                break;
+            case 'D':
+                code = KeyCode.LEFT;
+                break;
+            case 'H':
+                code = KeyCode.HOME;
+                break;
+            case 'F':
+                code = KeyCode.END;
+                break;
+            default:
+                code = KeyCode.UNKNOWN;
+                break;
+        }
 
         return KeyEvent.ofKey(code, mods);
     }
@@ -246,19 +290,30 @@ public final class EventParser {
         }
 
         // SS3 sequences (typically function keys on some terminals)
-        return switch (c) {
-            case 'P' -> KeyEvent.ofKey(KeyCode.F1);
-            case 'Q' -> KeyEvent.ofKey(KeyCode.F2);
-            case 'R' -> KeyEvent.ofKey(KeyCode.F3);
-            case 'S' -> KeyEvent.ofKey(KeyCode.F4);
-            case 'A' -> KeyEvent.ofKey(KeyCode.UP);
-            case 'B' -> KeyEvent.ofKey(KeyCode.DOWN);
-            case 'C' -> KeyEvent.ofKey(KeyCode.RIGHT);
-            case 'D' -> KeyEvent.ofKey(KeyCode.LEFT);
-            case 'H' -> KeyEvent.ofKey(KeyCode.HOME);
-            case 'F' -> KeyEvent.ofKey(KeyCode.END);
-            default -> KeyEvent.ofKey(KeyCode.UNKNOWN);
-        };
+        switch (c) {
+            case 'P':
+                return KeyEvent.ofKey(KeyCode.F1);
+            case 'Q':
+                return KeyEvent.ofKey(KeyCode.F2);
+            case 'R':
+                return KeyEvent.ofKey(KeyCode.F3);
+            case 'S':
+                return KeyEvent.ofKey(KeyCode.F4);
+            case 'A':
+                return KeyEvent.ofKey(KeyCode.UP);
+            case 'B':
+                return KeyEvent.ofKey(KeyCode.DOWN);
+            case 'C':
+                return KeyEvent.ofKey(KeyCode.RIGHT);
+            case 'D':
+                return KeyEvent.ofKey(KeyCode.LEFT);
+            case 'H':
+                return KeyEvent.ofKey(KeyCode.HOME);
+            case 'F':
+                return KeyEvent.ofKey(KeyCode.END);
+            default:
+                return KeyEvent.ofKey(KeyCode.UNKNOWN);
+        }
     }
 
     private static Event parseMouseSGR(NonBlockingReader reader) throws IOException {
@@ -314,12 +369,21 @@ public final class EventParser {
         boolean isDrag = (button & 32) != 0;
         button = button & ~32;
 
-        MouseButton mouseButton = switch (button) {
-            case 0 -> MouseButton.LEFT;
-            case 1 -> MouseButton.MIDDLE;
-            case 2 -> MouseButton.RIGHT;
-            default -> MouseButton.NONE;
-        };
+        MouseButton mouseButton;
+        switch (button) {
+            case 0:
+                mouseButton = MouseButton.LEFT;
+                break;
+            case 1:
+                mouseButton = MouseButton.MIDDLE;
+                break;
+            case 2:
+                mouseButton = MouseButton.RIGHT;
+                break;
+            default:
+                mouseButton = MouseButton.NONE;
+                break;
+        }
 
         MouseEventKind kind;
         if (isRelease) {

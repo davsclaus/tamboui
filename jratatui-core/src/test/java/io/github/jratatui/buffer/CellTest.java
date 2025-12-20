@@ -23,7 +23,7 @@ class CellTest {
     @Test
     @DisplayName("Cell symbol creates new cell with new symbol")
     void symbol() {
-        var cell = Cell.EMPTY.symbol("X");
+        Cell cell = Cell.EMPTY.symbol("X");
         assertThat(cell.symbol()).isEqualTo("X");
         assertThat(cell.style()).isEqualTo(Style.EMPTY);
     }
@@ -31,8 +31,8 @@ class CellTest {
     @Test
     @DisplayName("Cell style creates new cell with new style")
     void style() {
-        var style = Style.EMPTY.fg(Color.RED);
-        var cell = Cell.EMPTY.style(style);
+        Style style = Style.EMPTY.fg(Color.RED);
+        Cell cell = Cell.EMPTY.style(style);
         assertThat(cell.symbol()).isEqualTo(" ");
         assertThat(cell.style()).isEqualTo(style);
     }
@@ -40,7 +40,7 @@ class CellTest {
     @Test
     @DisplayName("Cell reset returns EMPTY")
     void reset() {
-        var cell = new Cell("X", Style.EMPTY.fg(Color.RED));
+        Cell cell = new Cell("X", Style.EMPTY.fg(Color.RED));
         assertThat(cell.reset()).isEqualTo(Cell.EMPTY);
     }
 }

@@ -11,6 +11,7 @@ import io.github.jratatui.text.Line;
 import io.github.jratatui.text.Span;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,7 +20,7 @@ class AxisTest {
 
     @Test
     void defaults_creates_axis_with_zero_bounds() {
-        var axis = Axis.defaults();
+        Axis axis = Axis.defaults();
 
         assertThat(axis.min()).isEqualTo(0.0);
         assertThat(axis.max()).isEqualTo(0.0);
@@ -30,7 +31,7 @@ class AxisTest {
 
     @Test
     void builder_title_string() {
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .title("X Axis")
             .build();
 
@@ -40,8 +41,8 @@ class AxisTest {
 
     @Test
     void builder_title_line() {
-        var line = Line.from("Y Axis");
-        var axis = Axis.builder()
+        Line line = Line.from("Y Axis");
+        Axis axis = Axis.builder()
             .title(line)
             .build();
 
@@ -51,7 +52,7 @@ class AxisTest {
 
     @Test
     void builder_title_spans() {
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .title(Span.styled("X", Style.EMPTY.fg(Color.RED)), Span.raw(" Axis"))
             .build();
 
@@ -61,7 +62,7 @@ class AxisTest {
 
     @Test
     void builder_title_null_clears_title() {
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .title("Test")
             .title((String) null)
             .build();
@@ -71,7 +72,7 @@ class AxisTest {
 
     @Test
     void builder_bounds_min_max() {
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .bounds(0, 100)
             .build();
 
@@ -82,7 +83,7 @@ class AxisTest {
 
     @Test
     void builder_bounds_array() {
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .bounds(new double[] {-50, 50})
             .build();
 
@@ -93,7 +94,7 @@ class AxisTest {
 
     @Test
     void builder_bounds_null_keeps_default() {
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .bounds(null)
             .build();
 
@@ -103,7 +104,7 @@ class AxisTest {
 
     @Test
     void builder_labels_strings() {
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .labels("0", "25", "50", "75", "100")
             .build();
 
@@ -115,10 +116,10 @@ class AxisTest {
 
     @Test
     void builder_labels_spans() {
-        var span1 = Span.styled("Min", Style.EMPTY.fg(Color.GREEN));
-        var span2 = Span.styled("Max", Style.EMPTY.fg(Color.RED));
+        Span span1 = Span.styled("Min", Style.EMPTY.fg(Color.GREEN));
+        Span span2 = Span.styled("Max", Style.EMPTY.fg(Color.RED));
 
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .labels(span1, span2)
             .build();
 
@@ -129,9 +130,9 @@ class AxisTest {
 
     @Test
     void builder_labels_list() {
-        var labels = List.of(Span.raw("A"), Span.raw("B"), Span.raw("C"));
+        List<Span> labels = Arrays.asList(Span.raw("A"), Span.raw("B"), Span.raw("C"));
 
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .labels(labels)
             .build();
 
@@ -140,7 +141,7 @@ class AxisTest {
 
     @Test
     void builder_labels_null_clears_labels() {
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .labels("1", "2", "3")
             .labels((String[]) null)
             .build();
@@ -150,7 +151,7 @@ class AxisTest {
 
     @Test
     void builder_addLabel_string() {
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .addLabel("First")
             .addLabel("Second")
             .build();
@@ -162,9 +163,9 @@ class AxisTest {
 
     @Test
     void builder_addLabel_span() {
-        var span = Span.styled("Label", Style.EMPTY.fg(Color.CYAN));
+        Span span = Span.styled("Label", Style.EMPTY.fg(Color.CYAN));
 
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .addLabel(span)
             .build();
 
@@ -174,9 +175,9 @@ class AxisTest {
 
     @Test
     void builder_style() {
-        var style = Style.EMPTY.fg(Color.MAGENTA);
+        Style style = Style.EMPTY.fg(Color.MAGENTA);
 
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .style(style)
             .build();
 
@@ -185,14 +186,14 @@ class AxisTest {
 
     @Test
     void style_returns_empty_when_null() {
-        var axis = Axis.builder().build();
+        Axis axis = Axis.builder().build();
 
         assertThat(axis.style()).isEqualTo(Style.EMPTY);
     }
 
     @Test
     void builder_labelsAlignment() {
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .labelsAlignment(Alignment.CENTER)
             .build();
 
@@ -201,7 +202,7 @@ class AxisTest {
 
     @Test
     void builder_labelsAlignment_null_defaults_to_left() {
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .labelsAlignment(null)
             .build();
 
@@ -210,11 +211,11 @@ class AxisTest {
 
     @Test
     void bounds_returns_clone() {
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .bounds(0, 100)
             .build();
 
-        var bounds = axis.bounds();
+        double[] bounds = axis.bounds();
         bounds[0] = 999;
 
         // Original should not be modified
@@ -223,11 +224,11 @@ class AxisTest {
 
     @Test
     void labels_returns_immutable_list() {
-        var axis = Axis.builder()
+        Axis axis = Axis.builder()
             .labels("A", "B", "C")
             .build();
 
-        var labels = axis.labels();
+        List<Span> labels = axis.labels();
 
         org.junit.jupiter.api.Assertions.assertThrows(
             UnsupportedOperationException.class,

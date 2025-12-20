@@ -10,7 +10,15 @@ import io.github.jratatui.style.Style;
 /**
  * A string with a single style applied. The smallest styled text unit.
  */
-public record Span(String content, Style style) {
+public final class Span {
+
+    private final String content;
+    private final Style style;
+
+    public Span(String content, Style style) {
+        this.content = content;
+        this.style = style;
+    }
 
     public static Span raw(String content) {
         return new Span(content, Style.EMPTY);
@@ -110,5 +118,37 @@ public record Span(String content, Style style) {
 
     public Span gray() {
         return fg(Color.GRAY);
+    }
+
+    public String content() {
+        return content;
+    }
+
+    public Style style() {
+        return style;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Span)) {
+            return false;
+        }
+        Span span = (Span) o;
+        return content.equals(span.content) && style.equals(span.style);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = content.hashCode();
+        result = 31 * result + style.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Span[content=%s, style=%s]", content, style);
     }
 }

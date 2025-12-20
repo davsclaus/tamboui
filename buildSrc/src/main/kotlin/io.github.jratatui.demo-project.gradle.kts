@@ -1,3 +1,5 @@
+import gradle.kotlin.dsl.accessors._d7c1cb8291fcf7e869bfba85a0dc6ae2.java
+
 plugins {
     id("io.github.jratatui.java-base")
     application
@@ -11,8 +13,14 @@ dependencies {
 }
 
 tasks.named<JavaExec>("run") {
-    standardInput = System.`in`
+    enabled = false
 }
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
 
 graalvmNative {
     binaries {

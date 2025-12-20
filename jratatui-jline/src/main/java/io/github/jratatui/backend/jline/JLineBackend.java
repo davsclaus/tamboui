@@ -229,20 +229,30 @@ public class JLineBackend implements Backend {
     }
 
     private String colorToAnsi(Color color, boolean foreground) {
-        return switch (color) {
-            case Color.Reset() -> foreground ? "39" : "49";
-            case Color.Ansi(AnsiColor c) -> String.valueOf(foreground ? c.fgCode() : c.bgCode());
-            case Color.Indexed(int idx) -> (foreground ? "38;5;" : "48;5;") + idx;
-            case Color.Rgb(int r, int g, int b) -> (foreground ? "38;2;" : "48;2;") + r + ";" + g + ";" + b;
-        };
+        if (color instanceof Color.Reset) {
+            return foreground ? "39" : "49";
+        } else if (color instanceof Color.Ansi) {
+            AnsiColor c = ((Color.Ansi) color).color();
+            return String.valueOf(foreground ? c.fgCode() : c.bgCode());
+        } else if (color instanceof Color.Indexed) {
+            int idx = ((Color.Indexed) color).index();
+            return (foreground ? "38;5;" : "48;5;") + idx;
+        } else if (color instanceof Color.Rgb) {
+            Color.Rgb rgb = (Color.Rgb) color;
+            return (foreground ? "38;2;" : "48;2;") + rgb.r() + ";" + rgb.g() + ";" + rgb.b();
+        }
+        return "";
     }
 
     private String underlineColorToAnsi(Color color) {
-        return switch (color) {
-            case Color.Indexed(int idx) -> "58;5;" + idx;
-            case Color.Rgb(int r, int g, int b) -> "58;2;" + r + ";" + g + ";" + b;
-            default -> "";
-        };
+        if (color instanceof Color.Indexed) {
+            int idx = ((Color.Indexed) color).index();
+            return "58;5;" + idx;
+        } else if (color instanceof Color.Rgb) {
+            Color.Rgb rgb = (Color.Rgb) color;
+            return "58;2;" + rgb.r() + ";" + rgb.g() + ";" + rgb.b();
+        }
+        return "";
     }
 
     /**

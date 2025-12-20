@@ -21,7 +21,7 @@ import java.util.Optional;
  * characters to show progress. It's more compact and suitable for status bars.
  *
  * <pre>{@code
- * var gauge = LineGauge.builder()
+ * LineGauge gauge = LineGauge.builder()
  *     .ratio(0.75)
  *     .label("Progress: ")
  *     .lineSet(LineGauge.THICK)
@@ -121,14 +121,51 @@ public final class LineGauge implements Widget {
     /**
      * Defines the characters used for filled and unfilled portions of the line gauge.
      */
-    public record LineSet(String unfilled, String filled) {
-        public LineSet {
+    public static final class LineSet {
+        private final String unfilled;
+        private final String filled;
+
+        public LineSet(String unfilled, String filled) {
             if (unfilled == null || unfilled.isEmpty()) {
                 throw new IllegalArgumentException("Unfilled character cannot be null or empty");
             }
             if (filled == null || filled.isEmpty()) {
                 throw new IllegalArgumentException("Filled character cannot be null or empty");
             }
+            this.unfilled = unfilled;
+            this.filled = filled;
+        }
+
+        public String unfilled() {
+            return unfilled;
+        }
+
+        public String filled() {
+            return filled;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof LineSet)) {
+                return false;
+            }
+            LineSet lineSet = (LineSet) o;
+            return unfilled.equals(lineSet.unfilled) && filled.equals(lineSet.filled);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = unfilled.hashCode();
+            result = 31 * result + filled.hashCode();
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("LineSet[unfilled=%s, filled=%s]", unfilled, filled);
         }
     }
 

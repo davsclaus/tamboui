@@ -74,12 +74,19 @@ public class TuiDemo {
         }
 
         // Handle different event types
-        return switch (event) {
-            case KeyEvent k -> handleKeyEvent(k);
-            case MouseEvent m -> handleMouseEvent(m);
-            case TickEvent t -> handleTickEvent(t);
-            case ResizeEvent r -> handleResizeEvent(r);
-        };
+        if (event instanceof KeyEvent) {
+            return handleKeyEvent((KeyEvent) event);
+        }
+        if (event instanceof MouseEvent) {
+            return handleMouseEvent((MouseEvent) event);
+        }
+        if (event instanceof TickEvent) {
+            return handleTickEvent((TickEvent) event);
+        }
+        if (event instanceof ResizeEvent) {
+            return handleResizeEvent((ResizeEvent) event);
+        }
+        return true;
     }
 
     private boolean handleKeyEvent(KeyEvent k) {

@@ -14,7 +14,7 @@ package io.github.jratatui.widgets.scrollbar;
  *
  * <pre>{@code
  * // Create state for a list of 100 items
- * var state = new ScrollbarState()
+ * ScrollbarState state = new ScrollbarState()
  *     .contentLength(100)
  *     .position(0);
  *

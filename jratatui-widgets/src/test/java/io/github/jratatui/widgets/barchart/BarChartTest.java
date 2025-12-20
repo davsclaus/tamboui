@@ -20,7 +20,7 @@ class BarChartTest {
     @Test
     @DisplayName("Bar creates with value")
     void barCreatesWithValue() {
-        var bar = Bar.of(75);
+        Bar bar = Bar.of(75);
         assertThat(bar.value()).isEqualTo(75);
         assertThat(bar.label()).isEmpty();
     }
@@ -28,7 +28,7 @@ class BarChartTest {
     @Test
     @DisplayName("Bar creates with value and label")
     void barCreatesWithValueAndLabel() {
-        var bar = Bar.of(75, "Sales");
+        Bar bar = Bar.of(75, "Sales");
         assertThat(bar.value()).isEqualTo(75);
         assertThat(bar.label()).isPresent();
         assertThat(bar.label().get().rawContent()).isEqualTo("Sales");
@@ -37,7 +37,7 @@ class BarChartTest {
     @Test
     @DisplayName("Bar builder with all options")
     void barBuilderWithAllOptions() {
-        var bar = Bar.builder()
+        Bar bar = Bar.builder()
             .value(100)
             .label("Test")
             .textValue("100%")
@@ -55,21 +55,21 @@ class BarChartTest {
     @Test
     @DisplayName("Bar displayValue uses textValue when set")
     void barDisplayValueUsesTextValue() {
-        var bar = Bar.builder().value(50).textValue("50%").build();
+        Bar bar = Bar.builder().value(50).textValue("50%").build();
         assertThat(bar.displayValue()).isEqualTo("50%");
     }
 
     @Test
     @DisplayName("Bar displayValue uses numeric value when textValue not set")
     void barDisplayValueUsesNumeric() {
-        var bar = Bar.of(50);
+        Bar bar = Bar.of(50);
         assertThat(bar.displayValue()).isEqualTo("50");
     }
 
     @Test
     @DisplayName("BarGroup creates from values")
     void barGroupCreatesFromValues() {
-        var group = BarGroup.of(10, 20, 30);
+        BarGroup group = BarGroup.of(10, 20, 30);
         assertThat(group.size()).isEqualTo(3);
         assertThat(group.maxValue()).isEqualTo(30);
     }
@@ -77,7 +77,7 @@ class BarChartTest {
     @Test
     @DisplayName("BarGroup creates from bars")
     void barGroupCreatesFromBars() {
-        var group = BarGroup.of(
+        BarGroup group = BarGroup.of(
             Bar.of(10, "A"),
             Bar.of(20, "B")
         );
@@ -88,7 +88,7 @@ class BarChartTest {
     @Test
     @DisplayName("BarGroup creates with label")
     void barGroupCreatesWithLabel() {
-        var group = BarGroup.of("Q1",
+        BarGroup group = BarGroup.of("Q1",
             Bar.of(100, "Jan"),
             Bar.of(150, "Feb")
         );
@@ -99,7 +99,7 @@ class BarChartTest {
     @Test
     @DisplayName("BarGroup builder")
     void barGroupBuilder() {
-        var group = BarGroup.builder()
+        BarGroup group = BarGroup.builder()
             .label("Test")
             .addBar(10)
             .addBar(20, "B")
@@ -113,14 +113,14 @@ class BarChartTest {
     @Test
     @DisplayName("BarChart renders vertical bars")
     void rendersVerticalBars() {
-        var chart = BarChart.builder()
+        BarChart chart = BarChart.builder()
             .data(BarGroup.of(8))
             .max(8)
             .barWidth(1)
             .barGap(0)
             .build();
-        var area = new Rect(0, 0, 3, 3);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 3, 3);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -133,13 +133,13 @@ class BarChartTest {
     @Test
     @DisplayName("BarChart renders half-height bar")
     void rendersHalfHeightBar() {
-        var chart = BarChart.builder()
+        BarChart chart = BarChart.builder()
             .data(BarGroup.of(4))
             .max(8)
             .barWidth(1)
             .build();
-        var area = new Rect(0, 0, 3, 4);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 3, 4);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -151,14 +151,14 @@ class BarChartTest {
     @Test
     @DisplayName("BarChart renders multiple bars")
     void rendersMultipleBars() {
-        var chart = BarChart.builder()
+        BarChart chart = BarChart.builder()
             .data(BarGroup.of(4, 8))
             .max(8)
             .barWidth(1)
             .barGap(1)
             .build();
-        var area = new Rect(0, 0, 5, 4);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 5, 4);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -173,13 +173,13 @@ class BarChartTest {
     @Test
     @DisplayName("BarChart renders with bar style")
     void rendersWithBarStyle() {
-        var chart = BarChart.builder()
+        BarChart chart = BarChart.builder()
             .data(BarGroup.of(8))
             .max(8)
             .barStyle(Style.EMPTY.fg(Color.CYAN))
             .build();
-        var area = new Rect(0, 0, 3, 3);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 3, 3);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -189,13 +189,13 @@ class BarChartTest {
     @Test
     @DisplayName("BarChart renders with block")
     void rendersWithBlock() {
-        var chart = BarChart.builder()
+        BarChart chart = BarChart.builder()
             .data(BarGroup.of(8))
             .max(8)
             .block(Block.bordered())
             .build();
-        var area = new Rect(0, 0, 5, 5);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 5, 5);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -209,14 +209,14 @@ class BarChartTest {
     @Test
     @DisplayName("BarChart renders horizontal bars")
     void rendersHorizontalBars() {
-        var chart = BarChart.builder()
+        BarChart chart = BarChart.builder()
             .data(BarGroup.of(Bar.of(8, "A")))
             .max(8)
             .direction(Direction.HORIZONTAL)
             .barWidth(1)
             .build();
-        var area = new Rect(0, 0, 10, 3);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 10, 3);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -236,7 +236,7 @@ class BarChartTest {
     @Test
     @DisplayName("BarChart with multiple groups")
     void withMultipleGroups() {
-        var chart = BarChart.builder()
+        BarChart chart = BarChart.builder()
             .data(
                 BarGroup.of(4),
                 BarGroup.of(8)
@@ -246,8 +246,8 @@ class BarChartTest {
             .barGap(0)
             .groupGap(1)
             .build();
-        var area = new Rect(0, 0, 5, 4);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 5, 4);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -262,9 +262,9 @@ class BarChartTest {
     @Test
     @DisplayName("BarChart handles empty data")
     void handlesEmptyData() {
-        var chart = BarChart.builder().build();
-        var area = new Rect(0, 0, 5, 5);
-        var buffer = Buffer.empty(area);
+        BarChart chart = BarChart.builder().build();
+        Rect area = new Rect(0, 0, 5, 5);
+        Buffer buffer = Buffer.empty(area);
 
         // Should not throw
         chart.render(area, buffer);
@@ -273,11 +273,11 @@ class BarChartTest {
     @Test
     @DisplayName("BarChart handles empty area")
     void handlesEmptyArea() {
-        var chart = BarChart.builder()
+        BarChart chart = BarChart.builder()
             .data(BarGroup.of(1, 2, 3))
             .build();
-        var area = new Rect(0, 0, 0, 0);
-        var buffer = Buffer.empty(new Rect(0, 0, 5, 5));
+        Rect area = new Rect(0, 0, 0, 0);
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 5, 5));
 
         // Should not throw
         chart.render(area, buffer);
@@ -286,13 +286,13 @@ class BarChartTest {
     @Test
     @DisplayName("BarChart with wider bars")
     void withWiderBars() {
-        var chart = BarChart.builder()
+        BarChart chart = BarChart.builder()
             .data(BarGroup.of(8))
             .max(8)
             .barWidth(3)
             .build();
-        var area = new Rect(0, 0, 5, 3);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 5, 3);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -305,8 +305,8 @@ class BarChartTest {
     @Test
     @DisplayName("BarSet NINE_LEVELS has correct symbols")
     void barSetNineLevels() {
-        var set = BarChart.BarSet.NINE_LEVELS;
-        var symbols = set.symbols();
+        BarChart.BarSet set = BarChart.BarSet.NINE_LEVELS;
+        String[] symbols = set.symbols();
 
         assertThat(symbols).hasSize(9);
         assertThat(symbols[0]).isEqualTo(" ");
@@ -316,7 +316,7 @@ class BarChartTest {
     @Test
     @DisplayName("BarSet HORIZONTAL has correct symbols")
     void barSetHorizontal() {
-        var set = BarChart.BarSet.HORIZONTAL;
+        BarChart.BarSet set = BarChart.BarSet.HORIZONTAL;
 
         assertThat(set.empty()).isEqualTo(" ");
         assertThat(set.full()).isEqualTo("█");
@@ -326,13 +326,13 @@ class BarChartTest {
     @Test
     @DisplayName("BarChart auto-scales to max value")
     void autoScalesToMaxValue() {
-        var chart = BarChart.builder()
+        BarChart chart = BarChart.builder()
             .data(BarGroup.of(50, 100))
             .barWidth(1)
             .barGap(1)
             .build();
-        var area = new Rect(0, 0, 5, 4);
-        var buffer = Buffer.empty(area);
+        Rect area = new Rect(0, 0, 5, 4);
+        Buffer buffer = Buffer.empty(area);
 
         chart.render(area, buffer);
 
@@ -344,7 +344,7 @@ class BarChartTest {
     @Test
     @DisplayName("Bar value cannot be negative")
     void barValueCannotBeNegative() {
-        var bar = Bar.builder().value(-10).build();
+        Bar bar = Bar.builder().value(-10).build();
         assertThat(bar.value()).isEqualTo(0);
     }
 }

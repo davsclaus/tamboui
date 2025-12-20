@@ -21,10 +21,10 @@ class TabsTest {
     @Test
     @DisplayName("Tabs renders basic content")
     void rendersBasicContent() {
-        var tabs = Tabs.from("Tab1", "Tab2", "Tab3");
-        var area = new Rect(0, 0, 30, 1);
-        var buffer = Buffer.empty(area);
-        var state = new TabsState();
+        Tabs tabs = Tabs.from("Tab1", "Tab2", "Tab3");
+        Rect area = new Rect(0, 0, 30, 1);
+        Buffer buffer = Buffer.empty(area);
+        TabsState state = new TabsState();
 
         tabs.render(area, buffer, state);
 
@@ -37,13 +37,13 @@ class TabsTest {
     @Test
     @DisplayName("Tabs renders with divider")
     void rendersWithDivider() {
-        var tabs = Tabs.builder()
+        Tabs tabs = Tabs.builder()
             .titles("A", "B")
             .divider(" | ")
             .build();
-        var area = new Rect(0, 0, 20, 1);
-        var buffer = Buffer.empty(area);
-        var state = new TabsState();
+        Rect area = new Rect(0, 0, 20, 1);
+        Buffer buffer = Buffer.empty(area);
+        TabsState state = new TabsState();
 
         tabs.render(area, buffer, state);
 
@@ -58,13 +58,13 @@ class TabsTest {
     @Test
     @DisplayName("Tabs renders with custom divider")
     void rendersWithCustomDivider() {
-        var tabs = Tabs.builder()
+        Tabs tabs = Tabs.builder()
             .titles("X", "Y")
             .divider(" - ")
             .build();
-        var area = new Rect(0, 0, 20, 1);
-        var buffer = Buffer.empty(area);
-        var state = new TabsState();
+        Rect area = new Rect(0, 0, 20, 1);
+        Buffer buffer = Buffer.empty(area);
+        TabsState state = new TabsState();
 
         tabs.render(area, buffer, state);
 
@@ -76,15 +76,15 @@ class TabsTest {
     @Test
     @DisplayName("Tabs renders with selection")
     void rendersWithSelection() {
-        var highlightStyle = Style.EMPTY.fg(Color.YELLOW);
-        var tabs = Tabs.builder()
+        Style highlightStyle = Style.EMPTY.fg(Color.YELLOW);
+        Tabs tabs = Tabs.builder()
             .titles("First", "Second")
             .highlightStyle(highlightStyle)
             .divider("|")
             .build();
-        var area = new Rect(0, 0, 20, 1);
-        var buffer = Buffer.empty(area);
-        var state = new TabsState(1); // Select second tab
+        Rect area = new Rect(0, 0, 20, 1);
+        Buffer buffer = Buffer.empty(area);
+        TabsState state = new TabsState(1); // Select second tab
 
         tabs.render(area, buffer, state);
 
@@ -96,14 +96,14 @@ class TabsTest {
     @Test
     @DisplayName("Tabs with block")
     void withBlock() {
-        var tabs = Tabs.builder()
+        Tabs tabs = Tabs.builder()
             .titles("Tab1")
             .block(Block.bordered())
             .divider("")
             .build();
-        var area = new Rect(0, 0, 15, 3);
-        var buffer = Buffer.empty(area);
-        var state = new TabsState();
+        Rect area = new Rect(0, 0, 15, 3);
+        Buffer buffer = Buffer.empty(area);
+        TabsState state = new TabsState();
 
         tabs.render(area, buffer, state);
 
@@ -116,14 +116,14 @@ class TabsTest {
     @Test
     @DisplayName("Tabs with padding")
     void withPadding() {
-        var tabs = Tabs.builder()
+        Tabs tabs = Tabs.builder()
             .titles("A", "B")
             .divider("|")
             .padding(" ", " ")
             .build();
-        var area = new Rect(0, 0, 20, 1);
-        var buffer = Buffer.empty(area);
-        var state = new TabsState();
+        Rect area = new Rect(0, 0, 20, 1);
+        Buffer buffer = Buffer.empty(area);
+        TabsState state = new TabsState();
 
         tabs.render(area, buffer, state);
 
@@ -137,21 +137,21 @@ class TabsTest {
     @Test
     @DisplayName("Tabs size returns correct count")
     void sizeReturnsCount() {
-        var tabs = Tabs.from("A", "B", "C", "D");
+        Tabs tabs = Tabs.from("A", "B", "C", "D");
         assertThat(tabs.size()).isEqualTo(4);
     }
 
     @Test
     @DisplayName("Tabs titles accessor")
     void titlesAccessor() {
-        var tabs = Tabs.from("First", "Second");
+        Tabs tabs = Tabs.from("First", "Second");
         assertThat(tabs.titles()).hasSize(2);
     }
 
     @Test
     @DisplayName("Tabs from Line array")
     void fromLineArray() {
-        var tabs = Tabs.from(
+        Tabs tabs = Tabs.from(
             Line.from(Span.raw("Tab1").bold()),
             Line.from("Tab2")
         );
@@ -161,10 +161,10 @@ class TabsTest {
     @Test
     @DisplayName("Empty tabs renders nothing")
     void emptyTabs() {
-        var tabs = Tabs.builder().build();
-        var area = new Rect(0, 0, 20, 1);
-        var buffer = Buffer.empty(area);
-        var state = new TabsState();
+        Tabs tabs = Tabs.builder().build();
+        Rect area = new Rect(0, 0, 20, 1);
+        Buffer buffer = Buffer.empty(area);
+        TabsState state = new TabsState();
 
         tabs.render(area, buffer, state);
 
@@ -174,13 +174,13 @@ class TabsTest {
     @Test
     @DisplayName("Tabs truncates when area too small")
     void truncatesWhenTooSmall() {
-        var tabs = Tabs.builder()
+        Tabs tabs = Tabs.builder()
             .titles("VeryLongTabName", "Another")
             .divider("|")
             .build();
-        var area = new Rect(0, 0, 10, 1);
-        var buffer = Buffer.empty(area);
-        var state = new TabsState();
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
+        TabsState state = new TabsState();
 
         tabs.render(area, buffer, state);
 
@@ -191,14 +191,14 @@ class TabsTest {
     @Test
     @DisplayName("Tabs with styled divider")
     void styledDivider() {
-        var dividerSpan = Span.raw(" | ").fg(Color.DARK_GRAY);
-        var tabs = Tabs.builder()
+        Span dividerSpan = Span.raw(" | ").fg(Color.DARK_GRAY);
+        Tabs tabs = Tabs.builder()
             .titles("A", "B")
             .divider(dividerSpan)
             .build();
-        var area = new Rect(0, 0, 20, 1);
-        var buffer = Buffer.empty(area);
-        var state = new TabsState();
+        Rect area = new Rect(0, 0, 20, 1);
+        Buffer buffer = Buffer.empty(area);
+        TabsState state = new TabsState();
 
         tabs.render(area, buffer, state);
 
@@ -209,7 +209,7 @@ class TabsTest {
     @Test
     @DisplayName("Tabs builder addTitle")
     void builderAddTitle() {
-        var tabs = Tabs.builder()
+        Tabs tabs = Tabs.builder()
             .addTitle("First")
             .addTitle("Second")
             .addTitle(Line.from("Third"))

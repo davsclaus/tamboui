@@ -1,0 +1,288 @@
+/*
+ * Copyright (c) 2025 JRatatui Contributors
+ * SPDX-License-Identifier: MIT
+ */
+package io.github.jratatui.dsl.event;
+
+import io.github.jratatui.dsl.element.Element;
+import io.github.jratatui.dsl.element.StyledElement;
+import io.github.jratatui.dsl.focus.FocusManager;
+import io.github.jratatui.layout.Rect;
+import io.github.jratatui.tui.Keys;
+import io.github.jratatui.tui.event.Event;
+import io.github.jratatui.tui.event.KeyEvent;
+import io.github.jratatui.tui.event.MouseEvent;
+import io.github.jratatui.tui.event.MouseEventKind;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Routes events to elements based on focus and position.
+ * <p>
+ * Events are routed as follows:
+ * <ul>
+ *   <li>Key events go to the focused element</li>
+ *   <li>Mouse events go to the element at the mouse position</li>
+ *   <li>Tab/Shift+Tab navigate focus</li>
+ *   <li>Drag events are tracked and routed to the dragged element</li>
+ * </ul>
+ * <p>
+ * Events can be consumed by handlers to stop propagation.
+ */
+public final class EventRouter {
+
+    private final FocusManager focusManager;
+    private final List<Element> elements = new ArrayList<>();
+    private final java.util.IdentityHashMap<Element, Rect> elementAreas = new java.util.IdentityHashMap<>();
+
+    // Drag state
+    private Element draggingElement;
+    private DragHandler dragHandler;
+    private int dragStartX;
+    private int dragStartY;
+
+    public EventRouter(FocusManager focusManager) {
+        this.focusManager = focusManager;
+    }
+
+    /**
+     * Registers an element for event routing.
+     * Called during rendering to build the element list.
+     * The area is stored internally - elements don't need to track it.
+     */
+    public void registerElement(Element element, Rect area) {
+        elements.add(element);
+        elementAreas.put(element, area);
+        // Also set on StyledElement for backwards compatibility
+        if (element instanceof StyledElement) {
+            StyledElement<?> styled = (StyledElement<?>) element;
+            styled.setRenderedArea(area);
+        }
+    }
+
+    /**
+     * Gets the rendered area for an element.
+     */
+    private Rect getArea(Element element) {
+        return elementAreas.get(element);
+    }
+
+    /**
+     * Clears all registered elements.
+     * Should be called at the start of each render cycle.
+     */
+    public void clear() {
+        elements.clear();
+        elementAreas.clear();
+    }
+
+    /**
+     * Routes an event to the appropriate element(s).
+     *
+     * @param event the event to route
+     * @return HANDLED if any element handled the event, UNHANDLED otherwise
+     */
+    public EventResult route(Event event) {
+        if (event instanceof KeyEvent) {
+            return routeKeyEvent((KeyEvent) event);
+        }
+        if (event instanceof MouseEvent) {
+            return routeMouseEvent((MouseEvent) event);
+        }
+        return EventResult.UNHANDLED;
+    }
+
+    private EventResult routeKeyEvent(KeyEvent event) {
+        // Handle focus navigation first
+        if (Keys.isTab(event)) {
+            if (focusManager.focusNext()) {
+                return EventResult.HANDLED;
+            }
+            return EventResult.UNHANDLED;
+        }
+
+        if (Keys.isBackTab(event)) {
+            if (focusManager.focusPrevious()) {
+                return EventResult.HANDLED;
+            }
+            return EventResult.UNHANDLED;
+        }
+
+        // Escape cancels drag or clears focus
+        if (Keys.isEscape(event)) {
+            if (draggingElement != null) {
+                endDrag(-1, -1);
+                return EventResult.HANDLED;
+            }
+            if (focusManager.focusedId() != null) {
+                focusManager.clearFocus();
+                return EventResult.HANDLED;
+            }
+            return EventResult.UNHANDLED;
+        }
+
+        // Route to focused element first
+        String focusedId = focusManager.focusedId();
+        if (focusedId != null) {
+            for (Element element : elements) {
+                if (focusedId.equals(element.id())) {
+                    // Try element's handler
+                    EventResult result = element.handleKeyEvent(event, true);
+                    if (result.isHandled()) {
+                        return result;
+                    }
+                    // Try lambda handler
+                    KeyEventHandler handler = element.keyEventHandler();
+                    if (handler != null) {
+                        result = handler.handle(event);
+                        if (result.isHandled()) {
+                            return result;
+                        }
+                    }
+                }
+            }
+        }
+
+        // If not consumed, give all elements a chance to handle (for global hotkeys)
+        for (Element element : elements) {
+            if (focusedId == null || !focusedId.equals(element.id())) {
+                EventResult result = element.handleKeyEvent(event, false);
+                if (result.isHandled()) {
+                    return result;
+                }
+            }
+        }
+
+        return EventResult.UNHANDLED;
+    }
+
+    private EventResult routeMouseEvent(MouseEvent event) {
+        // Handle ongoing drag
+        if (draggingElement != null) {
+            if (event.kind() == MouseEventKind.DRAG) {
+                int deltaX = event.x() - dragStartX;
+                int deltaY = event.y() - dragStartY;
+                dragHandler.onDrag(event.x(), event.y(), deltaX, deltaY);
+                return EventResult.HANDLED;
+            }
+            if (event.kind() == MouseEventKind.RELEASE) {
+                endDrag(event.x(), event.y());
+                return EventResult.HANDLED;
+            }
+        }
+
+        // Handle new press - check for drag or focus
+        if (event.kind() == MouseEventKind.PRESS && event.isLeftButton()) {
+            // Find element at position (reverse order for z-ordering)
+            for (int i = elements.size() - 1; i >= 0; i--) {
+                Element element = elements.get(i);
+                Rect area = getArea(element);
+                if (area != null && area.contains(event.x(), event.y())) {
+                    // Focus the element first (before potential drag)
+                    boolean wasFocused = false;
+                    if (element.isFocusable() && element.id() != null) {
+                        focusManager.setFocus(element.id());
+                        wasFocused = true;
+                    }
+
+                    // Check if draggable
+                    if (element.isDraggable() && element instanceof StyledElement) {
+                        StyledElement<?> styled = (StyledElement<?>) element;
+                        DragHandler handler = styled.dragHandler();
+                        if (handler != null) {
+                            startDrag(element, handler, event.x(), event.y());
+                            return EventResult.HANDLED;
+                        }
+                    }
+
+                    // Route to element's handler
+                    EventResult result = element.handleMouseEvent(event);
+                    if (result.isHandled()) {
+                        return result;
+                    }
+                    MouseEventHandler handler = element.mouseEventHandler();
+                    if (handler != null) {
+                        result = handler.handle(event);
+                        if (result.isHandled()) {
+                            return result;
+                        }
+                    }
+
+                    // Only stop here if we actually did something (focused or had handlers)
+                    // Otherwise continue to check elements underneath
+                    if (wasFocused) {
+                        return EventResult.HANDLED;
+                    }
+                    // Continue checking other elements - this one didn't handle the click
+                }
+            }
+
+            // Clicked outside all elements - clear focus
+            focusManager.clearFocus();
+        }
+
+        // Route other mouse events to element at position
+        if (event.kind() == MouseEventKind.MOVE ||
+            event.kind() == MouseEventKind.SCROLL_UP ||
+            event.kind() == MouseEventKind.SCROLL_DOWN) {
+
+            for (int i = elements.size() - 1; i >= 0; i--) {
+                Element element = elements.get(i);
+                Rect area = getArea(element);
+                if (area != null && area.contains(event.x(), event.y())) {
+                    EventResult result = element.handleMouseEvent(event);
+                    if (result.isHandled()) {
+                        return result;
+                    }
+                    MouseEventHandler handler = element.mouseEventHandler();
+                    if (handler != null) {
+                        result = handler.handle(event);
+                        if (result.isHandled()) {
+                            return result;
+                        }
+                    }
+                }
+            }
+        }
+
+        return EventResult.UNHANDLED;
+    }
+
+    private void startDrag(Element element, DragHandler handler, int x, int y) {
+        this.draggingElement = element;
+        this.dragHandler = handler;
+        this.dragStartX = x;
+        this.dragStartY = y;
+        handler.onDragStart(x, y);
+    }
+
+    private void endDrag(int x, int y) {
+        if (dragHandler != null && x >= 0 && y >= 0) {
+            dragHandler.onDragEnd(x, y);
+        }
+        this.draggingElement = null;
+        this.dragHandler = null;
+    }
+
+    /**
+     * Returns whether a drag operation is in progress.
+     */
+    public boolean isDragging() {
+        return draggingElement != null;
+    }
+
+    /**
+     * Returns the element being dragged.
+     */
+    public Element draggingElement() {
+        return draggingElement;
+    }
+
+    /**
+     * Returns the number of registered elements (for debugging).
+     */
+    public int elementCount() {
+        return elements.size();
+    }
+}

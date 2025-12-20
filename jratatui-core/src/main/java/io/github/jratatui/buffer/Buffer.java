@@ -135,8 +135,9 @@ public final class Buffer {
      */
     public int setLine(int x, int y, Line line) {
         int col = x;
-        for (var span : line.spans()) {
-            col = setSpan(col, y, span);
+        List<Span> spans = line.spans();
+        for (int i = 0; i < spans.size(); i++) {
+            col = setSpan(col, y, spans.get(i));
         }
         return col;
     }

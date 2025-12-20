@@ -46,7 +46,7 @@ class KeyModifiersTest {
     @Test
     @DisplayName("of creates modifier with specified flags")
     void ofCreatesModifier() {
-        var mods = KeyModifiers.of(true, true, true);
+        KeyModifiers mods = KeyModifiers.of(true, true, true);
         assertThat(mods.ctrl()).isTrue();
         assertThat(mods.alt()).isTrue();
         assertThat(mods.shift()).isTrue();
@@ -55,12 +55,12 @@ class KeyModifiersTest {
     @Test
     @DisplayName("of with partial flags")
     void ofWithPartialFlags() {
-        var ctrlAlt = KeyModifiers.of(true, true, false);
+        KeyModifiers ctrlAlt = KeyModifiers.of(true, true, false);
         assertThat(ctrlAlt.ctrl()).isTrue();
         assertThat(ctrlAlt.alt()).isTrue();
         assertThat(ctrlAlt.shift()).isFalse();
 
-        var shiftOnly = KeyModifiers.of(false, false, true);
+        KeyModifiers shiftOnly = KeyModifiers.of(false, false, true);
         assertThat(shiftOnly.ctrl()).isFalse();
         assertThat(shiftOnly.alt()).isFalse();
         assertThat(shiftOnly.shift()).isTrue();

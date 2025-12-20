@@ -22,21 +22,21 @@ class MonthlyTest {
 
     @Test
     void ofCurrentMonthCreatesCalendar() {
-        var calendar = Monthly.ofCurrentMonth();
+        Monthly calendar = Monthly.ofCurrentMonth();
         assertThat(calendar).isNotNull();
     }
 
     @Test
     void ofCreatesCalendarForGivenDate() {
         LocalDate date = LocalDate.of(2025, 6, 15);
-        var calendar = Monthly.of(date, d -> Style.EMPTY);
+        Monthly calendar = Monthly.of(date, d -> Style.EMPTY);
         assertThat(calendar).isNotNull();
     }
 
     @Test
     void renderEmptyAreaDoesNothing() {
-        var calendar = Monthly.ofCurrentMonth();
-        var buffer = Buffer.empty(new Rect(0, 0, 0, 0));
+        Monthly calendar = Monthly.ofCurrentMonth();
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 0, 0));
 
         calendar.render(new Rect(0, 0, 0, 0), buffer);
         // Should not throw
@@ -46,17 +46,17 @@ class MonthlyTest {
     void renderBasicCalendarGrid() {
         // June 2025 - starts on Sunday
         LocalDate date = LocalDate.of(2025, 6, 15);
-        var calendar = Monthly.of(date, d -> Style.EMPTY);
+        Monthly calendar = Monthly.of(date, d -> Style.EMPTY);
 
         // Need at least 21 chars width (7 * 3 - 1) and 6 rows for grid
-        var buffer = Buffer.empty(new Rect(0, 0, 25, 8));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 25, 8));
         calendar.render(new Rect(0, 0, 25, 8), buffer);
 
         // Calendar should render something - check that buffer isn't empty
         boolean hasContent = false;
         for (int y = 0; y < 8; y++) {
             for (int x = 0; x < 25; x++) {
-                var cell = buffer.get(x, y);
+                io.github.jratatui.buffer.Cell cell = buffer.get(x, y);
                 if (!cell.symbol().equals(" ") && !cell.symbol().isEmpty()) {
                     hasContent = true;
                     break;
@@ -70,10 +70,10 @@ class MonthlyTest {
     @Test
     void renderWithMonthHeader() {
         LocalDate date = LocalDate.of(2025, 6, 15);
-        var calendar = Monthly.of(date, d -> Style.EMPTY)
+        Monthly calendar = Monthly.of(date, d -> Style.EMPTY)
             .showMonthHeader(Style.EMPTY.bold());
 
-        var buffer = Buffer.empty(new Rect(0, 0, 25, 10));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 25, 10));
         calendar.render(new Rect(0, 0, 25, 10), buffer);
 
         // Find "June" in the buffer
@@ -85,10 +85,10 @@ class MonthlyTest {
     @Test
     void renderWithWeekdaysHeader() {
         LocalDate date = LocalDate.of(2025, 6, 15);
-        var calendar = Monthly.of(date, d -> Style.EMPTY)
+        Monthly calendar = Monthly.of(date, d -> Style.EMPTY)
             .showWeekdaysHeader(Style.EMPTY.fg(Color.CYAN));
 
-        var buffer = Buffer.empty(new Rect(0, 0, 25, 10));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 25, 10));
         calendar.render(new Rect(0, 0, 25, 10), buffer);
 
         // Find weekday abbreviations in the buffer
@@ -99,11 +99,11 @@ class MonthlyTest {
     @Test
     void renderWithBothHeaders() {
         LocalDate date = LocalDate.of(2025, 6, 15);
-        var calendar = Monthly.of(date, d -> Style.EMPTY)
+        Monthly calendar = Monthly.of(date, d -> Style.EMPTY)
             .showMonthHeader(Style.EMPTY.bold())
             .showWeekdaysHeader(Style.EMPTY.fg(Color.CYAN));
 
-        var buffer = Buffer.empty(new Rect(0, 0, 25, 12));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 25, 12));
         calendar.render(new Rect(0, 0, 25, 12), buffer);
 
         // First row should have month
@@ -118,10 +118,10 @@ class MonthlyTest {
     @Test
     void renderWithBlock() {
         LocalDate date = LocalDate.of(2025, 6, 15);
-        var calendar = Monthly.of(date, d -> Style.EMPTY)
+        Monthly calendar = Monthly.of(date, d -> Style.EMPTY)
             .block(Block.bordered());
 
-        var buffer = Buffer.empty(new Rect(0, 0, 27, 12));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 27, 12));
         calendar.render(new Rect(0, 0, 27, 12), buffer);
 
         // Top-left corner should be border
@@ -134,22 +134,22 @@ class MonthlyTest {
         LocalDate date = LocalDate.of(2025, 6, 15);
         Style redBold = Style.EMPTY.fg(Color.RED).bold();
 
-        var calendar = Monthly.of(date, d -> {
+        Monthly calendar = Monthly.of(date, d -> {
             if (d.getDayOfMonth() == 15) {
                 return redBold;
             }
             return Style.EMPTY;
         });
 
-        var buffer = Buffer.empty(new Rect(0, 0, 25, 8));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 25, 8));
         calendar.render(new Rect(0, 0, 25, 8), buffer);
 
         // Find the "15" in the buffer and verify its style
         boolean foundStyledDay = false;
         for (int y = 0; y < 8; y++) {
             for (int x = 0; x < 24; x++) {
-                var cell = buffer.get(x, y);
-                var nextCell = buffer.get(x + 1, y);
+                io.github.jratatui.buffer.Cell cell = buffer.get(x, y);
+                io.github.jratatui.buffer.Cell nextCell = buffer.get(x + 1, y);
                 if (cell.symbol().equals("1") && nextCell.symbol().equals("5")) {
                     // Found "15" - check style
                     if (cell.style().fg().orElse(null) == Color.RED) {
@@ -170,10 +170,10 @@ class MonthlyTest {
         LocalDate date = LocalDate.of(2025, 6, 15);
         Style dimStyle = Style.EMPTY.dim();
 
-        var calendar = Monthly.of(date, d -> Style.EMPTY)
+        Monthly calendar = Monthly.of(date, d -> Style.EMPTY)
             .showSurrounding(dimStyle);
 
-        var buffer = Buffer.empty(new Rect(0, 0, 25, 8));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 25, 8));
         calendar.render(new Rect(0, 0, 25, 8), buffer);
 
         // The calendar should render something
@@ -186,13 +186,13 @@ class MonthlyTest {
         Style red = Style.EMPTY.fg(Color.RED);
         Style green = Style.EMPTY.fg(Color.GREEN);
 
-        var events = CalendarEventStore.empty()
+        CalendarEventStore events = CalendarEventStore.empty()
             .add(LocalDate.of(2025, 6, 15), red)
             .add(LocalDate.of(2025, 6, 25), green);
 
-        var calendar = Monthly.of(date, events);
+        Monthly calendar = Monthly.of(date, events);
 
-        var buffer = Buffer.empty(new Rect(0, 0, 25, 8));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 25, 8));
         calendar.render(new Rect(0, 0, 25, 8), buffer);
 
         assertThat(buffer).isNotNull();
@@ -202,16 +202,16 @@ class MonthlyTest {
     void firstDayOfWeekChangesDayOrder() {
         LocalDate date = LocalDate.of(2025, 6, 15);
 
-        var mondayFirst = Monthly.of(date, d -> Style.EMPTY)
+        Monthly mondayFirst = Monthly.of(date, d -> Style.EMPTY)
             .showWeekdaysHeader(Style.EMPTY)
             .firstDayOfWeek(DayOfWeek.MONDAY);
 
-        var sundayFirst = Monthly.of(date, d -> Style.EMPTY)
+        Monthly sundayFirst = Monthly.of(date, d -> Style.EMPTY)
             .showWeekdaysHeader(Style.EMPTY)
             .firstDayOfWeek(DayOfWeek.SUNDAY);
 
-        var buffer1 = Buffer.empty(new Rect(0, 0, 25, 10));
-        var buffer2 = Buffer.empty(new Rect(0, 0, 25, 10));
+        Buffer buffer1 = Buffer.empty(new Rect(0, 0, 25, 10));
+        Buffer buffer2 = Buffer.empty(new Rect(0, 0, 25, 10));
 
         mondayFirst.render(new Rect(0, 0, 25, 10), buffer1);
         sundayFirst.render(new Rect(0, 0, 25, 10), buffer2);
@@ -231,17 +231,17 @@ class MonthlyTest {
         LocalDate date = LocalDate.of(2025, 6, 15);
         Style defaultCyan = Style.EMPTY.fg(Color.CYAN);
 
-        var calendar = Monthly.of(date, d -> Style.EMPTY)
+        Monthly calendar = Monthly.of(date, d -> Style.EMPTY)
             .defaultStyle(defaultCyan);
 
-        var buffer = Buffer.empty(new Rect(0, 0, 25, 8));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 25, 8));
         calendar.render(new Rect(0, 0, 25, 8), buffer);
 
         // Find a day that should have the default style
         boolean foundStyledDay = false;
         for (int y = 0; y < 8; y++) {
             for (int x = 0; x < 25; x++) {
-                var cell = buffer.get(x, y);
+                io.github.jratatui.buffer.Cell cell = buffer.get(x, y);
                 if (Character.isDigit(cell.symbol().charAt(0))) {
                     if (cell.style().fg().orElse(null) == Color.CYAN) {
                         foundStyledDay = true;
@@ -262,7 +262,7 @@ class MonthlyTest {
         Style dim = Style.EMPTY.dim();
         Style white = Style.EMPTY.fg(Color.WHITE);
 
-        var calendar = Monthly.builder(date, d -> Style.EMPTY)
+        Monthly calendar = Monthly.builder(date, d -> Style.EMPTY)
             .monthHeaderStyle(red)
             .weekdaysHeaderStyle(cyan)
             .surroundingStyle(dim)
@@ -279,10 +279,10 @@ class MonthlyTest {
         // Test different months render correctly
         for (int month = 1; month <= 12; month++) {
             LocalDate date = LocalDate.of(2025, month, 15);
-            var calendar = Monthly.of(date, d -> Style.EMPTY)
+            Monthly calendar = Monthly.of(date, d -> Style.EMPTY)
                 .showMonthHeader(Style.EMPTY);
 
-            var buffer = Buffer.empty(new Rect(0, 0, 25, 10));
+            Buffer buffer = Buffer.empty(new Rect(0, 0, 25, 10));
             calendar.render(new Rect(0, 0, 25, 10), buffer);
 
             String header = extractBufferContent(buffer, 0, 0, 25, 1);
@@ -294,9 +294,9 @@ class MonthlyTest {
     void renderFebruaryLeapYear() {
         // 2024 is a leap year
         LocalDate date = LocalDate.of(2024, 2, 15);
-        var calendar = Monthly.of(date, d -> Style.EMPTY);
+        Monthly calendar = Monthly.of(date, d -> Style.EMPTY);
 
-        var buffer = Buffer.empty(new Rect(0, 0, 25, 8));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 25, 8));
         calendar.render(new Rect(0, 0, 25, 8), buffer);
 
         // Should contain day 29
@@ -308,9 +308,9 @@ class MonthlyTest {
     void renderFebruaryNonLeapYear() {
         // 2025 is not a leap year
         LocalDate date = LocalDate.of(2025, 2, 15);
-        var calendar = Monthly.of(date, d -> Style.EMPTY);
+        Monthly calendar = Monthly.of(date, d -> Style.EMPTY);
 
-        var buffer = Buffer.empty(new Rect(0, 0, 25, 8));
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 25, 8));
         calendar.render(new Rect(0, 0, 25, 8), buffer);
 
         // Should contain day 28 but not 29 in February context

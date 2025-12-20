@@ -16,7 +16,7 @@ class CalendarEventStoreTest {
 
     @Test
     void emptyStoreReturnsEmptyStyle() {
-        var store = CalendarEventStore.empty();
+        CalendarEventStore store = CalendarEventStore.empty();
 
         assertThat(store.isEmpty()).isTrue();
         assertThat(store.size()).isEqualTo(0);
@@ -26,7 +26,7 @@ class CalendarEventStoreTest {
     @Test
     void todayCreatesStoreWithTodayStyled() {
         Style redBold = Style.EMPTY.fg(Color.RED).bold();
-        var store = CalendarEventStore.today(redBold);
+        CalendarEventStore store = CalendarEventStore.today(redBold);
 
         assertThat(store.isEmpty()).isFalse();
         assertThat(store.size()).isEqualTo(1);
@@ -36,11 +36,11 @@ class CalendarEventStoreTest {
 
     @Test
     void addCreatesNewStoreWithDate() {
-        var store = CalendarEventStore.empty();
+        CalendarEventStore store = CalendarEventStore.empty();
         LocalDate christmas = LocalDate.of(2025, 12, 25);
         Style green = Style.EMPTY.fg(Color.GREEN);
 
-        var newStore = store.add(christmas, green);
+        CalendarEventStore newStore = store.add(christmas, green);
 
         // Original store unchanged (immutability)
         assertThat(store.isEmpty()).isTrue();
@@ -58,7 +58,7 @@ class CalendarEventStoreTest {
         LocalDate date2 = LocalDate.of(2025, 7, 4);
         LocalDate date3 = LocalDate.of(2025, 12, 31);
 
-        var store = CalendarEventStore.empty().addAll(yellow, date1, date2, date3);
+        CalendarEventStore store = CalendarEventStore.empty().addAll(yellow, date1, date2, date3);
 
         assertThat(store.size()).isEqualTo(3);
         assertThat(store.getStyle(date1)).isEqualTo(yellow);
@@ -72,7 +72,7 @@ class CalendarEventStoreTest {
         LocalDate start = LocalDate.of(2025, 6, 1);
         LocalDate end = LocalDate.of(2025, 6, 7);
 
-        var store = CalendarEventStore.empty().addRange(start, end, cyan);
+        CalendarEventStore store = CalendarEventStore.empty().addRange(start, end, cyan);
 
         assertThat(store.size()).isEqualTo(7);
         for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
@@ -91,7 +91,7 @@ class CalendarEventStoreTest {
         LocalDate newYear = LocalDate.of(2025, 1, 1);
         LocalDate july4 = LocalDate.of(2025, 7, 4);
 
-        var store = CalendarEventStore.today(red)
+        CalendarEventStore store = CalendarEventStore.today(red)
             .add(christmas, green)
             .add(newYear, blue)
             .add(july4, red);
@@ -106,7 +106,7 @@ class CalendarEventStoreTest {
     @Test
     void unstyledDateReturnsEmptyStyle() {
         Style red = Style.EMPTY.fg(Color.RED);
-        var store = CalendarEventStore.today(red);
+        CalendarEventStore store = CalendarEventStore.today(red);
 
         LocalDate unstyledDate = LocalDate.of(2000, 1, 1);
         assertThat(store.contains(unstyledDate)).isFalse();
@@ -119,7 +119,7 @@ class CalendarEventStoreTest {
         Style red = Style.EMPTY.fg(Color.RED);
         Style blue = Style.EMPTY.fg(Color.BLUE);
 
-        var store = CalendarEventStore.empty()
+        CalendarEventStore store = CalendarEventStore.empty()
             .add(date, red)
             .add(date, blue);
 
@@ -134,7 +134,7 @@ class CalendarEventStoreTest {
         LocalDate date = LocalDate.of(2025, 3, 15);
         Style magenta = Style.EMPTY.fg(Color.MAGENTA);
 
-        var store = CalendarEventStore.empty().addRange(date, date, magenta);
+        CalendarEventStore store = CalendarEventStore.empty().addRange(date, date, magenta);
 
         assertThat(store.size()).isEqualTo(1);
         assertThat(store.getStyle(date)).isEqualTo(magenta);

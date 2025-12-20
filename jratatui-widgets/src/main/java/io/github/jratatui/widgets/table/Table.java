@@ -11,8 +11,10 @@ import io.github.jratatui.layout.Rect;
 import io.github.jratatui.style.Style;
 import io.github.jratatui.text.Line;
 import io.github.jratatui.text.Text;
+import io.github.jratatui.text.Span;
 import io.github.jratatui.widgets.StatefulWidget;
 import io.github.jratatui.widgets.block.Block;
+import static io.github.jratatui.util.CollectionUtil.listCopyOf;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,7 +28,7 @@ import java.util.Optional;
  * row selection with highlighting, and scrolling for large datasets.
  *
  * <pre>{@code
- * var table = Table.builder()
+ * Table table = Table.builder()
  *     .header(Row.from("Name", "Age", "City").style(Style.EMPTY.bold()))
  *     .rows(List.of(
  *         Row.from("Alice", "30", "New York"),
@@ -60,8 +62,8 @@ public final class Table implements StatefulWidget<TableState> {
     private final HighlightSpacing highlightSpacing;
 
     private Table(Builder builder) {
-        this.rows = List.copyOf(builder.rows);
-        this.widths = List.copyOf(builder.widths);
+        this.rows = listCopyOf(builder.rows);
+        this.widths = listCopyOf(builder.widths);
         this.header = Optional.ofNullable(builder.header);
         this.footer = Optional.ofNullable(builder.footer);
         this.block = Optional.ofNullable(builder.block);
@@ -175,11 +177,15 @@ public final class Table implements StatefulWidget<TableState> {
     }
 
     private int calculateHighlightWidth(TableState state) {
-        return switch (highlightSpacing) {
-            case ALWAYS -> highlightSymbol.length();
-            case WHEN_SELECTED -> state.selected() != null ? highlightSymbol.length() : 0;
-            case NEVER -> 0;
-        };
+        switch (highlightSpacing) {
+            case ALWAYS:
+                return highlightSymbol.length();
+            case WHEN_SELECTED:
+                return state.selected() != null ? highlightSymbol.length() : 0;
+            case NEVER:
+            default:
+                return 0;
+        }
     }
 
     private List<Integer> calculateColumnWidths(int availableWidth) {
@@ -231,7 +237,9 @@ public final class Table implements StatefulWidget<TableState> {
 
                     // Render line content, truncated to column width
                     int col_x = x;
-                    for (var span : line.patchStyle(cellStyle).spans()) {
+                    List<Span> patchedSpans = line.patchStyle(cellStyle).spans();
+                    for (int spanIdx = 0; spanIdx < patchedSpans.size(); spanIdx++) {
+                        Span span = patchedSpans.get(spanIdx);
                         String text = span.content();
                         int remainingWidth = Math.min(text.length(), colWidth - (col_x - x));
                         if (remainingWidth > 0) {

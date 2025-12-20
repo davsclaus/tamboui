@@ -5,7 +5,8 @@ include(
     "jratatui-widgets",
     "jratatui-jline",
     "jratatui-tui",
-    "jratatui-picocli"
+    "jratatui-picocli",
+    "jratatui-dsl"
 )
 
 File("demos").listFiles()?.forEach {

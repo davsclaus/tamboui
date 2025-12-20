@@ -22,7 +22,7 @@ class StyleTest {
     @Test
     @DisplayName("Style fg sets foreground color")
     void fgColor() {
-        var style = Style.EMPTY.fg(Color.RED);
+        Style style = Style.EMPTY.fg(Color.RED);
         assertThat(style.fg()).contains(Color.RED);
         assertThat(style.bg()).isEmpty();
     }
@@ -30,7 +30,7 @@ class StyleTest {
     @Test
     @DisplayName("Style bg sets background color")
     void bgColor() {
-        var style = Style.EMPTY.bg(Color.BLUE);
+        Style style = Style.EMPTY.bg(Color.BLUE);
         assertThat(style.bg()).contains(Color.BLUE);
         assertThat(style.fg()).isEmpty();
     }
@@ -38,28 +38,28 @@ class StyleTest {
     @Test
     @DisplayName("Style bold adds BOLD modifier")
     void boldModifier() {
-        var style = Style.EMPTY.bold();
+        Style style = Style.EMPTY.bold();
         assertThat(style.addModifiers()).contains(Modifier.BOLD);
     }
 
     @Test
     @DisplayName("Style italic adds ITALIC modifier")
     void italicModifier() {
-        var style = Style.EMPTY.italic();
+        Style style = Style.EMPTY.italic();
         assertThat(style.addModifiers()).contains(Modifier.ITALIC);
     }
 
     @Test
     @DisplayName("Style underlined adds UNDERLINED modifier")
     void underlinedModifier() {
-        var style = Style.EMPTY.underlined();
+        Style style = Style.EMPTY.underlined();
         assertThat(style.addModifiers()).contains(Modifier.UNDERLINED);
     }
 
     @Test
     @DisplayName("Style chaining")
     void chaining() {
-        var style = Style.EMPTY
+        Style style = Style.EMPTY
             .fg(Color.RED)
             .bg(Color.BLACK)
             .bold()
@@ -73,10 +73,10 @@ class StyleTest {
     @Test
     @DisplayName("Style patch merges styles")
     void patch() {
-        var base = Style.EMPTY.fg(Color.RED).bold();
-        var patch = Style.EMPTY.bg(Color.BLUE).italic();
+        Style base = Style.EMPTY.fg(Color.RED).bold();
+        Style patch = Style.EMPTY.bg(Color.BLUE).italic();
 
-        var merged = base.patch(patch);
+        Style merged = base.patch(patch);
 
         assertThat(merged.fg()).contains(Color.RED);
         assertThat(merged.bg()).contains(Color.BLUE);
@@ -86,10 +86,10 @@ class StyleTest {
     @Test
     @DisplayName("Style patch overwrites colors")
     void patchOverwrites() {
-        var base = Style.EMPTY.fg(Color.RED);
-        var patch = Style.EMPTY.fg(Color.GREEN);
+        Style base = Style.EMPTY.fg(Color.RED);
+        Style patch = Style.EMPTY.fg(Color.GREEN);
 
-        var merged = base.patch(patch);
+        Style merged = base.patch(patch);
 
         assertThat(merged.fg()).contains(Color.GREEN);
     }

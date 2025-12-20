@@ -17,7 +17,7 @@ import java.util.Optional;
  * Contains data points (x, y coordinates) and rendering configuration.
  *
  * <pre>{@code
- * var dataset = Dataset.builder()
+ * Dataset dataset = Dataset.builder()
  *     .name("Temperature")
  *     .data(new double[][] {{0, 20}, {1, 22}, {2, 25}, {3, 23}})
  *     .graphType(GraphType.LINE)

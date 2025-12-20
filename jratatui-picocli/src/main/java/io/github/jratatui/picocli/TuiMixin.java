@@ -25,7 +25,7 @@ import java.time.Duration;
  *     @Override
  *     public Integer call() throws Exception {
  *         TuiConfig config = tuiOptions.toConfig();
- *         try (var runner = TuiRunner.create(config)) {
+ *         try (TuiRunner runner = TuiRunner.create(config)) {
  *             runner.run(...);
  *         }
  *         return 0;

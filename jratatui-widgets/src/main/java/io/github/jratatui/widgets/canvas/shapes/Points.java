@@ -18,7 +18,15 @@ import io.github.jratatui.widgets.canvas.Shape;
  *
  * @see Shape
  */
-public record Points(double[][] coords, Color color) implements Shape {
+public final class Points implements Shape {
+
+    private final double[][] coords;
+    private final Color color;
+
+    public Points(double[][] coords, Color color) {
+        this.coords = coords;
+        this.color = color;
+    }
 
     /**
      * Creates a points shape from coordinate pairs and a color.
@@ -59,5 +67,70 @@ public record Points(double[][] coords, Color color) implements Shape {
                     painter.paint(p.x(), p.y(), color));
             }
         }
+    }
+
+    public double[][] coords() {
+        return coords;
+    }
+
+    public Color color() {
+        return color;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Points)) {
+            return false;
+        }
+        Points points = (Points) o;
+        if (color == null ? points.color != null : !color.equals(points.color)) {
+            return false;
+        }
+        if (coords == points.coords) {
+            return true;
+        }
+        if (coords == null || points.coords == null || coords.length != points.coords.length) {
+            return false;
+        }
+        for (int i = 0; i < coords.length; i++) {
+            double[] a = coords[i];
+            double[] b = points.coords[i];
+            if (a == b) {
+                continue;
+            }
+            if (a == null || b == null || a.length != b.length) {
+                return false;
+            }
+            for (int j = 0; j < a.length; j++) {
+                if (Double.compare(a[j], b[j]) != 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = color != null ? color.hashCode() : 0;
+        if (coords != null) {
+            for (double[] arr : coords) {
+                if (arr != null) {
+                    for (double v : arr) {
+                        long bits = Double.doubleToLongBits(v);
+                        result = 31 * result + (int) (bits ^ (bits >>> 32));
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Points[color=%s, count=%d]", color, coords != null ? coords.length : 0);
     }
 }

@@ -35,14 +35,25 @@ public enum Modifier {
      * Returns the ANSI SGR code to disable this modifier.
      */
     public int resetCode() {
-        return switch (this) {
-            case BOLD, DIM -> 22;  // Both reset by 22
-            case ITALIC -> 23;
-            case UNDERLINED -> 24;
-            case SLOW_BLINK, RAPID_BLINK -> 25;
-            case REVERSED -> 27;
-            case HIDDEN -> 28;
-            case CROSSED_OUT -> 29;
-        };
+        switch (this) {
+            case BOLD:
+            case DIM:
+                return 22;  // Both reset by 22
+            case ITALIC:
+                return 23;
+            case UNDERLINED:
+                return 24;
+            case SLOW_BLINK:
+            case RAPID_BLINK:
+                return 25;
+            case REVERSED:
+                return 27;
+            case HIDDEN:
+                return 28;
+            case CROSSED_OUT:
+                return 29;
+            default:
+                return 0;
+        }
     }
 }

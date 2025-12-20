@@ -67,18 +67,23 @@ public class Context {
     }
 
     private static int calculateGridWidth(int width, Marker marker) {
-        return switch (marker) {
-            case BRAILLE -> width * 2;  // 2 dots horizontally per cell
-            default -> width;
-        };
+        switch (marker) {
+            case BRAILLE:
+                return width * 2;  // 2 dots horizontally per cell
+            default:
+                return width;
+        }
     }
 
     private static int calculateGridHeight(int height, Marker marker) {
-        return switch (marker) {
-            case BRAILLE -> height * 4;     // 4 dots vertically per cell
-            case HALF_BLOCK -> height * 2;  // 2 half-blocks per cell
-            default -> height;
-        };
+        switch (marker) {
+            case BRAILLE:
+                return height * 4;     // 4 dots vertically per cell
+            case HALF_BLOCK:
+                return height * 2;  // 2 half-blocks per cell
+            default:
+                return height;
+        }
     }
 
     /**
@@ -213,5 +218,27 @@ public class Context {
     /**
      * A text label at canvas coordinates.
      */
-    record Label(double x, double y, Line line) {}
+    static final class Label {
+        private final double x;
+        private final double y;
+        private final Line line;
+
+        Label(double x, double y, Line line) {
+            this.x = x;
+            this.y = y;
+            this.line = line;
+        }
+
+        double x() {
+            return x;
+        }
+
+        double y() {
+            return y;
+        }
+
+        Line line() {
+            return line;
+        }
+    }
 }
