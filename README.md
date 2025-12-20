@@ -244,23 +244,38 @@ try (var backend = new JLineBackend()) {
 }
 ```
 
-## Building
+## Building and Running Demos
+
+### Building the Project
 
 ```bash
-# Build the project
 ./gradlew build
-
-# Run demos
-./gradlew :demos:basic-demo:run
-./gradlew :demos:tui-demo:run
-./gradlew :demos:dsl-demo:run
-./gradlew :demos:picocli-demo:run
-./gradlew :demos:chart-demo:run
-./gradlew :demos:canvas-demo:run
-
-# Build native image (requires GraalVM)
-./gradlew :demos:basic-demo:nativeCompile
 ```
+
+### Running Demos
+
+To run the demos, you can either run them on the JVM or compile them to a native executable.
+
+#### JVM
+
+To run a demo on the JVM, first install the distribution and then execute the generated script.
+For example, to run the `sparkline-demo`:
+
+```bash
+./gradlew :demos:sparkline-demo:installDist
+./demos/sparkline-demo/build/install/sparkline-demo/bin/sparkline-demo
+```
+
+#### Native Image (requires GraalVM)
+
+To run as a native executable:
+
+```bash
+./gradlew :demos:sparkline-demo:nativeCompile
+./demos/sparkline-demo/build/native/nativeCompile/sparkline-demo
+```
+
+Replace `sparkline-demo` with the name of any other demo (e.g., `basic-demo`, `tui-demo`, `dsl-demo`).
 
 ## Widgets
 
