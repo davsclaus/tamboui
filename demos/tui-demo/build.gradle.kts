@@ -5,7 +5,7 @@ plugins {
 description = "Demo showcasing the TuiRunner framework"
 
 dependencies {
-    implementation(project(":jratatui-tui"))
+    implementation(projects.jratatuiTui)
 }
 
 application {

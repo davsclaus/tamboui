@@ -2,10 +2,10 @@ plugins {
     id("io.github.jratatui.java-library")
 }
 
-description = "High-level TUI application framework for JRatatui"
+description = "Fluent DSL for building TUI applications with JRatatui"
 
 dependencies {
     api(projects.jratatuiCore)
     api(projects.jratatuiWidgets)
-    api(projects.jratatuiJline)
+    api(projects.jratatuiTui)
 }

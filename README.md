@@ -25,6 +25,7 @@ JRatatui brings the immediate-mode TUI paradigm from Rust to the Java ecosystem.
 | `jratatui-widgets` | All widget implementations (see below) |
 | `jratatui-jline` | JLine 3 terminal backend |
 | `jratatui-tui` | High-level TUI framework with TuiRunner, event handling, and key helpers |
+| `jratatui-dsl` | Fluent DSL for declarative UI construction with components and focus management |
 | `jratatui-picocli` | Optional PicoCLI integration for CLI argument parsing |
 | `demos/*` | Demo applications showcasing widgets and features |
 
@@ -118,6 +119,110 @@ public class MyApp extends TuiCommand {
 }
 ```
 
+### Using the DSL (Declarative)
+
+The `jratatui-dsl` module provides a fluent DSL for declarative UI construction:
+
+```java
+import static io.github.jratatui.dsl.Dsl.*;
+import io.github.jratatui.dsl.app.DslApp;
+import io.github.jratatui.dsl.element.Element;
+
+public class HelloDsl extends DslApp {
+
+    @Override
+    protected Element render() {
+        return panel("Hello",
+            text("Welcome to JRatatui DSL!").bold().cyan(),
+            spacer(),
+            text("Press 'q' to quit").dim()
+        ).rounded();
+    }
+
+    public static void main(String[] args) throws Exception {
+        new HelloDsl().run();
+    }
+}
+```
+
+#### DSL Elements
+
+| Element | Factory Method | Description |
+|---------|----------------|-------------|
+| Text | `text("Hello")` | Styled text content |
+| Panel | `panel("Title", ...)` | Bordered container with title |
+| Row | `row(a, b, c)` | Horizontal layout |
+| Column | `column(a, b, c)` | Vertical layout |
+| Spacer | `spacer()` | Flexible empty space |
+| Gauge | `gauge(0.75)` | Progress bar |
+| LineGauge | `lineGauge(50)` | Single-line progress indicator |
+| Sparkline | `sparkline(1,2,3,4,5)` | Mini data chart |
+| List | `list("A", "B", "C")` | Selectable list |
+| Table | `table()` | Data table with rows/columns |
+| Tabs | `tabs("Home", "Settings")` | Tab bar |
+| TextInput | `textInput(state)` | Text input field |
+| BarChart | `barChart(10, 20, 30)` | Bar chart |
+| Chart | `chart()` | Line/scatter plots |
+| Canvas | `canvas()` | Drawing surface |
+| Calendar | `calendar()` | Monthly calendar |
+| Scrollbar | `scrollbar()` | Scroll position indicator |
+
+#### DSL Examples
+
+```java
+// Progress with color coding
+gauge(0.75)
+    .label("Loading...")
+    .gaugeColor(Color.GREEN)
+    .title("Progress")
+    .rounded()
+
+// Sparkline chart
+sparkline(cpuHistory)
+    .color(Color.CYAN)
+    .title("CPU Usage")
+    .rounded()
+
+// Selectable list
+list("Option 1", "Option 2", "Option 3")
+    .state(listState)
+    .highlightColor(Color.YELLOW)
+    .title("Menu")
+    .rounded()
+
+// Tab bar
+tabs("Home", "Settings", "About")
+    .selected(0)
+    .highlightColor(Color.CYAN)
+
+// Table with data
+table()
+    .header("Name", "Age", "City")
+    .row("Alice", "30", "NYC")
+    .row("Bob", "25", "LA")
+    .widths(Constraint.percentage(40), Constraint.length(10), Constraint.fill())
+    .title("Users")
+    .rounded()
+
+// Canvas drawing
+canvas(-10, 10, -10, 10)
+    .paint(ctx -> {
+        ctx.draw(new Circle(0, 0, 5, Color.RED));
+        ctx.draw(new Line(-5, -5, 5, 5, Color.GREEN));
+    })
+    .title("Drawing")
+    .rounded()
+```
+
+#### Features
+
+- **Static imports** - `text()`, `panel()`, `row()`, `column()`, `spacer()`, and all widget factories
+- **Fluent styling** - `.bold()`, `.cyan()`, `.onBlue()`, `.rounded()`, `.borderColor()`
+- **Layout constraints** - `.length(n)`, `.percent(n)`, `.fill()`, `.min(n)`, `.max(n)`
+- **Automatic focus** - Tab navigation, click-to-focus
+- **Component events** - Components handle their own key/mouse events via `.onKeyEvent()` and `.onMouseEvent()`
+- **Drag support** - `.draggable()` for movable elements
+
 ### Low-Level API
 
 For more control, use the terminal directly:
@@ -146,6 +251,7 @@ try (var backend = new JLineBackend()) {
 # Run demos
 ./gradlew :demos:basic-demo:run
 ./gradlew :demos:tui-demo:run
+./gradlew :demos:dsl-demo:run
 ./gradlew :demos:picocli-demo:run
 ./gradlew :demos:chart-demo:run
 ./gradlew :demos:canvas-demo:run
@@ -182,6 +288,8 @@ All standard ratatui widgets are implemented:
 |------|-------------|
 | `basic-demo` | Interactive list with text input |
 | `tui-demo` | Showcases TuiRunner with keyboard, mouse, and animation |
+| `dsl-demo` | Widget Playground showcasing DSL with draggable panels |
+| `jtop-demo` | System monitor (like "top") using the DSL |
 | `picocli-demo` | PicoCLI integration with CLI options |
 | `gauge-demo` | Progress bars and line gauges |
 | `table-demo` | Table widget with selection |

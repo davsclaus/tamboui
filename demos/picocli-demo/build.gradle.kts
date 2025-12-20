@@ -5,7 +5,7 @@ plugins {
 description = "Demo showcasing PicoCLI integration with JRatatui"
 
 dependencies {
-    implementation(project(":jratatui-picocli"))
+    implementation(projects.jratatuiPicocli)
     annotationProcessor(libs.picocli.codegen)
 }
 
