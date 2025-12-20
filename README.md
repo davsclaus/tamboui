@@ -1,10 +1,13 @@
 # Glimt
 
-A pure Java port of [ratatui](https://github.com/ratatui/ratatui), the Rust library for building terminal user interfaces.
+A Java library for building modern terminal user interfaces.
 
-## Overview
+Glimt brings the TUI paradigms seen in things like Rust's [ratatui](https://github.com/ratatui/ratatui) or Go's [bubbletea](https://github.com/charmbracelet/bubbletea/) to the Java ecosystem.
 
-Glimt brings the immediate-mode TUI paradigm from Rust to the Java ecosystem. It provides a comprehensive set of widgets and a layout system for building rich terminal applications with modern Java idioms.
+It provides a comprehensive set of widgets and a layout system for building rich terminal applications with modern Java idioms.
+
+> **Note:** Glimt is still experimental and under active development. APIs may/will change. Feedback, issues, and contributions are welcome!
+
 
 ### Key Features
 
@@ -371,7 +374,7 @@ isBackTab(event)   // Shift+Tab
 
 ## Acknowledgments
 
-This project is a port of [ratatui](https://github.com/ratatui/ratatui), an excellent Rust TUI library. We thank the ratatui maintainers and contributors for their work.
+This project started as a port of [ratatui](https://github.com/ratatui/ratatui), an excellent Rust TUI library. We thank the ratatui maintainers and contributors for their work.
 
 ## License
 
