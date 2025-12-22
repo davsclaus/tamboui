@@ -9,7 +9,7 @@ include(
     "glimt-toolkit"
 )
 
-File("demos").listFiles()?.forEach {
+File(settingsDir, "demos").listFiles()?.forEach {
     if (it.isDirectory) {
         include("demos:${it.name}")
     }
