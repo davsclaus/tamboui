@@ -25,7 +25,7 @@ jobs:
 
       - name: Execute Gradle build
         if: env.CENTRAL_USERNAME
-        run: ./gradlew closeAndReleaseSonatypeStagingRepository
+        run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
