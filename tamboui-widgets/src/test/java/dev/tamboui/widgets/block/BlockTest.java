@@ -13,6 +13,15 @@ import dev.tamboui.symbols.merge.MergeStrategy;
 import dev.tamboui.text.Line;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static dev.tamboui.assertj.BufferAssertions.assertThat;
@@ -487,6 +496,165 @@ class BlockTest {
             "test"
         );
         assertThat(buffer).isEqualTo(expected);
+    }
+
+    static Stream<Arguments> mergeStrategyProvider() {
+        return Stream.of(
+            Arguments.of(MergeStrategy.REPLACE, "merge_replace.txt"),
+            Arguments.of(MergeStrategy.EXACT, "merge_exact.txt"),
+            Arguments.of(MergeStrategy.FUZZY, "merge_fuzzy.txt")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("mergeStrategyProvider")
+    @DisplayName("Render merged borders with different merge strategies")
+    void renderMergedBorders(MergeStrategy strategy, String expectedFile) throws IOException {
+        // Test with all border types that have expected output in the test files
+        // (The test files from Ratatui include Plain, Rounded, Thick, Double, and all dashed variants)
+        BorderType[] borderTypes = {
+            BorderType.PLAIN,
+            BorderType.ROUNDED,
+            BorderType.THICK,
+            BorderType.DOUBLE,
+            BorderType.LIGHT_DOUBLE_DASHED,
+            BorderType.HEAVY_DOUBLE_DASHED,
+            BorderType.LIGHT_TRIPLE_DASHED,
+            BorderType.HEAVY_TRIPLE_DASHED,
+            BorderType.LIGHT_QUADRUPLE_DASHED,
+            BorderType.HEAVY_QUADRUPLE_DASHED
+        };
+
+        // Test rects: touching at corners, overlapping, touching vertical edges, touching horizontal edges
+        Rect[][] rects = {
+            {new Rect(0, 0, 5, 5), new Rect(4, 4, 5, 5)},      // touching at corners
+            {new Rect(10, 0, 5, 5), new Rect(12, 2, 5, 5)},    // overlapping
+            {new Rect(18, 0, 5, 5), new Rect(22, 0, 5, 5)},   // touching vertical edges
+            {new Rect(28, 0, 5, 5), new Rect(28, 4, 5, 5)}     // touching horizontal edges
+        };
+
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 43, 1000));
+
+        int offsetY = 0;
+        for (BorderType borderType1 : borderTypes) {
+            for (BorderType borderType2 : borderTypes) {
+                // Render title (format: "Plain + Rounded" to match expected files)
+                String title = formatBorderTypeName(borderType1) + " + " + formatBorderTypeName(borderType2);
+                buffer.setString(0, offsetY, title, Style.EMPTY);
+                offsetY += 1;
+
+                // Render blocks for each rect pair
+                for (Rect[] rectPair : rects) {
+                    Rect rect1 = new Rect(rectPair[0].x(), rectPair[0].y() + offsetY, rectPair[0].width(), rectPair[0].height());
+                    Rect rect2 = new Rect(rectPair[1].x(), rectPair[1].y() + offsetY, rectPair[1].width(), rectPair[1].height());
+
+                    Block.builder()
+                        .borders(Borders.ALL)
+                        .borderType(borderType1)
+                        .mergeBorders(strategy)
+                        .build()
+                        .render(rect1, buffer);
+
+                    Block.builder()
+                        .borders(Borders.ALL)
+                        .borderType(borderType2)
+                        .mergeBorders(strategy)
+                        .build()
+                        .render(rect2, buffer);
+                }
+                offsetY += 9;
+            }
+        }
+
+        // Load expected output from resource file and compare entire buffer (like Ratatui)
+        String resourceFile = expectedFile;
+        try {
+            String expectedContent = loadResourceFile("dev/tamboui/widgets/block/" + resourceFile);
+            Buffer expected = parseExpectedBufferFromContent(expectedContent);
+            
+            // Compare the entire buffer directly, just like Ratatui does
+            assertThat(buffer).isEqualTo(expected);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load expected file: " + resourceFile, e);
+        }
+    }
+
+    private String loadResourceFile(String resourcePath) throws IOException {
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
+            if (is == null) {
+                throw new IOException("Resource not found: " + resourcePath);
+            }
+            try (Scanner scanner = new Scanner(is, StandardCharsets.UTF_8.name())) {
+                scanner.useDelimiter("\\A");
+                return scanner.hasNext() ? scanner.next() : "";
+            }
+        }
+    }
+
+    private String formatBorderTypeName(BorderType type) {
+        // Format Java enum name to match Rust format in expected files
+        switch (type) {
+            case PLAIN: return "Plain";
+            case ROUNDED: return "Rounded";
+            case THICK: return "Thick";
+            case DOUBLE: return "Double";
+            case LIGHT_DOUBLE_DASHED: return "LightDoubleDashed";
+            case HEAVY_DOUBLE_DASHED: return "HeavyDoubleDashed";
+            case LIGHT_TRIPLE_DASHED: return "LightTripleDashed";
+            case HEAVY_TRIPLE_DASHED: return "HeavyTripleDashed";
+            case LIGHT_QUADRUPLE_DASHED: return "LightQuadrupleDashed";
+            case HEAVY_QUADRUPLE_DASHED: return "HeavyQuadrupleDashed";
+            case QUADRANT_INSIDE: return "QuadrantInside";
+            case QUADRANT_OUTSIDE: return "QuadrantOutside";
+            default: return type.name();
+        }
+    }
+
+    private Buffer parseExpectedBufferFromContent(String content) {
+        // Parse the entire expected content into a buffer, just like Ratatui's Buffer::with_lines()
+        // Normalize line endings (handle both \n and \r\n)
+        content = content.replace("\r\n", "\n").replace("\r", "\n");
+        String[] lines = content.split("\n");
+        
+        if (lines.length == 0) {
+            return Buffer.empty(new Rect(0, 0, 0, 0));
+        }
+
+        // Find max width
+        int maxWidth = 0;
+        for (String line : lines) {
+            if (line != null) {
+                int width = line.codePointCount(0, line.length());
+                maxWidth = Math.max(maxWidth, width);
+            }
+        }
+
+        // Create buffer with exact dimensions needed
+        Buffer buffer = Buffer.empty(new Rect(0, 0, Math.max(maxWidth, 43), lines.length));
+
+        // Parse all lines into buffer
+        for (int y = 0; y < lines.length; y++) {
+            String line = lines[y];
+            if (line != null) {
+                // Truncate line to buffer width if needed
+                int lineWidth = line.codePointCount(0, line.length());
+                if (lineWidth > buffer.area().width()) {
+                    int codePointCount = 0;
+                    int endIndex = 0;
+                    for (int i = 0; i < line.length() && codePointCount < buffer.area().width(); i++) {
+                        if (Character.isHighSurrogate(line.charAt(i))) {
+                            i++;
+                        }
+                        codePointCount++;
+                        endIndex = i + 1;
+                    }
+                    line = line.substring(0, endIndex);
+                }
+                buffer.setString(0, y, line, Style.EMPTY);
+            }
+        }
+
+        return buffer;
     }
 
 }
