@@ -65,6 +65,7 @@
     },
     "input-form-demo": {
       "script-ref": "demos/input-form-demo/src/main/java/dev/tamboui/demo/InputFormDemo.java"
+    },
     "colors-rgb-demo": {
       "script-ref": "demos/colors-rgb-demo/src/main/java/dev/tamboui/demo/ColorsRgbDemo.java"
     }
