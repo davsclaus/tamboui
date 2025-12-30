@@ -6,6 +6,7 @@ description = "JTop - System monitor demo using the DSL module"
 
 dependencies {
     implementation(projects.tambouiToolkit)
+    implementation(libs.oshi.core)
 }
 
 application {

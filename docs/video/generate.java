@@ -144,6 +144,77 @@ void generateReadme(Path outputDir, Map<String, List<Path>> filesByBaseName, Pat
     }
 }
 
+List<Path> collectTapeFiles(Path path) throws IOException {
+    List<Path> tapeFiles = new ArrayList<>();
+    if (Files.isDirectory(path)) {
+        // Scan directory for .tape files
+        try (var files = Files.list(path)) {
+            files.filter(f -> {
+                String fileName = f.getFileName().toString();
+                return fileName.endsWith(".tape") && !fileName.endsWith("_.tape");
+            }).forEach(tapeFiles::add);
+        }
+    } else if (Files.isRegularFile(path) && path.getFileName().toString().endsWith(".tape")) {
+        String fileName = path.getFileName().toString();
+        if (!fileName.endsWith("_.tape")) {
+            tapeFiles.add(path);
+        }
+    }
+    return tapeFiles;
+}
+
+void processTapeFile(Path tapeFile, Path outputDir, List<String> outputFormats, Path videosDir) throws IOException {
+    println("Processing video: " + tapeFile.getFileName());
+
+    String baseName = tapeFile.getFileName().toString().replace(".tape", "");
+    List<Path> outputPaths = new ArrayList<>();
+    for (String format : outputFormats) {
+        outputPaths.add(outputDir.resolve(baseName + "." + format));
+    }
+
+    // Only generate if all output paths are newer than input path
+    // Also check if shared_.tape is newer than the outputs, to handle dependency on shared config/tape
+    Path sharedTape = videosDir.resolve("shared_.tape");
+    boolean upToDate = true;
+    for (Path outputPath : outputPaths) {
+        if (!exists(outputPath)) {
+            upToDate = false;
+            break;
+        }
+        if (getLastModifiedTime(outputPath).compareTo(getLastModifiedTime(tapeFile)) < 0) {
+            upToDate = false;
+            break;
+        }
+        if (exists(sharedTape)) {
+            if (getLastModifiedTime(outputPath).compareTo(getLastModifiedTime(sharedTape)) < 0) {
+                upToDate = false;
+                break;
+            }
+        }
+    }
+    if (upToDate) {
+        println("  (up to date: skipping)");
+        return;
+    }
+
+    // Generate all output formats in a single command with multiple -o flags
+    List<String> cmdArgs = new ArrayList<>();
+    cmdArgs.add("vhs");
+    for (Path outputPath : outputPaths) {
+        cmdArgs.add("-o");
+        cmdArgs.add(outputPath.toString());
+    }
+    cmdArgs.add(tapeFile.toString());
+    
+    // Unpack the list to pass as varargs
+    String[] argsArray = cmdArgs.toArray(new String[0]);
+    start(argsArray[0], Arrays.copyOfRange(argsArray, 1, argsArray.length))
+            .stream()
+            .peek(System.out::println)
+            .count();
+    println("Video processed: " + tapeFile.getFileName());
+}
+
 void main(String... args) throws IOException {
     println("Generating video...");
 
@@ -158,84 +229,74 @@ void main(String... args) throws IOException {
 
     Path outputDir = videosDir.resolve("output");
 
-    // Parse output formats from arguments (default to svg if none provided)
+    // Parse --type option and collect file/folder arguments
     List<String> outputFormats = new ArrayList<>();
-    if (args.length > 0) {
-        for (String arg : args) {
-            // Treat arguments as format extensions if they look like simple alphanumeric strings
-            if (arg.matches("^[a-zA-Z0-9]+$") && arg.length() < 20) {
-                outputFormats.add(arg);
+    List<Path> inputPaths = new ArrayList<>();
+    
+    for (int i = 0; i < args.length; i++) {
+        String arg = args[i];
+        if (arg.startsWith("--type=")) {
+            // Parse --type=svg,mp4 format
+            String typeValue = arg.substring(7); // Skip "--type="
+            String[] formats = typeValue.split(",");
+            for (String format : formats) {
+                String trimmed = format.trim();
+                if (!trimmed.isEmpty()) {
+                    outputFormats.add(trimmed);
+                }
+            }
+        } else if (arg.equals("--type") && i + 1 < args.length) {
+            // Parse --type svg,mp4 format
+            i++;
+            String typeValue = args[i];
+            String[] formats = typeValue.split(",");
+            for (String format : formats) {
+                String trimmed = format.trim();
+                if (!trimmed.isEmpty()) {
+                    outputFormats.add(trimmed);
+                }
+            }
+        } else {
+            // Treat as file/folder path
+            Path inputPath = Paths.get(arg).toAbsolutePath().normalize();
+            if (exists(inputPath)) {
+                inputPaths.add(inputPath);
+            } else {
+                System.err.println("Warning: Path does not exist: " + arg);
             }
         }
     }
+    
+    // Default format if none specified
     if (outputFormats.isEmpty()) {
-        outputFormats.add("svg"); // default format
+        outputFormats.add("svg");
     }
 
-    String pattern = ".*\\.tape$";
-    Pattern filter = Pattern.compile(pattern);
-
-    for (Path path : Files.list(videosDir).toList()) {
-        if (filter.matcher(path.getFileName().toString()).matches()) {
-            if(path.getFileName().toString().endsWith("_.tape")) {
-                continue; // ignore shared tapes
-            }
-            println("Processing video: " + path.getFileName());
-
-            String baseName = path.getFileName().toString().replace(".tape", "");
-            List<Path> outputPaths = new ArrayList<>();
-            for (String format : outputFormats) {
-                outputPaths.add(outputDir.resolve(baseName + "." + format));
-            }
-
-            // Only generate if all output paths are newer than input path
-            // Also check if shared_.tape is newer than the outputs, to handle dependency on shared config/tape
-            Path sharedTape = videosDir.resolve("shared_.tape");
-            boolean upToDate = true;
-            for (Path outputPath : outputPaths) {
-                if (!exists(outputPath)) {
-                    upToDate = false;
-                    break;
-                }
-                if (getLastModifiedTime(outputPath).compareTo(getLastModifiedTime(path)) < 0) {
-                    upToDate = false;
-                    break;
-                }
-                if (exists(sharedTape)) {
-                    if (getLastModifiedTime(outputPath).compareTo(getLastModifiedTime(sharedTape)) < 0) {
-                        upToDate = false;
-                        break;
-                    }
-                }
-            }
-            if (upToDate) {
-                println("  (up to date: skipping)");
-                continue;
-            }
-
-            // Generate all output formats in a single command with multiple -o flags
-            List<String> cmdArgs = new ArrayList<>();
-            cmdArgs.add("vhs");
-            for (Path outputPath : outputPaths) {
-                cmdArgs.add("-o");
-                cmdArgs.add(outputPath.toString());
-            }
-            cmdArgs.add(path.toString());
-            
-            // Unpack the list to pass as varargs
-            String[] argsArray = cmdArgs.toArray(new String[0]);
-            start(argsArray[0], Arrays.copyOfRange(argsArray, 1, argsArray.length))
-                    .stream()
-                    .peek(System.out::println)
-                    .count();
-            println("Video processed: " + path.getFileName());
+    // Collect all .tape files from input paths
+    List<Path> tapeFiles = new ArrayList<>();
+    if (inputPaths.isEmpty()) {
+        // No input paths specified, scan current directory (backward compatibility)
+        try (var files = Files.list(videosDir)) {
+            files.filter(f -> {
+                String fileName = f.getFileName().toString();
+                return fileName.endsWith(".tape") && !fileName.endsWith("_.tape");
+            }).forEach(tapeFiles::add);
         }
+    } else {
+        // Process specified paths
+        for (Path inputPath : inputPaths) {
+            tapeFiles.addAll(collectTapeFiles(inputPath));
+        }
+    }
+
+    // Process all collected tape files
+    for (Path tapeFile : tapeFiles) {
+        processTapeFile(tapeFile, outputDir, outputFormats, videosDir);
     }
 
     Path htmlOutputDir = outputDir;
     Files.createDirectories(htmlOutputDir); // make sure it exists
 
-    println("Generating index.html...");
 
     // Generate index.html showing all SVGs in outputDir
     Path indexFile = htmlOutputDir.resolve("index.html");
@@ -294,7 +355,9 @@ void main(String... args) throws IOException {
 
         println("Generating README.md...");
         generateReadme(htmlOutputDir, filesByBaseName, repoRoot);
-                
+        
+        println("Generating index.html...");
+
         // Generate HTML for each group
         filesByBaseName.entrySet().stream()
             .sorted(Map.Entry.comparingByKey())

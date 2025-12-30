@@ -1,6 +1,7 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS dev.tamboui:tamboui-toolkit:LATEST
 //DEPS dev.tamboui:tamboui-jline:LATEST
+//DEPS com.github.oshi:oshi-core:6.9.2
 //SOURCES SystemMetrics.java SystemMonitor.java
 
 /*
@@ -22,10 +23,17 @@ import static dev.tamboui.toolkit.Toolkit.*;
  * <p>
  * Displays system metrics including:
  * <ul>
- *   <li>CPU usage with history sparkline</li>
- *   <li>Memory usage with gauge</li>
- *   <li>Top processes by CPU/memory</li>
+ *   <li>CPU usage with toggleable views: bars, sparklines (all CPUs), or history chart</li>
+ *   <li>Memory usage with sparkline chart showing history</li>
+ *   <li>Top processes by CPU/memory/PID (sortable)</li>
  *   <li>System information</li>
+ * </ul>
+ * <p>
+ * Controls:
+ * <ul>
+ *   <li>[c] - Toggle CPU view (bars → sparklines → chart → bars)</li>
+ *   <li>[s] - Toggle sort mode (CPU → Memory → PID → CPU)</li>
+ *   <li>[q] - Quit</li>
  * </ul>
  */
 public class JTopDemo {
@@ -44,6 +52,7 @@ public class JTopDemo {
                     text(" JTop - System Monitor ").bold().cyan(),
                     spacer(),
                     text(" [s] Sort ").dim(),
+                    text(" [c] CPU View ").dim(),
                     text(" [q] Quit ").dim()
                 )).rounded().borderColor(Color.DARK_GRAY).length(3),
                 systemMonitor
