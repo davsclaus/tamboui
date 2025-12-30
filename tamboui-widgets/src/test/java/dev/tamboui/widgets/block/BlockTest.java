@@ -166,85 +166,37 @@ class BlockTest {
     @Test
     @DisplayName("Block with QUADRANT_INSIDE border renders correctly")
     void quadrantInsideBorder() {
-        // Expected rendering:
-        // ▗▄▄▄▄▄▖
-        // ▐     ▌
-        // ▐     ▌
-        // ▝▀▀▀▀▀▘
-        Rect area = new Rect(0, 0, 7, 4);
-        Block block = Block.builder()
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 7, 4));
+        Block.builder()
             .borders(Borders.ALL)
             .borderType(BorderType.QUADRANT_INSIDE)
-            .build();
-        Buffer buffer = Buffer.empty(area);
-
-        block.render(area, buffer);
-
-        // Corners
-        assertThat(buffer.get(0, 0).symbol()).isEqualTo("▖");  // top-left
-        assertThat(buffer.get(6, 0).symbol()).isEqualTo("▗");  // top-right
-        assertThat(buffer.get(0, 3).symbol()).isEqualTo("▘");  // bottom-left
-        assertThat(buffer.get(6, 3).symbol()).isEqualTo("▝");  // bottom-right
-
-        // Top horizontal (▄ - lower half block)
-        assertThat(buffer.get(1, 0).symbol()).isEqualTo("▄");
-        assertThat(buffer.get(3, 0).symbol()).isEqualTo("▄");
-        assertThat(buffer.get(5, 0).symbol()).isEqualTo("▄");
-
-        // Bottom horizontal (▀ - upper half block)
-        assertThat(buffer.get(1, 3).symbol()).isEqualTo("▀");
-        assertThat(buffer.get(3, 3).symbol()).isEqualTo("▀");
-        assertThat(buffer.get(5, 3).symbol()).isEqualTo("▀");
-
-        // Left vertical (▐ - right half block)
-        assertThat(buffer.get(0, 1).symbol()).isEqualTo("▐");
-        assertThat(buffer.get(0, 2).symbol()).isEqualTo("▐");
-
-        // Right vertical (▌ - left half block)
-        assertThat(buffer.get(6, 1).symbol()).isEqualTo("▌");
-        assertThat(buffer.get(6, 2).symbol()).isEqualTo("▌");
+            .build()
+            .render(buffer.area(), buffer);
+        Buffer expected = Buffer.withLines(
+            "▖▄▄▄▄▄▗",
+            "▐     ▌",
+            "▐     ▌",
+            "▘▀▀▀▀▀▝"
+        );
+        assertThat(buffer).isEqualTo(expected);
     }
 
     @Test
     @DisplayName("Block with QUADRANT_OUTSIDE border renders correctly")
     void quadrantOutsideBorder() {
-        // Expected rendering:
-        // ▛▀▀▀▀▀▜
-        // ▌     ▐
-        // ▌     ▐
-        // ▙▄▄▄▄▄▟
-        Rect area = new Rect(0, 0, 7, 4);
-        Block block = Block.builder()
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 7, 4));
+        Block.builder()
             .borders(Borders.ALL)
             .borderType(BorderType.QUADRANT_OUTSIDE)
-            .build();
-        Buffer buffer = Buffer.empty(area);
-
-        block.render(area, buffer);
-
-        // Corners
-        assertThat(buffer.get(0, 0).symbol()).isEqualTo("▛");  // top-left
-        assertThat(buffer.get(6, 0).symbol()).isEqualTo("▜");  // top-right
-        assertThat(buffer.get(0, 3).symbol()).isEqualTo("▙");  // bottom-left
-        assertThat(buffer.get(6, 3).symbol()).isEqualTo("▟");  // bottom-right
-
-        // Top horizontal (▀ - upper half block)
-        assertThat(buffer.get(1, 0).symbol()).isEqualTo("▀");
-        assertThat(buffer.get(3, 0).symbol()).isEqualTo("▀");
-        assertThat(buffer.get(5, 0).symbol()).isEqualTo("▀");
-
-        // Bottom horizontal (▄ - lower half block)
-        assertThat(buffer.get(1, 3).symbol()).isEqualTo("▄");
-        assertThat(buffer.get(3, 3).symbol()).isEqualTo("▄");
-        assertThat(buffer.get(5, 3).symbol()).isEqualTo("▄");
-
-        // Left vertical (▌ - left half block)
-        assertThat(buffer.get(0, 1).symbol()).isEqualTo("▌");
-        assertThat(buffer.get(0, 2).symbol()).isEqualTo("▌");
-
-        // Right vertical (▐ - right half block)
-        assertThat(buffer.get(6, 1).symbol()).isEqualTo("▐");
-        assertThat(buffer.get(6, 2).symbol()).isEqualTo("▐");
+            .build()
+            .render(buffer.area(), buffer);
+        Buffer expected = Buffer.withLines(
+            "▛▀▀▀▀▀▜",
+            "▌     ▐",
+            "▌     ▐",
+            "▙▄▄▄▄▄▟"
+        );
+        assertThat(buffer).isEqualTo(expected);
     }
 
     @Test
