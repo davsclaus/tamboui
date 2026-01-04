@@ -4,6 +4,10 @@
  */
 package dev.tamboui.widgets.paragraph;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.layout.Alignment;
 import dev.tamboui.layout.Rect;
@@ -14,10 +18,6 @@ import dev.tamboui.text.Text;
 import dev.tamboui.widgets.Widget;
 import dev.tamboui.widgets.block.Block;
 import dev.tamboui.widgets.text.Overflow;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * A paragraph widget for displaying styled text.
@@ -276,7 +276,7 @@ public final class Paragraph implements Widget {
                 currentLine.append(word);
             } else {
                 if (currentLine.length() > 0) {
-                    wrapped.add(Line.from(new Span(currentLine.toString().stripTrailing(), lineStyle)));
+                    wrapped.add(Line.from(new Span(stripTrailing(currentLine.toString()), lineStyle)));
                     currentLine = new StringBuilder();
                 }
                 // Handle words longer than maxWidth
@@ -289,16 +289,50 @@ public final class Paragraph implements Widget {
                     }
                     currentLine.append(remaining);
                 } else {
-                    currentLine.append(word.stripLeading());
+                    currentLine.append(stripLeading(word));
                 }
             }
         }
 
         if (currentLine.length() > 0) {
-            wrapped.add(Line.from(new Span(currentLine.toString().stripTrailing(), lineStyle)));
+            wrapped.add(Line.from(new Span(stripTrailing(currentLine.toString()), lineStyle)));
         }
 
         return wrapped;
+    }
+
+    // Java 8 compatible alternatives to String.stripLeading() and stripTrailing()
+    // These implementations use code points to properly handle UTF-16 surrogate pairs
+    private static String stripLeading(String s) {
+        if (s == null || s.isEmpty()) {
+            return s;
+        }
+        int len = s.length();
+        int start = 0;
+        while (start < len) {
+            int codePoint = Character.codePointAt(s, start);
+            if (!Character.isWhitespace(codePoint)) {
+                break;
+            }
+            start += Character.charCount(codePoint);
+        }
+        return start == 0 ? s : s.substring(start);
+    }
+
+    private static String stripTrailing(String s) {
+        if (s == null || s.isEmpty()) {
+            return s;
+        }
+        int len = s.length();
+        int end = len;
+        while (end > 0) {
+            int codePoint = Character.codePointBefore(s, end);
+            if (!Character.isWhitespace(codePoint)) {
+                break;
+            }
+            end -= Character.charCount(codePoint);
+        }
+        return end == len ? s : s.substring(0, end);
     }
 
     public static final class Builder {
