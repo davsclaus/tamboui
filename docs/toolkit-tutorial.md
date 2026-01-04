@@ -739,7 +739,7 @@ public EventResult handleKeyEvent(KeyEvent event, boolean focused) {
 
 ### Key Utilities
 
-KeyEvent provides convenience methods that delegate to the configured `KeyMap`. The default keymap (`standard`) uses only arrow keys:
+KeyEvent provides convenience methods that delegate to the configured `Bindings`. The default bindings (`standard`) uses only arrow keys:
 
 | Method | Keys Matched (Standard) |
 |--------|-------------------------|
@@ -761,64 +761,82 @@ KeyEvent provides convenience methods that delegate to the configured `KeyMap`. 
 | `event.isCharIgnoreCase('x')` | Specific character (case-insensitive) |
 | `event.isKey(KeyCode.F5)` | Specific key code |
 
-### Configurable Keymaps
+### Configurable Bindings
 
-You can configure different keymaps via `TuiConfig`:
+You can configure different binding sets via `TuiConfig`:
 
 ```java
-import dev.tamboui.tui.keymap.KeyMaps;
+import dev.tamboui.tui.bindings.BindingSets;
 
 TuiConfig config = TuiConfig.builder()
-    .keyMap(KeyMaps.vim())  // Enable vim-style navigation
+    .bindings(BindingSets.vim())  // Enable vim-style navigation
     .build();
 ```
 
-Available keymaps:
-- `KeyMaps.standard()` - Arrow keys only (default, safe for text input)
-- `KeyMaps.vim()` - hjkl navigation, g/G for home/end, Ctrl+u/d for page navigation
-- `KeyMaps.emacs()` - Ctrl+n/p/f/b navigation
-- `KeyMaps.intellij()` - IntelliJ IDEA-style bindings
-- `KeyMaps.vscode()` - VS Code-style bindings
+Available binding sets:
+- `BindingSets.standard()` - Arrow keys only (default, safe for text input)
+- `BindingSets.vim()` - hjkl navigation, g/G for home/end, Ctrl+u/d for page navigation
+- `BindingSets.emacs()` - Ctrl+n/p/f/b navigation
+- `BindingSets.intellij()` - IntelliJ IDEA-style bindings
+- `BindingSets.vscode()` - VS Code-style bindings
 
-You can also create custom keymaps:
+You can also create custom bindings:
 
 ```java
-import dev.tamboui.tui.keymap.*;
+import dev.tamboui.tui.bindings.*;
 
-KeyMap custom = KeyMaps.standard()
+Bindings custom = BindingSets.standard()
     .toBuilder()
-    .bind(Action.QUIT, KeyBinding.ch('x'))  // Quit with 'x' instead of 'q'
+    .bind(Actions.QUIT, KeyTrigger.ch('x'))  // Quit with 'x' instead of 'q'
+    .bind("contextMenu", MouseTrigger.rightClick())  // Custom mouse action
     .build();
 ```
 
-### Loading Keymaps from Properties Files
+### Loading Bindings from Properties Files
 
-You can load keymaps from standard Java properties files:
+You can load bindings from standard Java properties files. Loaded bindings extend the standard bindings by default:
 
 ```properties
-# my-keymap.properties
-MOVE_UP = Up, k, K
-MOVE_DOWN = Down, j, J
-CONFIRM = Enter
-CANCEL = Escape
-QUIT = q, Ctrl+c
+# my-bindings.properties
+moveUp = Up, k, K
+moveDown = Down, j, J
+confirm = Enter
+cancel = Escape
+quit = q, Ctrl+c
+
+# Mouse bindings
+click = Mouse.Left.Press
+rightClick = Mouse.Right.Press
+ctrlClick = Ctrl+Mouse.Left.Press
 ```
 
 Load from a file or classpath resource:
 
 ```java
-// From filesystem
-KeyMap keymap = KeyMaps.load(Path.of("/path/to/keymap.properties"));
+// From filesystem - extends standard bindings
+Bindings bindings = BindingSets.load(Path.of("/path/to/bindings.properties"));
 
 // From classpath resource
-KeyMap keymap = KeyMaps.loadResource("/keymaps/custom.properties");
+Bindings bindings = BindingSets.loadResource("/bindings/custom.properties");
+
+// Start with a different base (e.g., vim bindings)
+Bindings bindings = BindingSets.load(inputStream, BindingSets.vim());
+
+// Start with empty bindings (no defaults)
+Bindings bindings = BindingSets.load(inputStream, null);
 ```
 
-Binding syntax supports:
+Key binding syntax:
 - Key names: `Up`, `Down`, `Enter`, `Tab`, `Escape`, `Backspace`, `Delete`, `Home`, `End`, `PageUp`, `PageDown`, `F1`-`F12`
 - Characters: Single character like `k`, `q`
 - Modifiers: `Ctrl+c`, `Alt+x`, `Shift+Tab`
 - Space: Use the word `Space`
+
+Mouse binding syntax:
+- Format: `[Modifiers+]Mouse.Button.Kind`
+- Buttons: `Left`, `Right`, `Middle`
+- Kinds: `Press`, `Release`, `Drag`, `ScrollUp`, `ScrollDown`
+- Examples: `Mouse.Left.Press`, `Ctrl+Mouse.Left.Press`, `Mouse.ScrollUp`
 
 ### Checking Key Codes Directly
 
