@@ -8,6 +8,7 @@ import dev.tamboui.css.cascade.ResolvedStyle;
 import dev.tamboui.toolkit.element.RenderContext;
 import dev.tamboui.toolkit.element.StyledElement;
 import dev.tamboui.layout.Alignment;
+import dev.tamboui.layout.Constraint;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Style;
 import dev.tamboui.terminal.Frame;
@@ -111,6 +112,43 @@ public final class TextElement extends StyledElement<TextElement> {
     public TextElement right() {
         this.alignment = Alignment.RIGHT;
         return this;
+    }
+
+    /**
+     * Returns the layout constraint for this text element.
+     * <p>
+     * If no explicit constraint is set, a sensible default is calculated based on
+     * the content and overflow mode:
+     * <ul>
+     *   <li>For non-wrapping modes (CLIP, ELLIPSIS, etc.): uses {@code length(lineCount)}
+     *       to allocate exactly the space needed for the text lines.</li>
+     *   <li>For wrapping modes (WRAP_WORD, WRAP_CHARACTER): uses {@code min(lineCount)}
+     *       to ensure at least minimum height while allowing growth for wrapped content.</li>
+     * </ul>
+     *
+     * @return the constraint for this element
+     */
+    @Override
+    public Constraint constraint() {
+        if (layoutConstraint != null) {
+            return layoutConstraint;
+        }
+
+        // Count lines in content (newlines + 1, minimum 1 for empty content)
+        int lineCount = 1;
+        for (int i = 0; i < content.length(); i++) {
+            if (content.charAt(i) == '\n') {
+                lineCount++;
+            }
+        }
+
+        // For wrapping modes, use min constraint to allow growth for wrapped text
+        if (overflow == Overflow.WRAP_CHARACTER || overflow == Overflow.WRAP_WORD) {
+            return Constraint.min(lineCount);
+        }
+
+        // For non-wrapping modes, use exact length
+        return Constraint.length(lineCount);
     }
 
     @Override
