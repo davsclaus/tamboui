@@ -17,18 +17,19 @@ import java.util.Optional;
  * <p>
  * Actions are identified by strings, with common actions defined as
  * constants in {@link Actions}. Custom actions can use any string.
+ * <p>
+ * Events (both {@code KeyEvent} and {@code MouseEvent}) carry their own bindings
+ * and provide convenience methods for action matching. The preferred API is to
+ * call {@code matches()} directly on the event:
  *
  * <pre>{@code
- * // Using a predefined binding set
- * Bindings bindings = BindingSets.vim();
- *
- * // Checking if an event matches an action
- * if (bindings.matches(event, Actions.MOVE_UP)) {
+ * // Preferred: call matches() on the event
+ * if (event.matches(Actions.MOVE_UP)) {
  *     state.moveUp();
  * }
  *
  * // Using custom action names
- * if (bindings.matches(event, "myApp.save")) {
+ * if (event.matches("myApp.save")) {
  *     save();
  * }
  *

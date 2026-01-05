@@ -11,8 +11,6 @@ import dev.tamboui.toolkit.app.ToolkitApp;
 import dev.tamboui.toolkit.element.Element;
 import dev.tamboui.toolkit.event.EventResult;
 import dev.tamboui.tui.bindings.Actions;
-import dev.tamboui.tui.bindings.Bindings;
-import dev.tamboui.tui.bindings.BindingSets;
 import dev.tamboui.tui.event.KeyCode;
 import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.widgets.list.ListState;
@@ -40,7 +38,6 @@ public class DemoSelector extends ToolkitApp {
 
     private static final String SELF_NAME = "demo-selector";
 
-    private final Bindings bindings = BindingSets.standard();
     private final ListState listState = new ListState();
     private final Map<String, List<DemoInfo>> demosByModule = new TreeMap<>();
     private final Set<String> expandedModules = new HashSet<>();
@@ -213,29 +210,29 @@ public class DemoSelector extends ToolkitApp {
         var current = currentIdx != null ? currentIdx : 0;
 
         // Navigation using bindings
-        if (bindings.matches(event, Actions.MOVE_UP)) {
+        if (event.matches(Actions.MOVE_UP)) {
             if (current > 0) {
                 listState.select(current - 1);
             }
             return EventResult.HANDLED;
         }
-        if (bindings.matches(event, Actions.MOVE_DOWN)) {
+        if (event.matches(Actions.MOVE_DOWN)) {
             if (current < listSize - 1) {
                 listState.select(current + 1);
             }
             return EventResult.HANDLED;
         }
-        if (bindings.matches(event, Actions.HOME)) {
+        if (event.matches(Actions.HOME)) {
             listState.select(0);
             return EventResult.HANDLED;
         }
-        if (bindings.matches(event, Actions.END)) {
+        if (event.matches(Actions.END)) {
             listState.select(listSize - 1);
             return EventResult.HANDLED;
         }
 
         // Left: collapse current group or go to parent
-        if (bindings.matches(event, Actions.MOVE_LEFT)) {
+        if (event.matches(Actions.MOVE_LEFT)) {
             var selected = selectedItem();
             if (selected != null) {
                 if (selected.demo() == null) {
@@ -257,7 +254,7 @@ public class DemoSelector extends ToolkitApp {
         }
 
         // Right: expand current group or go to first child
-        if (bindings.matches(event, Actions.MOVE_RIGHT)) {
+        if (event.matches(Actions.MOVE_RIGHT)) {
             var selected = selectedItem();
             if (selected != null && selected.demo() == null) {
                 if (!selected.expanded()) {
@@ -272,7 +269,7 @@ public class DemoSelector extends ToolkitApp {
         }
 
         // Select: toggle module or select demo
-        if (bindings.matches(event, Actions.SELECT)) {
+        if (event.matches(Actions.SELECT)) {
             var selected = selectedItem();
             if (selected != null) {
                 if (selected.demo() == null) {
@@ -288,7 +285,7 @@ public class DemoSelector extends ToolkitApp {
         }
 
         // Clear filter with Escape/Cancel
-        if (bindings.matches(event, Actions.CANCEL) && !filter.isEmpty()) {
+        if (event.matches(Actions.CANCEL) && !filter.isEmpty()) {
             filter = "";
             rebuildDisplayList();
             listState.select(findFirstSelectable());
@@ -296,7 +293,7 @@ public class DemoSelector extends ToolkitApp {
         }
 
         // Backspace
-        if (bindings.matches(event, Actions.DELETE_BACKWARD) && !filter.isEmpty()) {
+        if (event.matches(Actions.DELETE_BACKWARD) && !filter.isEmpty()) {
             filter = filter.substring(0, filter.length() - 1);
             rebuildDisplayList();
             listState.select(findFirstSelectable());

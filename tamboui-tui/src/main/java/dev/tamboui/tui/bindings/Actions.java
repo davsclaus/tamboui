@@ -12,10 +12,10 @@ package dev.tamboui.tui.bindings;
  *
  * <pre>{@code
  * // Using predefined actions
- * if (bindings.matches(event, Actions.MOVE_UP)) { ... }
+ * if (event.matches(Actions.MOVE_UP)) { ... }
  *
  * // Using custom string actions
- * if (bindings.matches(event, "myApp.customAction")) { ... }
+ * if (event.matches("myApp.customAction")) { ... }
  * }</pre>
  */
 public final class Actions {
