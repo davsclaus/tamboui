@@ -2,7 +2,7 @@
  * Copyright (c) 2025 TamboUI Contributors
  * SPDX-License-Identifier: MIT
  */
-package dev.tamboui.widgets;
+package dev.tamboui.widget;
 
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.layout.Rect;
