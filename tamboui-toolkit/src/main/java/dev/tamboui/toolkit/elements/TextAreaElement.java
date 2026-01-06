@@ -11,7 +11,6 @@ import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.Style;
 import dev.tamboui.terminal.Frame;
-import dev.tamboui.tui.event.KeyCode;
 import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.widgets.block.Block;
 import dev.tamboui.widgets.block.BorderType;
@@ -41,6 +40,7 @@ public final class TextAreaElement extends StyledElement<TextAreaElement> {
     private String title;
     private BorderType borderType;
     private Color borderColor;
+    private Color focusedBorderColor;
     private boolean showCursor = true;
     private boolean showLineNumbers = false;
     private Style lineNumberStyle = Style.EMPTY.dim();
@@ -160,6 +160,16 @@ public final class TextAreaElement extends StyledElement<TextAreaElement> {
     }
 
     /**
+     * Sets the border color to use when focused.
+     * If not set, no special focused border styling is applied
+     * (CSS :focused pseudo-class can be used instead).
+     */
+    public TextAreaElement focusedBorderColor(Color color) {
+        this.focusedBorderColor = color;
+        return this;
+    }
+
+    /**
      * Sets a listener for text changes.
      */
     public TextAreaElement onTextChange(TextChangeListener listener) {
@@ -241,6 +251,8 @@ public final class TextAreaElement extends StyledElement<TextAreaElement> {
             return;
         }
 
+        boolean isFocused = elementId != null && context.isFocused(elementId);
+
         TextArea.Builder builder = TextArea.builder()
             .style(context.currentStyle())
             .cursorStyle(cursorStyle)
@@ -249,7 +261,11 @@ public final class TextAreaElement extends StyledElement<TextAreaElement> {
             .showLineNumbers(showLineNumbers)
             .lineNumberStyle(lineNumberStyle);
 
-        if (title != null || borderType != null) {
+        Color effectiveBorderColor = isFocused && focusedBorderColor != null
+                ? focusedBorderColor
+                : borderColor;
+
+        if (title != null || borderType != null || effectiveBorderColor != null) {
             Block.Builder blockBuilder = Block.builder().borders(Borders.ALL);
             if (title != null) {
                 blockBuilder.title(Title.from(title));
@@ -257,15 +273,15 @@ public final class TextAreaElement extends StyledElement<TextAreaElement> {
             if (borderType != null) {
                 blockBuilder.borderType(borderType);
             }
-            if (borderColor != null) {
-                blockBuilder.borderStyle(Style.EMPTY.fg(borderColor));
+            if (effectiveBorderColor != null) {
+                blockBuilder.borderStyle(Style.EMPTY.fg(effectiveBorderColor));
             }
             builder.block(blockBuilder.build());
         }
 
         TextArea widget = builder.build();
 
-        if (showCursor) {
+        if (showCursor && isFocused) {
             widget.renderWithCursor(area, frame.buffer(), state, frame);
         } else {
             frame.renderStatefulWidget(widget, area, state);

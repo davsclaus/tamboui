@@ -10,9 +10,9 @@ import dev.tamboui.terminal.Frame;
 import dev.tamboui.toolkit.app.ToolkitRunner;
 import dev.tamboui.toolkit.element.Element;
 import dev.tamboui.toolkit.element.RenderContext;
-import dev.tamboui.toolkit.event.EventResult;
 import dev.tamboui.tui.TuiConfig;
-import dev.tamboui.tui.event.KeyEvent;
+import dev.tamboui.style.Color;
+import dev.tamboui.style.Style;
 import dev.tamboui.widgets.input.TextAreaState;
 
 import java.time.Duration;
@@ -116,6 +116,7 @@ public class TextAreaDemo implements Element {
                         .title("Main Editor")
                         .showLineNumbers()
                         .rounded()
+                        .focusedBorderColor(Color.CYAN)
                         .id("main-editor")
                         .onTextChange(text -> updateCounts())
                         .fill()
@@ -128,6 +129,7 @@ public class TextAreaDemo implements Element {
                         .title("Notes")
                         .placeholder("Type your notes here...")
                         .rounded()
+                        .focusedBorderColor(Color.CYAN)
                         .id("notes")
                         .fill(),
 
@@ -135,7 +137,7 @@ public class TextAreaDemo implements Element {
                     textArea(readOnlyState)
                         .title("Display (Read-only)")
                         .showLineNumbers()
-                        .lineNumberStyle(dev.tamboui.style.Style.EMPTY.fg(dev.tamboui.style.Color.CYAN))
+                        .lineNumberStyle(Style.EMPTY.fg(Color.CYAN))
                         .showCursor(false)
                         .rounded()
                         .length(8),
