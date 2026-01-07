@@ -4,6 +4,7 @@
 [![Downloads](https://img.shields.io/github/downloads/tamboui/tamboui/total.svg)](https://hanadigital.github.io/grev/?user=jbangdev&repo=jbang)
 [![Build Status](https://github.com/tamboui/tamboui/workflows/Tests/badge.svg)](https://github.com/tamboui/tamboui/actions)
 [![Chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://tamboui.zulipchat.com)
+[![All Contributors](https://img.shields.io/github/all-contributors/tamboui/tamboui?color=ee8449&style=flat-square)](#contributors)
 
 A Java library for building modern terminal user interfaces.
 
@@ -454,6 +455,17 @@ isEscape(event)    // Escape
 isTab(event)       // Tab
 isBackTab(event)   // Shift+Tab
 ```
+
+## Contributors
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 
 ## Acknowledgments
 
