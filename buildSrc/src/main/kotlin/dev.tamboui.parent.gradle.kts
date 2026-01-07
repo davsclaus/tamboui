@@ -39,6 +39,6 @@ tasks.register<UpdateJBangCatalogTask>("updateJBangCatalog") {
     group = "build"
 
     projectDir = layout.projectDirectory
-    this.modules.set(modules)
+    modules =  rootProject.subprojects.map { it.name }
     catalogFile = layout.projectDirectory.file("jbang-catalog.json")
 }
