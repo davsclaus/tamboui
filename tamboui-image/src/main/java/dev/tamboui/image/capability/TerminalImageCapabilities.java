@@ -27,6 +27,7 @@ import java.util.Set;
  *
  * <h2>Terminal Detection</h2>
  * <table>
+ *   <caption>Environment variable to protocol mapping</caption>
  *   <tr><th>Environment</th><th>Protocol</th></tr>
  *   <tr><td>KITTY_WINDOW_ID</td><td>Kitty</td></tr>
  *   <tr><td>TERM=xterm-kitty</td><td>Kitty</td></tr>
