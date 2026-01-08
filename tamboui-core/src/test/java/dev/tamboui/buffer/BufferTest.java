@@ -170,8 +170,123 @@ class BufferTest {
         Buffer buffer = Buffer.empty(new Rect(0, 0, 10, 5));
         Cell cell = new Cell("X", Style.EMPTY);
         buffer.set(5, 2, cell);
-        
+
         assertThat(buffer).hasCellAt(5, 2, cell);
         assertThat(buffer).hasCellAt(0, 0, Cell.EMPTY);
+    }
+
+    @Test
+    @DisplayName("toAnsiString renders plain text correctly")
+    void toAnsiStringPlainText() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 5, 1));
+        buffer.setString(0, 0, "Hello", Style.EMPTY);
+
+        String result = buffer.toAnsiString();
+
+        // Should have reset at start, content, and reset at end
+        assertThat(result).startsWith("\u001b[0m");
+        assertThat(result).contains("Hello");
+        assertThat(result).endsWith("\u001b[0m");
+    }
+
+    @Test
+    @DisplayName("toAnsiString renders styled text with ANSI codes")
+    void toAnsiStringStyledText() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 2, 1));
+        buffer.set(0, 0, new Cell("A", Style.EMPTY.fg(Color.RED)));
+        buffer.set(1, 0, new Cell("B", Style.EMPTY.fg(Color.GREEN)));
+
+        String result = buffer.toAnsiString();
+
+        // Should contain red code for A and green code for B
+        assertThat(result).contains(";31m");  // red
+        assertThat(result).contains("A");
+        assertThat(result).contains(";32m");  // green
+        assertThat(result).contains("B");
+    }
+
+    @Test
+    @DisplayName("toAnsiString handles multiple lines")
+    void toAnsiStringMultipleLines() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 3, 2));
+        buffer.setString(0, 0, "ABC", Style.EMPTY);
+        buffer.setString(0, 1, "XYZ", Style.EMPTY);
+
+        String result = buffer.toAnsiString();
+
+        assertThat(result).contains("ABC");
+        assertThat(result).contains("\n");
+        assertThat(result).contains("XYZ");
+    }
+
+    @Test
+    @DisplayName("toAnsiString optimizes style changes")
+    void toAnsiStringOptimizesStyleChanges() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 5, 1));
+        Style redStyle = Style.EMPTY.fg(Color.RED);
+        // All same style - should only emit style code once
+        for (int i = 0; i < 5; i++) {
+            buffer.set(i, 0, new Cell("X", redStyle));
+        }
+
+        String result = buffer.toAnsiString();
+
+        // Count occurrences of the red color code - should only appear once
+        int occurrences = countOccurrences(result, ";31m");
+        assertThat(occurrences).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("toAnsiStringTrimmed removes trailing spaces")
+    void toAnsiStringTrimmed() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 10, 1));
+        buffer.setString(0, 0, "Hi", Style.EMPTY);
+        // Rest of buffer is empty spaces
+
+        String trimmed = buffer.toAnsiStringTrimmed();
+        String full = buffer.toAnsiString();
+
+        // Trimmed should be shorter (no trailing spaces)
+        assertThat(trimmed.length()).isLessThan(full.length());
+        assertThat(trimmed).contains("Hi");
+    }
+
+    @Test
+    @DisplayName("toAnsiStringTrimmed preserves styled spaces")
+    void toAnsiStringTrimmedPreservesStyledSpaces() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 5, 1));
+        buffer.set(0, 0, new Cell("A", Style.EMPTY));
+        buffer.set(1, 0, new Cell(" ", Style.EMPTY.bg(Color.RED)));  // Styled space
+        buffer.set(2, 0, new Cell("B", Style.EMPTY));
+        // 3 and 4 are empty default spaces
+
+        String trimmed = buffer.toAnsiStringTrimmed();
+
+        // Should contain A, styled space, and B, but not trailing spaces
+        assertThat(trimmed).contains("A");
+        assertThat(trimmed).contains("B");
+        // The styled space should cause content up to position 2 to be included
+    }
+
+    @Test
+    @DisplayName("toAnsiString with empty buffer")
+    void toAnsiStringEmptyBuffer() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 3, 2));
+
+        String result = buffer.toAnsiString();
+
+        // Should still have structure (spaces and newlines) with reset codes
+        assertThat(result).contains("\n");
+        assertThat(result).endsWith("\u001b[0m");
+    }
+
+    private int countOccurrences(String str, String sub) {
+        int count = 0;
+        int idx = 0;
+        while ((idx = str.indexOf(sub, idx)) != -1) {
+            count++;
+            idx += sub.length();
+        }
+        return count;
     }
 }

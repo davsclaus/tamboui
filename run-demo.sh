@@ -74,15 +74,19 @@ run_demo() {
         usage
     fi
 
+    # Get absolute path to project root (needed for macOS compatibility with Gradle scripts)
+    local project_root
+    project_root="$(cd "$(dirname "$0")" && pwd)"
+
     if [ "$native" = true ]; then
         echo "Building native image for $demo_name..."
         ./gradlew "$GRADLE_PATH:nativeCompile"
         echo ""
         echo "Running $demo_name (native)..."
         if [ "$use_exec" = true ]; then
-            exec "$NATIVE_DIR/$demo_name"
+            exec "$project_root/$NATIVE_DIR/$demo_name"
         else
-            "$NATIVE_DIR/$demo_name" || true
+            "$project_root/$NATIVE_DIR/$demo_name" || true
         fi
     else
         echo "Building $demo_name..."
@@ -90,9 +94,9 @@ run_demo() {
         echo ""
         echo "Running $demo_name..."
         if [ "$use_exec" = true ]; then
-            exec "$INSTALL_DIR/bin/$demo_name"
+            exec "$project_root/$INSTALL_DIR/bin/$demo_name"
         else
-            "$INSTALL_DIR/bin/$demo_name" || true
+            "$project_root/$INSTALL_DIR/bin/$demo_name" || true
         fi
     fi
 }
@@ -136,12 +140,15 @@ fi
 echo "Building demo selector..."
 ./gradlew :demos:demo-selector:installDist -q
 
+# Get absolute path to project root (needed for macOS compatibility with Gradle scripts)
+PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
+
 while true; do
     # Run the selector and capture the selected demo name
     # The selector prints the demo name to stdout and exits with 0 on selection,
     # or exits with 1 if the user quits without selecting
     set +e
-    DEMO_NAME=$(demos/demo-selector/build/install/demo-selector/bin/demo-selector)
+    DEMO_NAME=$("$PROJECT_ROOT/demos/demo-selector/build/install/demo-selector/bin/demo-selector")
     EXIT_CODE=$?
     set -e
 
