@@ -5,13 +5,15 @@ plugins {
 description = "Demo TUI application showcasing TamboUI effects"
 
 dependencies {
-    implementation(project(":tamboui-tfx"))
-    implementation(project(":tamboui-tui"))
-    runtimeOnly(project(":tamboui-jline"))
+    implementation(projects.tambouiTfx)
+    implementation(projects.tambouiTui)
 }
 
 application {
     mainClass.set("dev.tamboui.demo.TFxBasicEffectsDemo")
 }
 
-
+demo {
+    displayName = "TamboUI TFX Basic Effects Demo"
+    tags = setOf("tfx", "effects", "animation", "progress", "widgets")
+}
