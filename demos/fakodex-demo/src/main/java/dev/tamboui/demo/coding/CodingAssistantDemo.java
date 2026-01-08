@@ -1,3 +1,7 @@
+//DEPS dev.tamboui:tamboui-toolkit:LATEST
+//DEPS dev.tamboui:tamboui-jline:LATEST
+//FILES styles/codex.tcss=../../../../../resources/styles/codex.tcss
+
 /*
  * Copyright (c) 2025 TamboUI Contributors
  * SPDX-License-Identifier: MIT
