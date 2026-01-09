@@ -49,7 +49,7 @@ import java.util.function.BiConsumer;
  *
  * @see Buffer#toAnsiString()
  */
-public final class InlineDisplay implements Closeable {
+public final class InlineDisplay implements AutoCloseable {
 
     private static final String ESC = "\u001b";
     private static final String CSI = ESC + "[";
