@@ -41,21 +41,21 @@ class InlineDisplayTest {
     @Test
     @DisplayName("height() returns configured height")
     void heightReturnsConfiguredHeight() {
-        InlineDisplay display = InlineDisplay.createForTesting(5, 80, mockBackend, printWriter);
+        InlineDisplay display = new InlineDisplay(5, 80, mockBackend, printWriter);
         assertThat(display.height()).isEqualTo(5);
     }
 
     @Test
     @DisplayName("width() returns configured width")
     void widthReturnsConfiguredWidth() {
-        InlineDisplay display = InlineDisplay.createForTesting(3, 120, mockBackend, printWriter);
+        InlineDisplay display = new InlineDisplay(3, 120, mockBackend, printWriter);
         assertThat(display.width()).isEqualTo(120);
     }
 
     @Test
     @DisplayName("clearOnClose() returns this for chaining")
     void clearOnCloseReturnsThis() {
-        InlineDisplay display = InlineDisplay.createForTesting(3, 80, mockBackend, printWriter);
+        InlineDisplay display = new InlineDisplay(3, 80, mockBackend, printWriter);
         InlineDisplay result = display.clearOnClose();
         assertThat(result).isSameAs(display);
     }
@@ -63,7 +63,7 @@ class InlineDisplayTest {
     @Test
     @DisplayName("setLine() with negative line is ignored")
     void setLineWithNegativeLineIsIgnored() {
-        InlineDisplay display = InlineDisplay.createForTesting(3, 80, mockBackend, printWriter);
+        InlineDisplay display = new InlineDisplay(3, 80, mockBackend, printWriter);
         // Should not throw
         display.setLine(-1, "test");
         // Nothing written (no initialization triggered)
@@ -73,7 +73,7 @@ class InlineDisplayTest {
     @Test
     @DisplayName("setLine() with line >= height is ignored")
     void setLineWithLineBeyondHeightIsIgnored() {
-        InlineDisplay display = InlineDisplay.createForTesting(3, 80, mockBackend, printWriter);
+        InlineDisplay display = new InlineDisplay(3, 80, mockBackend, printWriter);
         // Should not throw
         display.setLine(3, "test");
         display.setLine(10, "test");
@@ -84,7 +84,7 @@ class InlineDisplayTest {
     @Test
     @DisplayName("setLine() initializes display and writes content")
     void setLineInitializesAndWritesContent() {
-        InlineDisplay display = InlineDisplay.createForTesting(2, 40, mockBackend, printWriter);
+        InlineDisplay display = new InlineDisplay(2, 40, mockBackend, printWriter);
         display.setLine(0, "Hello");
 
         String output = stringWriter.toString();
@@ -97,7 +97,7 @@ class InlineDisplayTest {
     @Test
     @DisplayName("render() draws widgets to buffer")
     void renderDrawsWidgetsToBuffer() {
-        InlineDisplay display = InlineDisplay.createForTesting(2, 40, mockBackend, printWriter);
+        InlineDisplay display = new InlineDisplay(2, 40, mockBackend, printWriter);
 
         display.render((area, buf) -> {
             Paragraph.builder()
@@ -113,7 +113,7 @@ class InlineDisplayTest {
     @Test
     @DisplayName("println() outputs text above status area")
     void printlnOutputsTextAboveStatusArea() {
-        InlineDisplay display = InlineDisplay.createForTesting(2, 40, mockBackend, printWriter);
+        InlineDisplay display = new InlineDisplay(2, 40, mockBackend, printWriter);
         // Initialize with a render call first
         display.setLine(0, "Status");
 
@@ -126,7 +126,7 @@ class InlineDisplayTest {
     @Test
     @DisplayName("println(Text) renders styled text")
     void printlnTextRendersStyledText() {
-        InlineDisplay display = InlineDisplay.createForTesting(2, 40, mockBackend, printWriter);
+        InlineDisplay display = new InlineDisplay(2, 40, mockBackend, printWriter);
         display.setLine(0, "Status");
 
         display.println(Text.from(Line.from(
@@ -141,7 +141,7 @@ class InlineDisplayTest {
     @Test
     @DisplayName("close() writes reset sequence")
     void closeWritesResetSequence() throws IOException {
-        InlineDisplay display = InlineDisplay.createForTesting(2, 40, mockBackend, printWriter);
+        InlineDisplay display = new InlineDisplay(2, 40, mockBackend, printWriter);
         display.setLine(0, "Status");
 
         display.close();
@@ -155,7 +155,7 @@ class InlineDisplayTest {
     @Test
     @DisplayName("release() can be called before close()")
     void releaseCanBeCalledBeforeClose() throws IOException {
-        InlineDisplay display = InlineDisplay.createForTesting(2, 40, mockBackend, printWriter);
+        InlineDisplay display = new InlineDisplay(2, 40, mockBackend, printWriter);
         display.setLine(0, "Status");
 
         display.release();
@@ -168,7 +168,7 @@ class InlineDisplayTest {
     @Test
     @DisplayName("release() is idempotent")
     void releaseIsIdempotent() throws IOException {
-        InlineDisplay display = InlineDisplay.createForTesting(2, 40, mockBackend, printWriter);
+        InlineDisplay display = new InlineDisplay(2, 40, mockBackend, printWriter);
         display.setLine(0, "Status");
 
         display.release();
@@ -183,7 +183,7 @@ class InlineDisplayTest {
     @Test
     @DisplayName("setLine(Text) renders styled text")
     void setLineTextRendersStyledText() {
-        InlineDisplay display = InlineDisplay.createForTesting(2, 40, mockBackend, printWriter);
+        InlineDisplay display = new InlineDisplay(2, 40, mockBackend, printWriter);
 
         display.setLine(0, Text.from(Line.from(
             Span.styled("styled", Style.EMPTY.fg(Color.GREEN))

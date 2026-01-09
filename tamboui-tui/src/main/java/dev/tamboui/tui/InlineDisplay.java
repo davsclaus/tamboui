@@ -63,7 +63,7 @@ public final class InlineDisplay implements Closeable {
     private boolean released;
     private boolean shouldClearOnClose;
 
-    private InlineDisplay(int height, int width, Backend backend, PrintWriter out) {
+    InlineDisplay(int height, int width, Backend backend, PrintWriter out) {
         this.height = height;
         this.width = width;
         this.backend = backend;
@@ -100,20 +100,6 @@ public final class InlineDisplay implements Closeable {
     public static InlineDisplay create(int height, int width) throws IOException {
         Backend backend = BackendFactory.create();
         PrintWriter out = new PrintWriter(System.out, true);
-        return new InlineDisplay(height, width, backend, out);
-    }
-
-    /**
-     * Creates an InlineDisplay for testing with injected dependencies.
-     * Package-private for use by tests.
-     *
-     * @param height  the number of lines for the display area
-     * @param width   the width of the display area
-     * @param backend the terminal backend
-     * @param out     the output writer
-     * @return a new InlineDisplay
-     */
-    static InlineDisplay createForTesting(int height, int width, Backend backend, PrintWriter out) {
         return new InlineDisplay(height, width, backend, out);
     }
 
