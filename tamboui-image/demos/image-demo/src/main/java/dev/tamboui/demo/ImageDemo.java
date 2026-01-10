@@ -70,7 +70,6 @@ public class ImageDemo {
     private final String imageTitle;
     private ImageProtocol currentProtocol;
     private ImageScaling currentScaling = ImageScaling.FIT;
-    private boolean needsFullRedraw;
     private boolean forceProtocol;
 
     public static void main(String[] args) throws Exception {
@@ -100,23 +99,8 @@ public class ImageDemo {
 
             var terminal = new Terminal<>(backend);
 
-            // Handle resize
-            backend.onResize(() -> {
-                try {
-                    terminal.draw(this::ui);
-                } catch (IOException e) {
-                    // Ignore
-                }
-            });
-
             // Event loop
             while (running) {
-                // Force full redraw if needed (e.g., after protocol switch)
-                if (needsFullRedraw) {
-                    terminal.clear();
-                    needsFullRedraw = false;
-                }
-
                 terminal.draw(this::ui);
 
                 var c = backend.read(100);
@@ -175,15 +159,13 @@ public class ImageDemo {
                 break;
             case 6: // Ctrl+F - force protocol
                 forceProtocol = true;
-                needsFullRedraw = true;
                 break;
             default:
                 break;
         }
 
-        // Force full redraw and reset force flag when switching protocols
+        // Reset force flag when switching protocols
         if (previousProtocol != currentProtocol) {
-            needsFullRedraw = true;
             forceProtocol = false;
         }
     }
