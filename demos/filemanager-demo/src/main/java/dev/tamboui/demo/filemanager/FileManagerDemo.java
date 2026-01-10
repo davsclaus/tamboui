@@ -1,6 +1,9 @@
 //DEPS dev.tamboui:tamboui-toolkit:LATEST
 //DEPS dev.tamboui:tamboui-jline:LATEST
+//DEPS dev.tamboui:tamboui-image:LATEST
 //SOURCES FileManagerController.java FileManagerView.java FileManagerKeyHandler.java DirectoryBrowserController.java
+// Prevents OSX from showing up in the terminal when running the demo
+//JAVA_OPTIONS -Dapple.awt.UIElement=true
 
 /*
  * Copyright (c) 2025 TamboUI Contributors
@@ -36,8 +39,15 @@ import java.time.Duration;
  *   <li>F5/C - Copy to other panel</li>
  *   <li>F6/M - Move to other panel</li>
  *   <li>F8/D - Delete</li>
+ *   <li>V - View file (text files show in scrollable paragraph, PNG images show in Image widget)</li>
  *   <li>R - Refresh</li>
  *   <li>Q - Quit</li>
+ * </ul>
+ * <p>Viewer key bindings:
+ * <ul>
+ *   <li>Esc - Close viewer</li>
+ *   <li>Up/Down - Scroll text (text files only)</li>
+ *   <li>PgUp/PgDn - Page scroll text (text files only)</li>
  * </ul>
  */
 public class FileManagerDemo {
