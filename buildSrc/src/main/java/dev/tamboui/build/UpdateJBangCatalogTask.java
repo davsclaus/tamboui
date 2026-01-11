@@ -8,17 +8,22 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -59,6 +64,15 @@ public abstract class UpdateJBangCatalogTask extends DefaultTask {
     public abstract RegularFileProperty getCatalogFile();
 
     /**
+     * Returns whether to verify builds after writing the catalog.
+     *
+     * @return the verify builds property
+     */
+    @Input
+    @Optional
+    public abstract Property<Boolean> getVerifyBuilds();
+
+    /**
      * Executes the task to update the jbang catalog.
      */
     @TaskAction
@@ -79,6 +93,11 @@ public abstract class UpdateJBangCatalogTask extends DefaultTask {
 
         // Write the catalog file
         writeCatalog(aliases);
+
+        // Optionally verify builds
+        if (getVerifyBuilds().getOrElse(false)) {
+            verifyBuilds(aliases.keySet());
+        }
     }
 
     /**
@@ -191,6 +210,73 @@ public abstract class UpdateJBangCatalogTask extends DefaultTask {
             getLogger().lifecycle("Updated {}", catalogFile);
         } catch (IOException e) {
             throw new RuntimeException("Failed to write catalog file: " + catalogFile, e);
+        }
+    }
+
+    /**
+     * Verifies builds for all aliases by running jbang build on each one.
+     *
+     * @param aliases the set of alias names to verify
+     */
+    private void verifyBuilds(java.util.Set<String> aliases) {
+        getLogger().lifecycle("Verifying builds for {} aliases...", aliases.size());
+        List<String> failedAliases = new ArrayList<>();
+
+        for (String alias : aliases) {
+            getLogger().lifecycle("Building alias: {}", alias);
+            if (!buildAlias(alias)) {
+                failedAliases.add(alias);
+            }
+        }
+
+        if (!failedAliases.isEmpty()) {
+            getLogger().error("Build verification failed for {} alias(es): {}", failedAliases.size(), String.join(", ", failedAliases));
+        } else {
+            getLogger().lifecycle("All {} aliases built successfully", aliases.size());
+        }
+    }
+
+    /**
+     * Builds a single alias using jbang build command.
+     *
+     * @param aliasName the alias name to build
+     * @return true if the build succeeded (exit code 0), false otherwise
+     */
+    private boolean buildAlias(String aliasName) {
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "jbang", "build",
+                    "-C=-Xdiags:compact",
+                    "-C=-Xmaxerrs",
+                    "-C=1",
+                    aliasName
+            );
+            processBuilder.redirectErrorStream(true);
+
+            Process process = processBuilder.start();
+
+            // Read and print output in real-time
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    getLogger().lifecycle("  {}", line);
+                }
+            }
+
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                getLogger().warn("Build failed for alias '{}' with exit code {}", aliasName, exitCode);
+                return false;
+            }
+            return true;
+        } catch (IOException e) {
+            getLogger().error("Failed to execute jbang build for alias '{}': {}", aliasName, e.getMessage(), e);
+            return false;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            getLogger().error("Build interrupted for alias '{}'", aliasName, e);
+            return false;
         }
     }
 }
