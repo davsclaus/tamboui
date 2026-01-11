@@ -15,6 +15,7 @@ import dev.tamboui.toolkit.app.ToolkitRunner;
 import dev.tamboui.tui.TuiConfig;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 
 /**
@@ -54,22 +55,22 @@ public class FileManagerDemo {
 
     public static void main(String[] args) throws Exception {
         // Determine starting directories
-        var home = Path.of(System.getProperty("user.home"));
-        var leftStart = args.length > 0 ? Path.of(args[0]) : Path.of(".");
-        var rightStart = args.length > 1 ? Path.of(args[1]) : home;
+        Path home = Paths.get(System.getProperty("user.home"));
+        Path leftStart = args.length > 0 ? Paths.get(args[0]) : Paths.get(".");
+        Path rightStart = args.length > 1 ? Paths.get(args[1]) : home;
 
         // Create the model
-        var manager = new FileManagerController(leftStart, rightStart);
+        FileManagerController manager = new FileManagerController(leftStart, rightStart);
 
         // Create the view (implements Element with handleKeyEvent)
-        var view = new FileManagerView(manager);
+        FileManagerView view = new FileManagerView(manager);
 
         // Run the application
-        var config = TuiConfig.builder()
+        TuiConfig config = TuiConfig.builder()
             .tickRate(Duration.ofMillis(50))
             .build();
 
-        try (var runner = ToolkitRunner.create(config)) {
+        try (ToolkitRunner runner = ToolkitRunner.create(config)) {
             runner.run(() -> view);
         }
     }

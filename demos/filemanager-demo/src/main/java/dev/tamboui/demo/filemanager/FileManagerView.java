@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static dev.tamboui.toolkit.Toolkit.*;
 
@@ -48,7 +49,7 @@ public class FileManagerView implements Element {
     public void render(Frame frame, Rect area, RenderContext context) {
 
         // Build and render the UI tree
-        var ui = column(
+        Element ui = column(
                 header(),
                 browserRow(context),
                 helpBar()
@@ -64,8 +65,8 @@ public class FileManagerView implements Element {
     }
 
     private void renderDialog(Frame frame, Rect area, RenderContext context) {
-        var type = manager.currentDialog();
-        var message = manager.dialogMessage();
+        FileManagerController.DialogType type = manager.currentDialog();
+        String message = manager.dialogMessage();
 
         // Handle input dialogs separately
         if (type == FileManagerController.DialogType.MKDIR_INPUT) {
@@ -83,19 +84,37 @@ public class FileManagerView implements Element {
             return;
         }
 
-        var titleColor = switch (type) {
-            case ERROR -> Color.RED;
-            case DELETE_CONFIRM -> Color.YELLOW;
-            default -> Color.CYAN;
-        };
+        Color titleColor;
+        switch (type) {
+            case ERROR:
+                titleColor = Color.RED;
+                break;
+            case DELETE_CONFIRM:
+                titleColor = Color.YELLOW;
+                break;
+            default:
+                titleColor = Color.CYAN;
+                break;
+        }
 
-        var title = switch (type) {
-            case COPY_CONFIRM -> "Copy";
-            case MOVE_CONFIRM -> "Move";
-            case DELETE_CONFIRM -> "Delete";
-            case ERROR -> "Error";
-            default -> "";
-        };
+        String title;
+        switch (type) {
+            case COPY_CONFIRM:
+                title = "Copy";
+                break;
+            case MOVE_CONFIRM:
+                title = "Move";
+                break;
+            case DELETE_CONFIRM:
+                title = "Delete";
+                break;
+            case ERROR:
+                title = "Error";
+                break;
+            default:
+                title = "";
+                break;
+        }
 
         // Confirmation dialogs don't use Enter for confirm (they use y/n)
         // so we just create a simple dialog without onConfirm
@@ -166,8 +185,8 @@ public class FileManagerView implements Element {
     }
 
     private Element browserRow(RenderContext context) {
-        var leftActive = manager.isActive(FileManagerController.Side.LEFT);
-        var rightActive = manager.isActive(FileManagerController.Side.RIGHT);
+        boolean leftActive = manager.isActive(FileManagerController.Side.LEFT);
+        boolean rightActive = manager.isActive(FileManagerController.Side.RIGHT);
 
         return row(
                 browserPanel(manager.leftBrowser(), leftActive, "left", context),
@@ -201,20 +220,20 @@ public class FileManagerView implements Element {
     }
 
     private Element fileList(DirectoryBrowserController browser, boolean active) {
-        var entries = browser.entries();
-        var offset = browser.scrollOffset();
-        var cursor = browser.cursorIndex();
-        var visibleCount = Math.min(browser.visibleRows(), Math.max(0, entries.size() - offset));
+        List<DirectoryBrowserController.FileEntry> entries = browser.entries();
+        int offset = browser.scrollOffset();
+        int cursor = browser.cursorIndex();
+        int visibleCount = Math.min(browser.visibleRows(), Math.max(0, entries.size() - offset));
 
         if (visibleCount == 0) {
             return text("Empty").dim().fill();
         }
 
-        var elements = new Element[visibleCount];
+        Element[] elements = new Element[visibleCount];
         for (int i = 0; i < visibleCount; i++) {
-            var entryIndex = offset + i;
-            var entry = entries.get(entryIndex);
-            var isSelected = entryIndex == cursor;
+            int entryIndex = offset + i;
+            DirectoryBrowserController.FileEntry entry = entries.get(entryIndex);
+            boolean isSelected = entryIndex == cursor;
             elements[i] = fileEntry(browser, entry, isSelected, active);
         }
 
@@ -222,14 +241,14 @@ public class FileManagerView implements Element {
     }
 
     private Element fileEntry(DirectoryBrowserController browser, DirectoryBrowserController.FileEntry entry, boolean selected, boolean active) {
-        var name = entry.name();
-        var isMarked = browser.isMarked(name);
-        var marker = isMarked ? "*" : " ";
-        var displayName = entry.isDirectory() && !name.equals("..") ? name + "/" : name;
-        var size = entry.isDirectory() ? "<DIR>" : formatSize(entry.size());
+        String name = entry.name();
+        boolean isMarked = browser.isMarked(name);
+        String marker = isMarked ? "*" : " ";
+        String displayName = entry.isDirectory() && !name.equals("..") ? name + "/" : name;
+        String size = entry.isDirectory() ? "<DIR>" : formatSize(entry.size());
 
         // Combine marker + space + name into single left-aligned text
-        var fullName = marker + " " + displayName;
+        String fullName = marker + " " + displayName;
 
         // Determine colors based on state
         Color fg, bg;
@@ -247,18 +266,21 @@ public class FileManagerView implements Element {
             bg = null;
         }
 
-        var nameText = text(fullName).fg(fg).ellipsis().fill();
-        var sizeText = text(" " + size).fg(selected ? fg : Color.GRAY);
-
         if (bg != null) {
-            return row(nameText.bg(bg), sizeText.bg(bg)).length(1);
+            return row(
+                    text(fullName).fg(fg).bg(bg).ellipsis().fill(),
+                    text(" " + size).fg(selected ? fg : Color.GRAY).bg(bg)
+            ).length(1);
         }
-        return row(nameText, sizeText).length(1);
+        return row(
+                text(fullName).fg(fg).ellipsis().fill(),
+                text(" " + size).fg(selected ? fg : Color.GRAY)
+        ).length(1);
     }
 
     private Element helpBar() {
-        var browser = manager.activeBrowser();
-        var entry = browser.selectedEntry();
+        DirectoryBrowserController browser = manager.activeBrowser();
+        DirectoryBrowserController.FileEntry entry = browser.selectedEntry();
 
         String info;
         if (entry == null) {
@@ -359,7 +381,8 @@ public class FileManagerView implements Element {
 
     private void renderTextFile(Frame frame, Rect area, Path textPath) {
         try {
-            String content = Files.readString(textPath, StandardCharsets.UTF_8);
+            byte[] bytes = Files.readAllBytes(textPath);
+            String content = new String(bytes, StandardCharsets.UTF_8);
             int scrollPos = manager.textScrollPosition();
             
             Paragraph paragraph = Paragraph.builder()

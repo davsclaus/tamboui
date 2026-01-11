@@ -8,10 +8,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Manages browsing a directory: navigation, selection, and marking files for operations.
@@ -19,13 +22,41 @@ import java.util.Set;
  */
 public final class DirectoryBrowserController {
 
-    public record FileEntry(
-        String name,
-        boolean isDirectory,
-        long size,
-        boolean isReadable,
-        boolean isWritable
-    ) {
+    public static final class FileEntry {
+        private final String name;
+        private final boolean isDirectory;
+        private final long size;
+        private final boolean isReadable;
+        private final boolean isWritable;
+
+        public FileEntry(String name, boolean isDirectory, long size, boolean isReadable, boolean isWritable) {
+            this.name = name;
+            this.isDirectory = isDirectory;
+            this.size = size;
+            this.isReadable = isReadable;
+            this.isWritable = isWritable;
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public boolean isDirectory() {
+            return isDirectory;
+        }
+
+        public long size() {
+            return size;
+        }
+
+        public boolean isReadable() {
+            return isReadable;
+        }
+
+        public boolean isWritable() {
+            return isWritable;
+        }
+
         public static FileEntry parentDir() {
             return new FileEntry("..", true, 0, true, false);
         }
@@ -52,7 +83,7 @@ public final class DirectoryBrowserController {
     }
 
     public List<FileEntry> entries() {
-        return List.copyOf(entries);
+        return Collections.unmodifiableList(new ArrayList<>(entries));
     }
 
     public int cursorIndex() {
@@ -71,7 +102,7 @@ public final class DirectoryBrowserController {
     }
 
     public Path selectedPath() {
-        var entry = selectedEntry();
+        FileEntry entry = selectedEntry();
         if (entry == null || entry.name().equals("..")) {
             return null;
         }
@@ -83,13 +114,13 @@ public final class DirectoryBrowserController {
     }
 
     public Set<String> markedFiles() {
-        return Set.copyOf(markedFiles);
+        return Collections.unmodifiableSet(new HashSet<>(markedFiles));
     }
 
     public List<Path> markedPaths() {
         return markedFiles.stream()
             .map(name -> currentDirectory.resolve(name))
-            .toList();
+            .collect(Collectors.toList());
     }
 
     public boolean hasMarkedFiles() {
@@ -148,7 +179,7 @@ public final class DirectoryBrowserController {
     }
 
     public void enter() {
-        var entry = selectedEntry();
+        FileEntry entry = selectedEntry();
         if (entry == null) {
             return;
         }
@@ -161,9 +192,9 @@ public final class DirectoryBrowserController {
     }
 
     public void navigateUp() {
-        var parent = currentDirectory.getParent();
+        Path parent = currentDirectory.getParent();
         if (parent != null) {
-            var previousDir = currentDirectory.getFileName().toString();
+            String previousDir = currentDirectory.getFileName().toString();
             navigateTo(parent);
             // Try to position cursor on the directory we came from
             for (int i = 0; i < entries.size(); i++) {
@@ -177,7 +208,7 @@ public final class DirectoryBrowserController {
     }
 
     public void navigateTo(Path directory) {
-        var normalized = directory.toAbsolutePath().normalize();
+        Path normalized = directory.toAbsolutePath().normalize();
         if (Files.isDirectory(normalized) && Files.isReadable(normalized)) {
             currentDirectory = normalized;
             markedFiles.clear();
@@ -195,13 +226,13 @@ public final class DirectoryBrowserController {
             entries.add(FileEntry.parentDir());
         }
 
-        try (var stream = Files.list(currentDirectory)) {
-            var fileEntries = stream
+        try (Stream<Path> stream = Files.list(currentDirectory)) {
+            List<FileEntry> fileEntries = stream
                 .map(this::createEntry)
                 .sorted(Comparator
                     .comparing((FileEntry e) -> !e.isDirectory())  // Directories first
                     .thenComparing(e -> e.name().toLowerCase()))   // Then alphabetically
-                .toList();
+                .collect(Collectors.toList());
             entries.addAll(fileEntries);
         } catch (IOException e) {
             // Directory not readable, keep it empty
@@ -215,7 +246,7 @@ public final class DirectoryBrowserController {
     }
 
     public void toggleMark() {
-        var entry = selectedEntry();
+        FileEntry entry = selectedEntry();
         if (entry == null || entry.name().equals("..")) {
             return;
         }
@@ -229,7 +260,7 @@ public final class DirectoryBrowserController {
     }
 
     public void markAll() {
-        for (var entry : entries) {
+        for (FileEntry entry : entries) {
             if (!entry.name().equals("..")) {
                 markedFiles.add(entry.name());
             }
@@ -241,7 +272,7 @@ public final class DirectoryBrowserController {
     }
 
     public void invertMarks() {
-        for (var entry : entries) {
+        for (FileEntry entry : entries) {
             if (entry.name().equals("..")) {
                 continue;
             }
@@ -259,11 +290,11 @@ public final class DirectoryBrowserController {
 
     private FileEntry createEntry(Path path) {
         try {
-            var name = path.getFileName().toString();
-            var isDir = Files.isDirectory(path);
-            var size = isDir ? 0 : Files.size(path);
-            var readable = Files.isReadable(path);
-            var writable = Files.isWritable(path);
+            String name = path.getFileName().toString();
+            boolean isDir = Files.isDirectory(path);
+            long size = isDir ? 0 : Files.size(path);
+            boolean readable = Files.isReadable(path);
+            boolean writable = Files.isWritable(path);
             return new FileEntry(name, isDir, size, readable, writable);
         } catch (IOException e) {
             return new FileEntry(path.getFileName().toString(), false, 0, false, false);

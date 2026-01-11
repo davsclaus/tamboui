@@ -33,7 +33,7 @@ public class FileManagerKeyHandler {
     }
 
     private EventResult handleDialogKey(KeyEvent event) {
-        var dialogType = manager.currentDialog();
+        FileManagerController.DialogType dialogType = manager.currentDialog();
 
         if (dialogType == FileManagerController.DialogType.ERROR) {
             if (event.isSelect() || event.isCancel()) {
@@ -57,7 +57,7 @@ public class FileManagerKeyHandler {
     }
 
     private EventResult handleBrowserKey(KeyEvent event) {
-        var browser = manager.activeBrowser();
+        DirectoryBrowserController browser = manager.activeBrowser();
 
         // Navigation
         if (event.isUp()) {
