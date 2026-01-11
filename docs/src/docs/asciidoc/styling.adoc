@@ -1,0 +1,418 @@
+= CSS Styling
+:doctype: book
+:icons: font
+:source-highlighter: highlight.js
+:toc: left
+:toclevels: 3
+
+include::_attributes.adoc[]
+
+{project-name} supports CSS-based styling as an alternative to programmatic style configuration.
+Instead of chaining `.bold().cyan().onBlue()` calls, you can define styles in external `.tcss` files and apply them via selectors.
+
+== Why Use CSS?
+
+Programmatic styling works well for simple cases:
+
+[source,java]
+----
+text("Hello").bold().cyan()
+panel("Title", content).rounded().borderColor(Color.BLUE)
+----
+
+But as applications grow, CSS offers advantages:
+
+* **Separation of concerns** - styling lives outside your code
+* **Theming** - switch between light/dark themes at runtime
+* **Designer-friendly** - non-developers can adjust colors and spacing
+* **Consistency** - define styles once, apply everywhere via classes
+
+== The StyleEngine
+
+`StyleEngine` manages stylesheets and resolves styles for elements:
+
+[source,java]
+----
+StyleEngine engine = StyleEngine.create();
+
+// Add inline CSS
+engine.addStylesheet("Panel { border-type: rounded; }");
+
+// Load named themes from classpath
+engine.loadStylesheet("dark", "/themes/dark.tcss");
+engine.loadStylesheet("light", "/themes/light.tcss");
+
+// Switch themes at runtime
+engine.setActiveStylesheet("dark");
+----
+
+== TCSS Format
+
+{project-name} uses `.tcss` (Textual CSS) files - a CSS dialect designed for terminal UIs.
+
+=== Variables
+
+Define reusable values:
+
+[source,css]
+----
+$bg-primary: black;
+$fg-primary: white;
+$accent: cyan;
+$border-color: dark-gray;
+
+Panel {
+    background: $bg-primary;
+    color: $fg-primary;
+    border-color: $border-color;
+}
+
+Panel:focus {
+    border-color: $accent;
+}
+----
+
+=== Selectors
+
+Type selectors match element types:
+
+[source,css]
+----
+Panel {
+    border-type: rounded;
+}
+
+Text {
+    color: white;
+}
+----
+
+Class selectors match CSS classes:
+
+[source,css]
+----
+.primary {
+    color: cyan;
+    text-style: bold;
+}
+
+.danger {
+    color: red;
+}
+----
+
+ID selectors match specific elements:
+
+[source,css]
+----
+#sidebar {
+    width: 30;
+    background: dark-gray;
+}
+
+#main-content {
+    padding: 1;
+}
+----
+
+Pseudo-class selectors match element state:
+
+[source,css]
+----
+Panel:focus {
+    border-color: cyan;
+    border-type: double;
+}
+
+Button:hover {
+    text-style: bold;
+}
+
+ListContainer-item:selected {
+    background: blue;
+}
+
+ListContainer-item:nth-child(even) {
+    background: #1a1a1a;
+}
+----
+
+Supported pseudo-classes: `:focus`, `:hover`, `:disabled`, `:active`, `:selected`, `:first-child`, `:last-child`, `:nth-child(even)`, `:nth-child(odd)`.
+
+Compound selectors combine multiple conditions:
+
+[source,css]
+----
+Panel.primary#main {
+    border-color: cyan;
+}
+----
+
+Descendant and child combinators:
+
+[source,css]
+----
+/* Any Button inside a Panel */
+Panel Button {
+    color: white;
+}
+
+/* Direct child only */
+Panel > Button {
+    text-style: bold;
+}
+----
+
+=== Nesting
+
+Use `&` for nested rules:
+
+[source,css]
+----
+Panel {
+    border-type: rounded;
+    border-color: gray;
+
+    &:focus {
+        border-color: cyan;
+        border-type: double;
+    }
+
+    &.primary {
+        border-color: blue;
+    }
+}
+----
+
+=== Properties
+
+[cols="1,2,2",options="header"]
+|===
+|Property |Values |Example
+
+|`color`
+|Named colors, hex, rgb
+|`color: cyan;` `color: #ff5500;`
+
+|`background`
+|Named colors, hex, rgb
+|`background: black;`
+
+|`text-style`
+|bold, dim, italic, underlined, reversed
+|`text-style: bold;`
+
+|`border-type`
+|plain, rounded, double, thick
+|`border-type: rounded;`
+
+|`border-color`
+|Named colors, hex, rgb
+|`border-color: cyan;`
+
+|`padding`
+|Single value or top right bottom left
+|`padding: 1;` `padding: 1 2 1 2;`
+
+|`text-align`
+|left, center, right
+|`text-align: center;`
+
+|`width`
+|Integer (columns)
+|`width: 40;`
+|===
+
+Named colors: `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, `gray`, `dark-gray`, and their bright variants.
+
+=== Importance
+
+Override specificity with `!important`:
+
+[source,css]
+----
+.error {
+    color: red !important;
+}
+----
+
+== Applying Styles
+
+=== With Toolkit DSL
+
+Elements automatically participate in CSS styling when you set IDs and classes:
+
+[source,java]
+----
+panel("Settings",
+    text("Username").cssClass("label"),
+    textInput(usernameState).id("username-input"),
+    text("Password").cssClass("label"),
+    textInput(passwordState).id("password-input").cssClass("secret")
+)
+.id("settings-panel")
+.cssClass("primary")
+----
+
+=== With ToolkitRunner
+
+Pass the StyleEngine when creating the runner:
+
+[source,java]
+----
+StyleEngine engine = StyleEngine.create();
+engine.loadStylesheet("dark", "/themes/dark.tcss");
+engine.setActiveStylesheet("dark");
+
+try (var runner = ToolkitRunner.builder()
+        .styleEngine(engine)
+        .build()) {
+    runner.run(() -> myApp());
+}
+----
+
+=== Implementing Styleable
+
+For custom widgets outside the Toolkit, implement the `Styleable` interface:
+
+[source,java]
+----
+public class MyWidget implements Widget, Styleable {
+    private String id;
+    private Set<String> classes = new HashSet<>();
+
+    @Override
+    public String styleType() {
+        return "MyWidget";  // Used for type selectors
+    }
+
+    @Override
+    public Optional<String> cssId() {
+        return Optional.ofNullable(id);
+    }
+
+    @Override
+    public Set<String> cssClasses() {
+        return classes;
+    }
+
+    @Override
+    public Optional<Styleable> cssParent() {
+        return Optional.empty();  // Or return parent for descendant selectors
+    }
+}
+----
+
+Then resolve and apply styles:
+
+[source,java]
+----
+CssStyleResolver resolved = engine.resolve(widget);
+
+Style style = Style.EMPTY;
+if (resolved.foreground() != null) {
+    style = style.fg(resolved.foreground());
+}
+if (resolved.background() != null) {
+    style = style.bg(resolved.background());
+}
+style = style.addModifiers(resolved.modifiers());
+----
+
+== Theme Switching
+
+Switch themes at runtime:
+
+[source,java]
+----
+@OnAction("toggleTheme")
+void onToggleTheme(Event event) {
+    String current = engine.getActiveStylesheet();
+    String next = "dark".equals(current) ? "light" : "dark";
+    engine.setActiveStylesheet(next);
+}
+----
+
+Listen for style changes:
+
+[source,java]
+----
+engine.addChangeListener(() -> {
+    // Styles changed, trigger redraw
+    requestRedraw();
+});
+----
+
+== Example Theme Files
+
+.dark.tcss
+[source,css]
+----
+$bg-primary: black;
+$fg-primary: white;
+$accent: cyan;
+$border-color: dark-gray;
+
+* {
+    color: $fg-primary;
+    background: $bg-primary;
+}
+
+Panel {
+    border-type: rounded;
+    border-color: $border-color;
+}
+
+Panel:focus {
+    border-color: $accent;
+    border-type: double;
+}
+
+.primary {
+    color: $accent;
+    text-style: bold;
+}
+
+.danger {
+    color: red;
+}
+
+.muted {
+    color: gray;
+}
+----
+
+.light.tcss
+[source,css]
+----
+$bg-primary: white;
+$fg-primary: black;
+$accent: blue;
+$border-color: gray;
+
+* {
+    color: $fg-primary;
+    background: $bg-primary;
+}
+
+Panel {
+    border-type: rounded;
+    border-color: $border-color;
+}
+
+Panel:focus {
+    border-color: $accent;
+    border-type: double;
+}
+
+.primary {
+    color: $accent;
+    text-style: bold;
+}
+----
+
+== Next Steps
+
+* link:api-levels.html[API Levels] - understanding the different abstraction layers
+* link:widgets.html[Widgets Reference] - available components to style
+* link:developer-guide.html[Developer Guide] - creating custom styleable widgets

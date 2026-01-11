@@ -1,0 +1,260 @@
+= Bindings and Actions
+:doctype: book
+:icons: font
+:source-highlighter: highlight.js
+:toc: left
+:toclevels: 3
+
+include::_attributes.adoc[]
+
+{project-name} separates physical input (keys, mouse clicks) from semantic actions.
+Instead of checking for specific keys everywhere, you define bindings that map inputs to actions like "moveUp" or "delete".
+
+== Predefined Binding Sets
+
+Several binding presets are available:
+
+[source,java]
+----
+Bindings standard = BindingSets.standard();  // Arrow keys, Enter, Escape
+Bindings vim = BindingSets.vim();            // hjkl navigation, Ctrl+u/d
+Bindings emacs = BindingSets.emacs();        // Ctrl+n/p/f/b navigation
+----
+
+== Matching Actions in Events
+
+Events carry binding information. Use semantic checks instead of hardcoding keys:
+
+[source,java]
+----
+// Semantic - works with any binding set
+if (event.isUp()) { }
+if (event.isSelect()) { }
+if (event.matches("delete")) { }
+
+// Low-level - when you need specific keys
+if (event.isChar('x')) { }
+if (event.isKey(KeyCode.F1)) { }
+----
+
+The `is*()` methods delegate to the current bindings.
+With vim bindings, `isUp()` matches Up arrow, `k`, or `Ctrl+p`.
+With standard bindings, it only matches the Up arrow.
+
+== Key Triggers
+
+`KeyTrigger` defines what input triggers an action:
+
+[source,java]
+----
+KeyTrigger.key(KeyCode.UP)           // Arrow key
+KeyTrigger.ch('j')                   // Character
+KeyTrigger.chIgnoreCase('j')         // j or J
+KeyTrigger.ctrl('u')                 // Ctrl+U
+KeyTrigger.alt('x')                  // Alt+X
+----
+
+== Mouse Triggers
+
+[source,java]
+----
+MouseTrigger.click()                 // Left click
+MouseTrigger.rightClick()            // Right click
+MouseTrigger.ctrlClick()             // Ctrl+click
+MouseTrigger.scrollUp()              // Scroll wheel
+MouseTrigger.drag(MouseButton.LEFT)  // Dragging
+----
+
+== Custom Bindings
+
+Start from a preset and customize:
+
+[source,java]
+----
+Bindings custom = BindingSets.standard()
+    .toBuilder()
+    .bind("delete", KeyTrigger.ch('d'), KeyTrigger.key(KeyCode.DELETE))
+    .bind("save", KeyTrigger.ctrl('s'))
+    .bind("contextMenu", MouseTrigger.rightClick())
+    .build();
+----
+
+== ActionHandler
+
+For centralized action handling, use `ActionHandler`:
+
+[source,java]
+----
+ActionHandler actions = new ActionHandler(BindingSets.vim())
+    .on(Actions.QUIT, e -> runner.quit())
+    .on("save", e -> save())
+    .on("delete", e -> deleteSelected());
+
+// In your event handler:
+(event, runner) -> {
+    if (actions.dispatch(event)) {
+        return true;  // Action was handled
+    }
+    // Handle other events...
+    return false;
+}
+----
+
+== @OnAction Annotation
+
+In Toolkit components, annotate methods to handle actions:
+
+[source,java]
+----
+public class EditorComponent extends Component<EditorComponent> {
+    private List<String> lines = new ArrayList<>();
+    private int cursor = 0;
+
+    @OnAction(Actions.MOVE_UP)
+    void moveCursorUp(Event event) {
+        if (cursor > 0) cursor--;
+    }
+
+    @OnAction(Actions.MOVE_DOWN)
+    void moveCursorDown(Event event) {
+        if (cursor < lines.size() - 1) cursor++;
+    }
+
+    @OnAction("delete")
+    void deleteLine(Event event) {
+        if (!lines.isEmpty()) {
+            lines.remove(cursor);
+        }
+    }
+}
+----
+
+The component framework discovers these methods and dispatches events automatically.
+
+=== Annotation Processing
+
+By default, `@OnAction` methods are discovered at runtime using reflection.
+For better startup performance and GraalVM native image compatibility, use the annotation processor to generate action handler registrations at compile time.
+
+==== Gradle (Kotlin DSL)
+
+[source,kotlin,subs="+attributes"]
+----
+dependencies {
+    implementation("{maven-group}:{toolkit-module}:{project-version}")
+    annotationProcessor("{maven-group}:{processor-module}:{project-version}")
+}
+----
+
+==== Gradle (Groovy DSL)
+
+[source,groovy,subs="+attributes"]
+----
+dependencies {
+    implementation '{maven-group}:{toolkit-module}:{project-version}'
+    annotationProcessor '{maven-group}:{processor-module}:{project-version}'
+}
+----
+
+==== Maven
+
+[source,xml,subs="+attributes"]
+----
+<dependencies>
+    <dependency>
+        <groupId>{maven-group}</groupId>
+        <artifactId>{toolkit-module}</artifactId>
+        <version>{project-version}</version>
+    </dependency>
+</dependencies>
+
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.13.0</version>
+            <configuration>
+                <annotationProcessorPaths>
+                    <path>
+                        <groupId>{maven-group}</groupId>
+                        <artifactId>{processor-module}</artifactId>
+                        <version>{project-version}</version>
+                    </path>
+                </annotationProcessorPaths>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+----
+
+The processor generates a `_ActionHandlerRegistrar` class for each component with `@OnAction` methods.
+These registrars are discovered via `ServiceLoader` and register action handlers without reflection.
+
+== Loading Bindings from Files
+
+Bindings can be externalized to properties files:
+
+[source,java]
+----
+// From classpath
+Bindings bindings = BindingSets.loadResource("/my-bindings.properties");
+
+// From filesystem
+Bindings bindings = BindingSets.load(Paths.get("~/.config/myapp/bindings.properties"));
+----
+
+Property file format:
+
+[source,properties]
+----
+# Navigation
+moveUp = Up, k
+moveDown = Down, j
+pageUp = PageUp, Ctrl+u
+pageDown = PageDown, Ctrl+d
+
+# Actions
+select = Enter, Space
+cancel = Escape
+delete = d, Delete
+
+# Mouse
+click = Mouse.Left.Press
+contextMenu = Mouse.Right.Press
+----
+
+Multiple triggers for the same action are comma-separated.
+Modifiers use `Ctrl+`, `Alt+`, `Shift+` prefixes.
+
+== Standard Actions
+
+The `Actions` class defines common action names:
+
+[cols="1,2",options="header"]
+|===
+|Action |Description
+
+|`MOVE_UP`, `MOVE_DOWN`, `MOVE_LEFT`, `MOVE_RIGHT`
+|Navigation
+
+|`PAGE_UP`, `PAGE_DOWN`, `HOME`, `END`
+|Page navigation
+
+|`SELECT`, `CONFIRM`, `CANCEL`
+|Selection and confirmation
+
+|`FOCUS_NEXT`, `FOCUS_PREVIOUS`
+|Focus navigation (Tab/Shift+Tab)
+
+|`DELETE_BACKWARD`, `DELETE_FORWARD`
+|Text editing
+
+|`QUIT`
+|Application exit
+|===
+
+== Next Steps
+
+* link:api-levels.html[API Levels] - choosing between immediate mode, TuiRunner, and Toolkit
+* link:mvc-architecture.html[Application Structure] - patterns for larger applications

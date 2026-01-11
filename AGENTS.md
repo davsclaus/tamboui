@@ -44,12 +44,15 @@ TamboUI is a Java library for building modern terminal user interfaces, inspired
 
 | Module | Purpose |
 |--------|---------|
-| `tamboui-core` | Core types: Buffer, Cell, Rect, Style, Layout, Text, Widget/StatefulWidget interfaces |
+| `tamboui-core` | Core types: Buffer, Cell, Rect, Style, Layout, Text, Widget/StatefulWidget interfaces, InlineDisplay |
 | `tamboui-widgets` | All widget implementations (Block, Paragraph, List, Table, Chart, Canvas, etc.) |
 | `tamboui-jline` | JLine 3 terminal backend implementation |
-| `tamboui-tui` | High-level TUI framework: TuiRunner, event handling, Keys utility |
+| `tamboui-tui` | High-level TUI framework: TuiRunner, event handling, bindings, action handlers |
 | `tamboui-toolkit` | Fluent DSL for declarative UI with retained-mode elements, focus management, event routing |
-| `tamboui-css` | CSS-based styling support |
+| `tamboui-css` | CSS-based styling with TCSS format, selectors, cascade resolution, theme switching |
+| `tamboui-annotations` | Annotation definitions (`@OnAction`) for action handling |
+| `tamboui-processor` | Annotation processor for compile-time action handler generation (avoids reflection) |
+| `tamboui-image` | Image rendering with multiple protocols (Kitty, iTerm, Sixel, HalfBlock, Braille) |
 | `tamboui-picocli` | PicoCLI integration for CLI argument parsing |
 | `demos/*` | Demo applications showcasing features |
 
@@ -94,7 +97,9 @@ class MyApp extends ToolkitApp {
 
 - `TuiRunner` provides the main event loop with `EventHandler` callback
 - Event types: `KeyEvent`, `MouseEvent`, `TickEvent`, `ResizeEvent`
-- `Keys` utility provides pattern matching helpers (`isQuit`, `isUp`, `isDown`, etc.)
+- `KeyEvent` provides semantic methods (`isQuit()`, `isUp()`, `isDown()`, `isSelect()`, etc.) that respect configured bindings
+- Bindings map physical inputs to semantic actions; use `BindingSets.standard()`, `BindingSets.vim()`, or custom bindings
+- `@OnAction` annotation on Component methods handles actions; use annotation processor for compile-time generation
 - Toolkit elements handle events via `handleKeyEvent()`/`handleMouseEvent()` or handler lambdas
 
 ### Key Packages
@@ -104,8 +109,12 @@ class MyApp extends ToolkitApp {
 - `dev.tamboui.style` - Style, Color, Modifier
 - `dev.tamboui.text` - Text, Span, Line for styled text
 - `dev.tamboui.widgets.*` - Widget implementations (block, paragraph, list, table, chart, canvas, etc.)
-- `dev.tamboui.tui` - TuiRunner, TuiConfig, Keys, event types
+- `dev.tamboui.tui` - TuiRunner, TuiConfig, event types
+- `dev.tamboui.tui.bindings` - Bindings, BindingSets, KeyTrigger, MouseTrigger, ActionHandler, @OnAction
 - `dev.tamboui.toolkit` - Toolkit DSL factory methods, Element interface, element implementations
+- `dev.tamboui.css` - StyleEngine, CssParser, selectors, cascade resolution
+- `dev.tamboui.inline` - InlineDisplay for progress/status output
+- `dev.tamboui.image` - Image widget and protocol implementations
 
 ## Code Style Guidelines
 
@@ -117,9 +126,9 @@ class MyApp extends ToolkitApp {
 - You MUST add braces on all control statements
 - You MUST follow conventional field/method declarations (fields on top, methods below)
 - You MUST avoid code duplication
-- Add MUST add javadocs to all public APIs
+- You MUST add javadocs to all public APIs
 - You MUST use imports instead of fully qualified names in code
-- Do SHOULD NOT name a method `getXXX` if it's not a simple getter returning a private field: prefer `computeXXX`, `fetchXXX`, `toXXX`, etc.
+- You SHOULD NOT name a method `getXXX` if it's not a simple getter returning a private field: prefer `computeXXX`, `fetchXXX`, `toXXX`, etc.
 - You MUST NOT add comments in source which cannot be understood without context
 
 ## Testing Instructions
@@ -129,6 +138,14 @@ class MyApp extends ToolkitApp {
 - Run `./gradlew -q test` for quiet output
 - Do not consider the task complete until all tests pass without errors
 - Run `./gradlew -q build` to ensure the project builds successfully
+
+## Documentation
+
+- Any API changes MUST be reflected in the documentation under `docs/src/docs/asciidoc/`
+- Build docs with `./gradlew :docs:asciidoctor` - output goes to `docs/build/docs/`
+- Key documentation files: `api-levels.adoc`, `widgets.adoc`, `bindings.adoc`, `styling.adoc`, `core-concepts.adoc`
+- Update `index.adoc` module overview when adding new modules
+- Keep AGENTS.md in sync with module structure and key packages
 
 ## PR Guidelines
 

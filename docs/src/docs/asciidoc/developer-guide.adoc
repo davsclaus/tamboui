@@ -1,0 +1,243 @@
+= Developer Guide
+:doctype: book
+:icons: font
+:source-highlighter: highlight.js
+:toc: left
+:toclevels: 3
+
+include::_attributes.adoc[]
+
+This guide covers how to create custom widgets and components for {project-name}.
+
+== Creating Custom Widgets
+
+{project-name} provides two widget interfaces depending on whether your widget needs external state.
+
+=== Stateless Widgets
+
+For widgets that render the same output given the same inputs:
+
+[source,java]
+----
+public interface Widget {
+    void render(Rect area, Buffer buffer);
+}
+----
+
+Example: A custom separator widget:
+
+[source,java]
+----
+public class Separator implements Widget {
+    private final Style style;
+
+    public Separator(Style style) {
+        this.style = style;
+    }
+
+    @Override
+    public void render(Rect area, Buffer buffer) {
+        // Fill the entire width with a horizontal line
+        for (int x = area.x(); x < area.right(); x++) {
+            buffer.setCell(x, area.y(), Cell.of('─', style));
+        }
+    }
+}
+----
+
+=== Stateful Widgets
+
+For widgets that need to track selection, scroll position, or other state:
+
+[source,java]
+----
+public interface StatefulWidget<S> {
+    void render(Rect area, Buffer buffer, S state);
+}
+----
+
+Example: A custom counter widget:
+
+[source,java]
+----
+public class Counter implements StatefulWidget<Counter.State> {
+    private final Style style;
+
+    public static class State {
+        private int value = 0;
+
+        public int value() { return value; }
+        public void increment() { value++; }
+        public void decrement() { if (value > 0) value--; }
+    }
+
+    public Counter(Style style) {
+        this.style = style;
+    }
+
+    @Override
+    public void render(Rect area, Buffer buffer, State state) {
+        String text = "Count: " + state.value();
+        int x = area.x();
+        for (char c : text.toCharArray()) {
+            if (x < area.right()) {
+                buffer.setCell(x++, area.y(), Cell.of(c, style));
+            }
+        }
+    }
+}
+
+// Usage:
+Counter.State counterState = new Counter.State();
+Counter counter = new Counter(Style.EMPTY.bold());
+counter.render(area, buffer, counterState);
+----
+
+== Buffer Operations
+
+=== Setting Cells
+
+[source,java]
+----
+// Set a single cell
+buffer.setCell(x, y, Cell.of('X', style));
+
+// Set a string
+int col = x;
+for (char c : "Hello".toCharArray()) {
+    buffer.setCell(col++, y, Cell.of(c, style));
+}
+----
+
+=== Reading Cells
+
+[source,java]
+----
+Cell cell = buffer.cell(x, y);
+char symbol = cell.symbol();
+Style style = cell.style();
+----
+
+=== Filling Areas
+
+[source,java]
+----
+// Fill a rectangle with a character
+for (int row = area.y(); row < area.bottom(); row++) {
+    for (int col = area.x(); col < area.right(); col++) {
+        buffer.setCell(col, row, Cell.of(' ', bgStyle));
+    }
+}
+----
+
+=== Bounds Checking
+
+Always check bounds before writing:
+
+[source,java]
+----
+if (x >= area.x() && x < area.right() &&
+    y >= area.y() && y < area.bottom()) {
+    buffer.setCell(x, y, cell);
+}
+----
+
+== Creating Toolkit Components
+
+For Toolkit DSL integration, extend the `Component` class.
+Components use the link:bindings.html[@OnAction annotation] to handle input through the bindings system:
+
+[source,java]
+----
+import dev.tamboui.toolkit.component.Component;
+import dev.tamboui.toolkit.element.Element;
+import dev.tamboui.tui.bindings.OnAction;
+import dev.tamboui.tui.event.Event;
+
+import static dev.tamboui.toolkit.Toolkit.*;
+
+public class CounterCard extends Component<CounterCard> {
+    private int count = 0;
+
+    @OnAction("increment")
+    void onIncrement(Event event) {
+        count++;
+    }
+
+    @OnAction("decrement")
+    void onDecrement(Event event) {
+        count--;
+    }
+
+    @Override
+    protected Element render() {
+        var borderColor = isFocused() ? Color.CYAN : Color.GRAY;
+
+        return panel(() -> column(
+                text("Count: " + count).bold(),
+                text("Press +/- to change").dim()
+        ))
+        .rounded()
+        .borderColor(borderColor)
+        .fill();
+    }
+}
+----
+
+=== Using Components
+
+Components require an ID:
+
+[source,java]
+----
+var counter1 = new CounterCard().id("counter-1");
+var counter2 = new CounterCard().id("counter-2");
+
+// Define bindings
+var bindings = BindingSets.standard()
+    .toBuilder()
+    .bind("increment", KeyTrigger.ch('+'), KeyTrigger.ch('='))
+    .bind("decrement", KeyTrigger.ch('-'), KeyTrigger.ch('_'))
+    .build();
+
+try (var runner = ToolkitRunner.builder()
+        .bindings(bindings)
+        .build()) {
+    runner.run(() -> row(counter1, counter2));
+}
+----
+
+== Best Practices
+
+=== Widget Design
+
+* Keep widgets focused on a single responsibility
+* Use the builder pattern for complex configuration
+* Respect the provided `Rect` bounds
+* Handle edge cases (empty area, no data)
+
+=== Performance
+
+* Minimize allocations in `render()` methods
+* Pre-compute strings and styles when possible
+* Use primitive arrays over collections for large data
+
+=== State Management
+
+* Keep state classes simple
+* Provide methods for all state modifications
+* Consider immutable state for thread safety
+
+== Next Steps
+
+* Review the link:widgets.html[Widgets Reference] to see existing implementations
+* Learn about link:bindings.html[Bindings and Actions] for handling input
+* Study link:mvc-architecture.html[Application Structure] for organizing larger apps
+
+== Further Reading
+
+For more details, explore the source code:
+
+* `tamboui-widgets/src/main/java/dev/tamboui/widgets/` - Widget implementations
+* `tamboui-toolkit/src/main/java/dev/tamboui/toolkit/` - Toolkit components
+* `tamboui-core/src/main/java/dev/tamboui/buffer/` - Buffer and Cell

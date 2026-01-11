@@ -1,0 +1,535 @@
+= Widgets Reference
+:doctype: book
+:icons: font
+:source-highlighter: highlight.js
+:toc: left
+:toclevels: 3
+
+include::_attributes.adoc[]
+
+{project-name} provides a comprehensive set of widgets for building terminal UIs.
+
+== Widget Overview
+
+[cols="1,1,2",options="header"]
+|===
+|Widget |Type |Description
+
+|<<block,Block>>
+|Stateless
+|Container with borders, titles, and padding
+
+|<<paragraph,Paragraph>>
+|Stateless
+|Multi-line text with wrapping and alignment
+
+|<<listwidget,ListWidget>>
+|Stateful
+|Scrollable list with selection
+
+|<<table,Table>>
+|Stateful
+|Grid with rows, columns, and selection
+
+|<<tabs,Tabs>>
+|Stateful
+|Tab bar with selection
+
+|<<gauge,Gauge>>
+|Stateless
+|Progress bar with percentage
+
+|<<linegauge,LineGauge>>
+|Stateless
+|Horizontal line progress indicator
+
+|<<sparkline,Sparkline>>
+|Stateless
+|Mini line chart for data series
+
+|<<barchart,BarChart>>
+|Stateless
+|Vertical bar chart
+
+|<<chart,Chart>>
+|Stateless
+|Line and scatter plots with axes
+
+|<<canvas,Canvas>>
+|Stateless
+|Drawing surface with shapes
+
+|<<calendar,Calendar>>
+|Stateless
+|Monthly calendar with date styling
+
+|<<scrollbar,Scrollbar>>
+|Stateful
+|Visual scroll position indicator
+
+|<<textinput,TextInput>>
+|Stateful
+|Single-line text input
+
+|<<clear,Clear>>
+|Stateless
+|Clears an area (for widget layering)
+|===
+
+== Container Widgets
+
+=== Block
+
+A `Block` is the most fundamental container widget. It can have borders, titles, and padding.
+
+[source,java]
+----
+Block block = Block.builder()
+    .title("My Title")
+    .borders(Borders.ALL)
+    .borderType(BorderType.ROUNDED)
+    .borderStyle(Style.EMPTY.fg(Color.CYAN))
+    .padding(new Padding(1, 2, 1, 2))  // top, right, bottom, left
+    .build();
+
+// Render the block
+block.render(area, buffer);
+
+// Get the inner area (after borders and padding)
+Rect inner = block.inner(area);
+----
+
+Border types:
+
+* `BorderType.PLAIN` - Simple lines (`─`, `│`)
+* `BorderType.ROUNDED` - Rounded corners (`╭`, `╮`, `╰`, `╯`)
+* `BorderType.DOUBLE` - Double lines (`═`, `║`)
+* `BorderType.THICK` - Thick lines (`━`, `┃`)
+
+=== Clear
+
+Clears an area by filling it with spaces. Useful before rendering overlays:
+
+[source,java]
+----
+Clear.INSTANCE.render(dialogArea, buffer);
+// Then render your dialog on top
+----
+
+== Text Widgets
+
+=== Paragraph
+
+Displays multi-line text with wrapping and alignment:
+
+[source,java]
+----
+Paragraph paragraph = Paragraph.builder()
+    .text(Text.from("This is a paragraph of text that can wrap across multiple lines."))
+    .wrap(Wrap.WORD)
+    .alignment(Alignment.LEFT)
+    .block(Block.builder()
+        .title("Description")
+        .borders(Borders.ALL)
+        .build())
+    .build();
+
+paragraph.render(area, buffer);
+----
+
+Wrap modes:
+
+* `Wrap.NONE` - No wrapping, text is clipped
+* `Wrap.CHARACTER` - Wrap at any character
+* `Wrap.WORD` - Wrap at word boundaries
+
+== Selection Widgets
+
+=== ListWidget
+
+A scrollable list with selection:
+
+[source,java]
+----
+// Create items
+List<ListItem> items = List.of(
+    ListItem.from("First item"),
+    ListItem.from("Second item"),
+    ListItem.styled("Styled item", Style.EMPTY.bold())
+);
+
+// Create state
+ListState state = new ListState();
+state.select(0);  // Select first item
+
+// Build and render
+ListWidget list = ListWidget.builder()
+    .items(items)
+    .highlightStyle(Style.EMPTY.reversed())
+    .highlightSymbol(">> ")
+    .block(Block.builder()
+        .title("Select an Item")
+        .borders(Borders.ALL)
+        .build())
+    .build();
+
+list.render(area, buffer, state);
+----
+
+State methods:
+
+* `state.select(index)` - Select specific index
+* `state.selectNext(totalItems)` - Move selection down
+* `state.selectPrevious()` - Move selection up
+* `state.selectFirst()` - Jump to first item
+* `state.selectLast(totalItems)` - Jump to last item
+
+=== Table
+
+A data table with rows and columns:
+
+[source,java]
+----
+// Create table
+Table table = Table.builder()
+    .header(Row.from("Name", "Age", "City"))
+    .rows(
+        Row.from("Alice", "30", "NYC"),
+        Row.from("Bob", "25", "LA"),
+        Row.from("Charlie", "35", "Chicago")
+    )
+    .widths(
+        Constraint.percentage(40),
+        Constraint.length(10),
+        Constraint.fill()
+    )
+    .highlightStyle(Style.EMPTY.bg(Color.DARK_GRAY))
+    .block(Block.builder()
+        .title("Users")
+        .borders(Borders.ALL)
+        .build())
+    .build();
+
+// Create and use state
+TableState state = new TableState();
+state.select(0);
+table.render(area, buffer, state);
+----
+
+=== Tabs
+
+A tab bar for navigation:
+
+[source,java]
+----
+Tabs tabs = Tabs.builder()
+    .titles("Home", "Settings", "About")
+    .highlightStyle(Style.EMPTY.bold().fg(Color.CYAN))
+    .divider(" | ")
+    .block(Block.builder()
+        .borders(Borders.BOTTOM)
+        .build())
+    .build();
+
+TabsState state = new TabsState();
+state.select(0);
+tabs.render(area, buffer, state);
+----
+
+== Data Visualization
+
+=== Gauge
+
+A progress bar showing completion percentage:
+
+[source,java]
+----
+Gauge gauge = Gauge.builder()
+    .ratio(0.75)  // 75% complete
+    .label("Loading...")
+    .gaugeStyle(Style.EMPTY.fg(Color.GREEN))
+    .block(Block.builder()
+        .title("Progress")
+        .borders(Borders.ALL)
+        .build())
+    .build();
+
+gauge.render(area, buffer);
+----
+
+=== LineGauge
+
+A compact single-line progress indicator:
+
+[source,java]
+----
+LineGauge lineGauge = LineGauge.builder()
+    .ratio(0.5)
+    .label("50%")
+    .lineSet(LineSet.THICK)
+    .filledStyle(Style.EMPTY.fg(Color.CYAN))
+    .unfilledStyle(Style.EMPTY.fg(Color.DARK_GRAY))
+    .build();
+
+lineGauge.render(area, buffer);
+----
+
+=== Sparkline
+
+A mini chart showing data trends:
+
+[source,java]
+----
+int[] data = {1, 4, 2, 8, 5, 7, 3, 6};
+
+Sparkline sparkline = Sparkline.builder()
+    .data(data)
+    .barStyle(Style.EMPTY.fg(Color.CYAN))
+    .block(Block.builder()
+        .title("CPU Usage")
+        .borders(Borders.ALL)
+        .build())
+    .build();
+
+sparkline.render(area, buffer);
+----
+
+=== BarChart
+
+Vertical bar chart for comparing values:
+
+[source,java]
+----
+BarChart barChart = BarChart.builder()
+    .bars(
+        Bar.builder().value(80).label("Mon").build(),
+        Bar.builder().value(95).label("Tue").build(),
+        Bar.builder().value(60).label("Wed").build(),
+        Bar.builder().value(75).label("Thu").build(),
+        Bar.builder().value(90).label("Fri").build()
+    )
+    .barWidth(5)
+    .barGap(1)
+    .barStyle(Style.EMPTY.fg(Color.GREEN))
+    .labelStyle(Style.EMPTY.dim())
+    .block(Block.builder()
+        .title("Weekly Sales")
+        .borders(Borders.ALL)
+        .build())
+    .build();
+
+barChart.render(area, buffer);
+----
+
+=== Chart
+
+Line and scatter plots with axes:
+
+[source,java]
+----
+// Create datasets
+Dataset dataset1 = Dataset.builder()
+    .name("Series A")
+    .data(List.of(
+        new Point(0, 0),
+        new Point(1, 2),
+        new Point(2, 1),
+        new Point(3, 4),
+        new Point(4, 3)
+    ))
+    .marker(Marker.BRAILLE)
+    .graphStyle(Style.EMPTY.fg(Color.CYAN))
+    .build();
+
+// Build chart
+Chart chart = Chart.builder()
+    .datasets(dataset1)
+    .xAxis(Axis.builder()
+        .title("X Axis")
+        .bounds(0, 5)
+        .build())
+    .yAxis(Axis.builder()
+        .title("Y Axis")
+        .bounds(0, 5)
+        .build())
+    .block(Block.builder()
+        .title("Line Chart")
+        .borders(Borders.ALL)
+        .build())
+    .build();
+
+chart.render(area, buffer);
+----
+
+Marker types:
+
+* `Marker.DOT` - Single dots
+* `Marker.BRAILLE` - Braille patterns for higher resolution
+* `Marker.BLOCK` - Block characters
+
+=== Canvas
+
+A drawing surface for custom graphics:
+
+[source,java]
+----
+Canvas canvas = Canvas.builder()
+    .xBounds(-10, 10)
+    .yBounds(-10, 10)
+    .marker(Marker.BRAILLE)
+    .paint(ctx -> {
+        // Draw shapes
+        ctx.draw(new Circle(0, 0, 5, Color.RED));
+        ctx.draw(new Line(-5, -5, 5, 5, Color.GREEN));
+        ctx.draw(new Rectangle(-3, -3, 6, 6, Color.BLUE));
+    })
+    .block(Block.builder()
+        .title("Drawing")
+        .borders(Borders.ALL)
+        .build())
+    .build();
+
+canvas.render(area, buffer);
+----
+
+Available shapes:
+
+* `Circle` - Circle with center and radius
+* `Line` - Line between two points
+* `Rectangle` - Rectangle with position and size
+* `Points` - Collection of individual points
+
+=== Calendar
+
+A monthly calendar widget:
+
+[source,java]
+----
+Calendar calendar = Calendar.builder()
+    .date(LocalDate.now())
+    .showSurroundingMonths(true)
+    .dateStyle(date -> {
+        if (date.equals(LocalDate.now())) {
+            return Style.EMPTY.bold().fg(Color.CYAN);
+        }
+        return Style.EMPTY;
+    })
+    .block(Block.builder()
+        .title("Calendar")
+        .borders(Borders.ALL)
+        .build())
+    .build();
+
+calendar.render(area, buffer);
+----
+
+== Input Widgets
+
+=== TextInput
+
+A single-line text input field:
+
+[source,java]
+----
+// Create state
+TextInputState state = new TextInputState();
+
+// Or with initial value
+TextInputState state = new TextInputState("initial text");
+
+// Build widget
+TextInput textInput = TextInput.builder()
+    .placeholder("Enter your name...")
+    .cursorStyle(Style.EMPTY.reversed())
+    .block(Block.builder()
+        .title("Name")
+        .borders(Borders.ALL)
+        .build())
+    .build();
+
+textInput.render(area, buffer, state);
+
+// Handle key events
+if (event.code() == KeyCode.CHAR) {
+    state.insert(event.character());
+} else if (event.code() == KeyCode.BACKSPACE) {
+    state.deleteBackward();
+} else if (event.code() == KeyCode.DELETE) {
+    state.deleteForward();
+} else if (event.code() == KeyCode.LEFT) {
+    state.moveCursorLeft();
+} else if (event.code() == KeyCode.RIGHT) {
+    state.moveCursorRight();
+}
+----
+
+State methods:
+
+* `state.text()` - Get current text
+* `state.setText(text)` - Set text
+* `state.insert(char)` - Insert character at cursor
+* `state.deleteBackward()` - Backspace
+* `state.deleteForward()` - Delete
+* `state.moveCursorLeft()` / `moveCursorRight()` - Move cursor
+* `state.clear()` - Clear all text
+
+== Utility Widgets
+
+=== Scrollbar
+
+Visual indicator of scroll position:
+
+[source,java]
+----
+Scrollbar scrollbar = Scrollbar.builder()
+    .orientation(ScrollbarOrientation.VERTICAL)
+    .thumbStyle(Style.EMPTY.fg(Color.CYAN))
+    .trackStyle(Style.EMPTY.fg(Color.DARK_GRAY))
+    .build();
+
+ScrollbarState state = new ScrollbarState();
+state.contentLength(100);
+state.viewportLength(20);
+state.position(scrollPosition);
+
+scrollbar.render(area, buffer, state);
+----
+
+== Using Widgets with Toolkit DSL
+
+The Toolkit DSL provides fluent factories for all widgets:
+
+[source,java]
+----
+import static dev.tamboui.toolkit.Toolkit.*;
+
+// Text
+text("Hello").bold().cyan()
+
+// Panel (Block)
+panel("Title", child1, child2).rounded().borderColor(Color.CYAN)
+
+// List
+list("Item 1", "Item 2", "Item 3").state(listState).highlightColor(Color.YELLOW)
+
+// Table
+table()
+    .header("Name", "Age")
+    .row("Alice", "30")
+    .state(tableState)
+
+// Gauge
+gauge(0.75).label("Loading...").gaugeColor(Color.GREEN)
+
+// Sparkline
+sparkline(1, 4, 2, 8, 5).color(Color.CYAN)
+
+// TextInput
+textInput(inputState).placeholder("Enter name...")
+
+// Layout
+row(left, right).spacing(1)
+column(top, middle, bottom).spacing(1)
+----
+
+See link:api-levels.html[API Levels] for more details on the Toolkit DSL.

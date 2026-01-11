@@ -1,0 +1,393 @@
+= Core Concepts
+:doctype: book
+:icons: font
+:source-highlighter: highlight.js
+:toc: left
+:toclevels: 3
+
+include::_attributes.adoc[]
+
+{project-name}'s architecture follows https://ratatui.rs[ratatui] closely.
+If you've used ratatui before, the concepts here will be familiar - `Buffer`, `Cell`, `Frame`, `Widget`, `Layout` all work the same way.
+
+== Rendering Model
+
+{project-name} uses *immediate-mode rendering* with an *intermediate buffer system*:
+
+1. **Widgets render to a Buffer** - not directly to the terminal
+2. **Buffer is diffed** - only changed cells are sent to the terminal
+3. **Each frame is a full redraw** - simple state management, no retained state in widgets
+
+[source]
+----
+Application State
+       │
+       ▼
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│   Widgets   │ ───▶ │   Buffer    │ ───▶ │  Terminal   │
+│   render()  │      │  (diff)     │      │  (output)   │
+└─────────────┘      └─────────────┘      └─────────────┘
+----
+
+This model makes {project-name} applications easy to reason about: the UI is always a pure function of your application state.
+
+== Buffer System
+
+=== Buffer
+
+A `Buffer` is a 2D grid of `Cell` objects representing the terminal screen:
+
+[source,java]
+----
+// A Buffer is created for each frame
+Buffer buffer = new Buffer(width, height);
+
+// Set a cell at position (x, y)
+buffer.setCell(x, y, Cell.of('A', Style.EMPTY.fg(Color.RED)));
+
+// Get a cell
+Cell cell = buffer.cell(x, y);
+----
+
+=== Cell
+
+A `Cell` represents a single character with styling:
+
+[source,java]
+----
+// Create a cell with character and style
+Cell cell = Cell.of('X', Style.EMPTY.bold().fg(Color.CYAN));
+
+// Get properties
+char symbol = cell.symbol();
+Style style = cell.style();
+----
+
+=== Frame
+
+A `Frame` wraps a buffer and provides rendering helpers:
+
+[source,java]
+----
+terminal.draw(frame -> {
+    // Get the renderable area
+    Rect area = frame.area();
+
+    // Render a widget to the frame
+    frame.renderWidget(myWidget, area);
+
+    // Or render to a sub-area
+    Rect subArea = new Rect(0, 0, 40, 10);
+    frame.renderWidget(headerWidget, subArea);
+});
+----
+
+== Layout System
+
+=== Rect
+
+A `Rect` defines a rectangular region with position and size:
+
+[source,java]
+----
+// Create a rectangle
+Rect rect = new Rect(x, y, width, height);
+
+// Properties
+int x = rect.x();
+int y = rect.y();
+int width = rect.width();
+int height = rect.height();
+
+// Derived values
+int right = rect.right();    // x + width
+int bottom = rect.bottom();  // y + height
+Position center = rect.center();
+----
+
+=== Constraints
+
+Constraints define how space is allocated in layouts:
+
+[cols="1,2,2",options="header"]
+|===
+|Constraint |Description |Example
+
+|`Length(n)`
+|Fixed size of n cells
+|`Constraint.length(20)`
+
+|`Percentage(n)`
+|n% of available space
+|`Constraint.percentage(50)`
+
+|`Ratio(num, denom)`
+|Fractional size
+|`Constraint.ratio(1, 3)`
+
+|`Min(n)`
+|At least n cells
+|`Constraint.min(10)`
+
+|`Max(n)`
+|At most n cells
+|`Constraint.max(50)`
+
+|`Fill(weight)`
+|Fill remaining space with weight
+|`Constraint.fill()` or `Constraint.fill(2)`
+|===
+
+=== Layout
+
+A `Layout` splits an area according to constraints:
+
+[source,java]
+----
+// Split vertically into header (3 lines) and content (rest)
+List<Rect> areas = Layout.builder()
+    .direction(Direction.VERTICAL)
+    .constraints(
+        Constraint.length(3),
+        Constraint.fill()
+    )
+    .build()
+    .split(frame.area());
+
+Rect headerArea = areas.get(0);
+Rect contentArea = areas.get(1);
+
+// Split horizontally with percentages
+List<Rect> columns = Layout.builder()
+    .direction(Direction.HORIZONTAL)
+    .constraints(
+        Constraint.percentage(30),
+        Constraint.percentage(70)
+    )
+    .build()
+    .split(contentArea);
+----
+
+=== Direction
+
+Layouts can split in two directions:
+
+* `Direction.VERTICAL` - stack elements top to bottom
+* `Direction.HORIZONTAL` - place elements left to right
+
+=== Margin
+
+Add spacing around layouts:
+
+[source,java]
+----
+Layout.builder()
+    .margin(new Margin(1, 2, 1, 2))  // top, right, bottom, left
+    .constraints(...)
+    .build()
+----
+
+== Styling
+
+=== Style
+
+`Style` is an immutable object that defines text appearance:
+
+[source,java]
+----
+// Create a style
+Style style = Style.EMPTY
+    .fg(Color.CYAN)
+    .bg(Color.BLACK)
+    .bold()
+    .underlined();
+
+// Styles are immutable - methods return new instances
+Style dimStyle = style.dim();
+----
+
+=== Color
+
+Colors can be specified in multiple ways:
+
+[source,java]
+----
+// Named ANSI colors
+Color.RED
+Color.GREEN
+Color.CYAN
+Color.WHITE
+Color.GRAY
+
+// Indexed colors (0-255)
+Color.indexed(196)
+
+// RGB colors (true color)
+Color.rgb(255, 128, 0)
+----
+
+=== Modifiers
+
+Text modifiers change how text is displayed:
+
+[source,java]
+----
+Style.EMPTY
+    .bold()       // Bold text
+    .dim()        // Dimmed/faint
+    .italic()     // Italic (terminal support varies)
+    .underlined() // Underlined
+    .slowBlink()  // Slow blinking
+    .rapidBlink() // Rapid blinking
+    .reversed()   // Swap fg/bg colors
+    .hidden()     // Hidden text
+    .crossedOut() // Strikethrough
+----
+
+== Text System
+
+=== Text
+
+`Text` represents multi-line styled text:
+
+[source,java]
+----
+// Simple text
+Text text = Text.from("Hello, World!");
+
+// Multi-line text
+Text multiLine = Text.of(
+    Line.from("First line"),
+    Line.from("Second line")
+);
+
+// With alignment
+Text centered = Text.from("Centered").centered();
+----
+
+=== Line
+
+A `Line` is a single line composed of `Span` objects:
+
+[source,java]
+----
+Line line = Line.from(
+    Span.styled("Bold", Style.EMPTY.bold()),
+    Span.raw(" and "),
+    Span.styled("Red", Style.EMPTY.fg(Color.RED))
+);
+----
+
+=== Span
+
+A `Span` is a styled piece of text:
+
+[source,java]
+----
+// Unstyled span
+Span plain = Span.raw("plain text");
+
+// Styled span
+Span styled = Span.styled("styled", Style.EMPTY.cyan().bold());
+----
+
+== Widget Interfaces
+
+=== Widget (Stateless)
+
+Stateless widgets implement the `Widget` interface:
+
+[source,java]
+----
+public interface Widget {
+    void render(Rect area, Buffer buffer);
+}
+----
+
+Examples: `Paragraph`, `Gauge`, `Block`, `Clear`
+
+=== StatefulWidget (Stateful)
+
+Stateful widgets carry external state:
+
+[source,java]
+----
+public interface StatefulWidget<S> {
+    void render(Rect area, Buffer buffer, S state);
+}
+----
+
+The state object tracks selection, scroll position, etc:
+
+[source,java]
+----
+// Create state
+ListState listState = new ListState();
+
+// Render with state
+listWidget.render(area, buffer, listState);
+
+// Modify state based on user input
+listState.selectNext(items.size());
+----
+
+Examples: `ListWidget`, `Table`, `Tabs`, `TextInput`
+
+== Event System
+
+{project-name} supports keyboard, mouse, and tick events:
+
+=== KeyEvent
+
+[source,java]
+----
+// Check specific keys
+if (event.code() == KeyCode.ENTER) { ... }
+if (event.code() == KeyCode.CHAR && event.character() == 'q') { ... }
+
+// Check modifiers
+if (event.modifiers().contains(KeyModifiers.CTRL)) { ... }
+
+// Using Keys utility
+if (event.isQuit()) { ... }
+if (event.isUp()) { ... }
+----
+
+=== MouseEvent
+
+[source,java]
+----
+int x = event.x();
+int y = event.y();
+MouseEventKind kind = event.kind();
+
+if (kind == MouseEventKind.DOWN && event.button() == MouseButton.LEFT) {
+    handleClick(x, y);
+}
+----
+
+=== TickEvent
+
+Tick events fire periodically for animations:
+
+[source,java]
+----
+// Configure tick rate
+TuiConfig config = TuiConfig.builder()
+    .tickRate(Duration.ofMillis(16))  // ~60fps
+    .build();
+
+// Handle tick
+if (event instanceof TickEvent) {
+    updateAnimation();
+    return true;  // redraw
+}
+----
+
+== Next Steps
+
+* Explore the link:widgets.html[Widgets Reference] for available components
+* Learn about link:api-levels.html[API Levels] in detail
+* Use link:styling.html[CSS Styling] for external style definitions
+* Understand link:bindings.html[Bindings and Actions] for input handling
+* Build maintainable apps with link:mvc-architecture.html[Application Structure]
