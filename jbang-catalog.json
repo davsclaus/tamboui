@@ -7,6 +7,9 @@
     "fakodex-demo": {
       "script-ref": "demos/fakodex-demo/src/main/java/dev/tamboui/demo/coding/CodingAssistantDemo.java"
     },
+    "inline-progress-demo": {
+      "script-ref": "demos/inline-progress-demo/src/main/java/dev/tamboui/demo/InlineProgressDemo.java"
+    },
     "modular-demo": {
       "script-ref": "demos/modular-demo/src/main/java/dev/tamboui/demo/modular/ModularDemo.java"
     },
@@ -15,6 +18,9 @@
     },
     "css-no-toolkit-demo": {
       "script-ref": "tamboui-css/demos/css-no-toolkit-demo/src/main/java/dev/tamboui/demo/CssNoToolkitDemo.java"
+    },
+    "image-demo": {
+      "script-ref": "tamboui-image/demos/image-demo/src/main/java/dev/tamboui/demo/ImageDemo.java"
     },
     "picocli-demo": {
       "script-ref": "tamboui-picocli/demos/picocli-demo/src/main/java/dev/tamboui/demo/PicoCLIDemo.java"

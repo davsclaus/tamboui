@@ -1,6 +1,7 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS dev.tamboui:tamboui-image:LATEST
 //DEPS dev.tamboui:tamboui-jline:LATEST
+//FILES c2023-tsuchinshan-atlas.jpg=../../../../resources/c2023-tsuchinshan-atlas.jpg
 
 /*
  * Copyright (c) 2025 TamboUI Contributors

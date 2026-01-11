@@ -147,6 +147,15 @@ class MyApp extends ToolkitApp {
 - Update `index.adoc` module overview when adding new modules
 - Keep AGENTS.md in sync with module structure and key packages
 
+## Widget/App Demos
+
+- `docs/video` should have a .tape files which are used with `vhs` to generate .svg and .mp4 for use on website
+- each .tape should `Source shared_.tape` to have consistent look
+- each .tape should use a `# Setup` section to `Hide` then run the demo using `jbang`, wait some seconds and then `Show`
+- after `# Setup` put `# Recording` and do the necessary `Type` and `Sleep` actions
+- keep each .tape short and focus. 
+- Try cover all demo features, but be aware they should not be too long as then the `.svg` renderings gets too big.
+
 ## PR Guidelines
 
 - Use `git add` for new files to include them in the commit

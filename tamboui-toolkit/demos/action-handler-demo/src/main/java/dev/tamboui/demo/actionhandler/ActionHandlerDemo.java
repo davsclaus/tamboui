@@ -1,3 +1,7 @@
+//DEPS dev.tamboui:tamboui-toolkit:LATEST
+//DEPS dev.tamboui:tamboui-jline:LATEST
+//SOURCES CounterComponent.java
+
 /*
  * Copyright (c) 2025 TamboUI Contributors
  * SPDX-License-Identifier: MIT
