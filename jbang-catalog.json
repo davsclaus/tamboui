@@ -7,11 +7,11 @@
     "fakodex-demo": {
       "script-ref": "demos/fakodex-demo/src/main/java/dev/tamboui/demo/coding/CodingAssistantDemo.java"
     },
-    "inline-progress-demo": {
-      "script-ref": "demos/inline-progress-demo/src/main/java/dev/tamboui/demo/InlineProgressDemo.java"
-    },
     "filemanager-demo": {
       "script-ref": "demos/filemanager-demo/src/main/java/dev/tamboui/demo/filemanager/FileManagerDemo.java"
+    },
+    "inline-progress-demo": {
+      "script-ref": "demos/inline-progress-demo/src/main/java/dev/tamboui/demo/InlineProgressDemo.java"
     },
     "modular-demo": {
       "script-ref": "demos/modular-demo/src/main/java/dev/tamboui/demo/modular/ModularDemo.java"
@@ -77,7 +77,7 @@
       "script-ref": "tamboui-widgets/demos/collapsed-borders-demo/src/main/java/dev/tamboui/demo/CollapsedBordersDemo.java"
     },
     "colors-rgb-demo": {
-      "script-ref": "tamboui-widgets/demos/colors-rgb-demo/src/main/java/dev/tamboui/demo/ColorsRgbDemoPanama.java"
+      "script-ref": "tamboui-widgets/demos/colors-rgb-demo/src/main/java/dev/tamboui/demo/ColorsRgbDemo.java"
     },
     "gauge-demo": {
       "script-ref": "tamboui-widgets/demos/gauge-demo/src/main/java/dev/tamboui/demo/GaugeDemo.java"
