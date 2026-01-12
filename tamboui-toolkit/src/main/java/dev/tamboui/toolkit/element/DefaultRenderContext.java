@@ -38,6 +38,7 @@ public final class DefaultRenderContext implements RenderContext {
     private final EventRouter eventRouter;
     private final Deque<Style> styleStack = new ArrayDeque<>();
     private final Deque<Styleable> elementStack = new ArrayDeque<>();
+    private final Deque<CssStyleResolver> resolverStack = new ArrayDeque<>();
     private StyleEngine styleEngine;
     private Bindings bindings = BindingSets.defaults();
 
@@ -121,6 +122,14 @@ public final class DefaultRenderContext implements RenderContext {
         List<Styleable> ancestors = buildAncestorChain(element);
 
         CssStyleResolver resolved = styleEngine.resolve(element, state, ancestors);
+
+        // If we have a parent resolver on the stack, create a merged resolver
+        // that inherits properties from the parent (e.g., border-type from Component to Panel)
+        CssStyleResolver parentResolver = resolverStack.isEmpty() ? null : resolverStack.peek();
+        if (parentResolver != null) {
+            resolved = resolved.withFallback(parentResolver);
+        }
+
         return resolved.hasProperties() ? Optional.of(resolved) : Optional.empty();
     }
 
@@ -334,14 +343,38 @@ public final class DefaultRenderContext implements RenderContext {
      * @param action the action to execute
      */
     public void withElement(Styleable element, Style style, Runnable action) {
+        withElement(element, style, null, action);
+    }
+
+    /**
+     * Executes an action with an element, style, and CSS resolver pushed onto their stacks.
+     * <p>
+     * The style is merged with the current style. The element, merged style, and resolver
+     * are available via {@link #currentElement()}, {@link #currentStyle()}, and
+     * {@link #currentResolver()}.
+     * <p>
+     * Internal use only - called by StyledElement.render().
+     *
+     * @param element the element being rendered
+     * @param style the element's resolved style
+     * @param resolver the element's CSS resolver (may be null)
+     * @param action the action to execute
+     */
+    public void withElement(Styleable element, Style style, CssStyleResolver resolver, Runnable action) {
         Style merged = currentStyle().patch(style);
         styleStack.push(merged);
         elementStack.push(element);
+        if (resolver != null) {
+            resolverStack.push(resolver);
+        }
         try {
             action.run();
         } finally {
             elementStack.pop();
             styleStack.pop();
+            if (resolver != null) {
+                resolverStack.pop();
+            }
         }
     }
 
@@ -350,5 +383,15 @@ public final class DefaultRenderContext implements RenderContext {
      */
     public Optional<Styleable> currentElement() {
         return elementStack.isEmpty() ? Optional.empty() : Optional.of(elementStack.peek());
+    }
+
+    /**
+     * Returns the current CSS resolver from the resolver stack, if any.
+     * <p>
+     * This allows child elements to access CSS properties from their parent elements
+     * that are not part of the Style cascade (e.g., border-type).
+     */
+    public Optional<CssStyleResolver> currentResolver() {
+        return resolverStack.isEmpty() ? Optional.empty() : Optional.of(resolverStack.peek());
     }
 }

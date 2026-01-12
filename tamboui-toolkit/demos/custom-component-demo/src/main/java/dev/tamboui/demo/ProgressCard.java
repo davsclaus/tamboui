@@ -128,14 +128,7 @@ public final class ProgressCard extends Component<ProgressCard> {
         ))
                 .title(status.name())
                 .addClass(status.cssClass());
-
-        if (focused) {
-            // Clear focus indicator: double border + cyan
-            panel.doubleBorder().borderColor(Color.CYAN);
-        } else {
-            panel.rounded();
-        }
-
+        
         return panel.fill();
     }
 

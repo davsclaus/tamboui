@@ -183,18 +183,15 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
     /**
      * Resolves the effective style by merging CSS and inline styles.
      * CSS styles provide the base, inline styles override.
-     * <p>
-     * This method is private because it should only be called once per render,
-     * from the {@link #render} template method. Subclasses should use
-     * {@link RenderContext#currentStyle()} to access the resolved style.
      *
-     * @param context the render context for CSS resolution
+     * @param cssResolver the CSS resolver (may be null)
      * @return the effective style combining CSS and inline styles
      */
-    private Style resolveEffectiveStyle(RenderContext context) {
-        Optional<CssStyleResolver> cssStyle = context.resolveStyle(this);
-        // CSS provides base, inline style overrides
-        return cssStyle.map(resolvedStyle -> resolvedStyle.toStyle().patch(style)).orElseGet(() -> style);
+    private Style resolveEffectiveStyle(CssStyleResolver cssResolver) {
+        if (cssResolver != null) {
+            return cssResolver.toStyle().patch(style);
+        }
+        return style;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -205,13 +202,15 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
      * Renders this element. This is a template method that:
      * <ol>
      *   <li>Resolves the effective CSS + inline style</li>
-     *   <li>Pushes the style onto the context's style stack</li>
+     *   <li>Pushes the style and CSS resolver onto the context's stacks</li>
      *   <li>Calls {@link #renderContent} for subclass-specific rendering</li>
-     *   <li>Pops the style when done</li>
+     *   <li>Pops the style and resolver when done</li>
      * </ol>
      * <p>
      * Subclasses must implement {@link #renderContent} instead of overriding this method.
      * The current style is available via {@link RenderContext#currentStyle()}.
+     * CSS properties not in Style (e.g., border-type) can be accessed from parent
+     * elements via {@link DefaultRenderContext#currentResolver()}.
      *
      * @param frame the frame to render to
      * @param area the area to render in
@@ -223,11 +222,14 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
             return;
         }
         this.lastRenderedArea = area;
-        Style effectiveStyle = resolveEffectiveStyle(context);
+
+        // Resolve CSS for this element
+        CssStyleResolver cssResolver = context.resolveStyle(this).orElse(null);
+        Style effectiveStyle = resolveEffectiveStyle(cssResolver);
 
         if (context instanceof DefaultRenderContext) {
             DefaultRenderContext ctx = (DefaultRenderContext) context;
-            ctx.withElement(this, effectiveStyle, () -> renderContent(frame, area, context));
+            ctx.withElement(this, effectiveStyle, cssResolver, () -> renderContent(frame, area, context));
             // Self-register for event routing if this element needs events
             if (needsEventRouting()) {
                 ctx.registerElement(this, area);

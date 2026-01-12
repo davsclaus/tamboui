@@ -244,6 +244,47 @@ public final class CssStyleResolver implements StylePropertyResolver {
     }
 
     /**
+     * Creates a new resolver that uses this resolver's properties but falls back
+     * to the given resolver for properties not set in this resolver.
+     * <p>
+     * This enables CSS property inheritance from parent elements to children.
+     *
+     * @param fallback the fallback resolver for missing properties
+     * @return a new resolver with fallback behavior
+     */
+    public CssStyleResolver withFallback(CssStyleResolver fallback) {
+        if (fallback == null) {
+            return this;
+        }
+        // For modifiers, pass null if both are empty to avoid EnumSet.copyOf issue
+        Set<Modifier> mergedModifiers = !modifiers.isEmpty() ? modifiers
+                : !fallback.modifiers.isEmpty() ? fallback.modifiers
+                : null;
+        return new CssStyleResolver(
+                foreground != null ? foreground : fallback.foreground,
+                background != null ? background : fallback.background,
+                mergedModifiers,
+                padding != null ? padding : fallback.padding,
+                alignment != null ? alignment : fallback.alignment,
+                borderType != null ? borderType : fallback.borderType,
+                width != null ? width : fallback.width,
+                mergeProperties(additionalProperties, fallback.additionalProperties)
+        );
+    }
+
+    private static Map<String, String> mergeProperties(Map<String, String> primary, Map<String, String> fallback) {
+        if (fallback.isEmpty()) {
+            return primary;
+        }
+        if (primary.isEmpty()) {
+            return fallback;
+        }
+        Map<String, String> merged = new HashMap<>(fallback);
+        merged.putAll(primary);
+        return merged;
+    }
+
+    /**
      * Creates a new builder.
      *
      * @return a new builder
@@ -258,12 +299,12 @@ public final class CssStyleResolver implements StylePropertyResolver {
     public static final class Builder {
         private Color foreground;
         private Color background;
-        private Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+        private final Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
         private Padding padding;
         private Alignment alignment;
         private BorderType borderType;
         private Width width;
-        private Map<String, String> additionalProperties = new HashMap<>();
+        private final Map<String, String> additionalProperties = new HashMap<>();
 
         private Builder() {
         }
