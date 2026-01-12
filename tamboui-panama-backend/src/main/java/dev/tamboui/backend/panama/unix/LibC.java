@@ -444,40 +444,58 @@ public final class LibC {
      * @param handler         the handler function pointer (upcall stub)
      */
     public static void setSigactionHandler(MemorySegment sigactionStruct, MemorySegment handler) {
-        SIGACTION_U_HANDLER.set(sigactionStruct, 0L, handler);
+        SIGACTION_HANDLER.set(sigactionStruct, 0L, handler);
     }
-    
+
     /**
      * Sets the flags in a sigaction structure.
+     * <p>
+     * Note: On Linux, sa_flags is a long (8 bytes), on macOS it's an int (4 bytes).
      *
      * @param sigactionStruct the sigaction structure
      * @param flags           the flags (e.g., SA_RESTART)
      */
     public static void setSigactionFlags(MemorySegment sigactionStruct, int flags) {
-        SIGACTION_FLAGS.set(sigactionStruct, 0L, flags);
+        if (PlatformConstants.isMacOS()) {
+            SIGACTION_FLAGS.set(sigactionStruct, 0L, flags);
+        } else {
+            // On Linux, sa_flags is a long
+            SIGACTION_FLAGS.set(sigactionStruct, 0L, (long) flags);
+        }
     }
-    
+
     /**
      * Sets the trampoline pointer in a sigaction structure.
      * For simple signal handlers, this should be set to NULL.
+     * <p>
+     * Note: This is macOS-specific. On Linux, this method does nothing.
      *
      * @param sigactionStruct the sigaction structure
      * @param tramp           the trampoline function pointer (or NULL)
      */
     public static void setSigactionTramp(MemorySegment sigactionStruct, MemorySegment tramp) {
-        SIGACTION_TRAMP.set(sigactionStruct, 0L, tramp);
+        if (SIGACTION_TRAMP != null) {
+            SIGACTION_TRAMP.set(sigactionStruct, 0L, tramp);
+        }
+        // On Linux, there's no trampoline field - do nothing
     }
-    
+
     /**
      * Sets the signal mask in a sigaction structure.
+     * <p>
+     * Note: On macOS, sa_mask is a simple int. On Linux, it's a 128-byte sigset_t.
+     * This method only sets the mask on macOS. On Linux, the mask is zeroed by default.
      *
      * @param sigactionStruct the sigaction structure
-     * @param mask            the signal mask
+     * @param mask            the signal mask (only used on macOS)
      */
     public static void setSigactionMask(MemorySegment sigactionStruct, int mask) {
-        SIGACTION_MASK.set(sigactionStruct, 0L, mask);
+        if (SIGACTION_MASK_MACOS != null) {
+            SIGACTION_MASK_MACOS.set(sigactionStruct, 0L, mask);
+        }
+        // On Linux, sa_mask is a 128-byte sigset_t - leave it zeroed (empty mask)
     }
-    
+
     /**
      * Gets the handler pointer from a sigaction structure.
      *
@@ -485,7 +503,7 @@ public final class LibC {
      * @return the handler function pointer
      */
     public static MemorySegment getSigactionHandler(MemorySegment sigactionStruct) {
-        return (MemorySegment) SIGACTION_U_HANDLER.get(sigactionStruct, 0L);
+        return (MemorySegment) SIGACTION_HANDLER.get(sigactionStruct, 0L);
     }
 
     /**
@@ -545,38 +563,68 @@ public final class LibC {
      * This union contains either __sa_handler or __sa_sigaction pointer.
      * Both are at offset 0 since it's a union.
      */
-    private static final MemoryLayout SIGACTION_U_LAYOUT = MemoryLayout.unionLayout(
+    private static final MemoryLayout SIGACTION_U_LAYOUT_MACOS = MemoryLayout.unionLayout(
             C_POINTER.withName("__sa_handler"),
             C_POINTER.withName("__sa_sigaction")
     );
-    
+
     /**
-     * Layout for the sigaction structure (macOS).
-     * struct __sigaction {
-     *     union __sigaction_u __sigaction_u;  // handler pointer
-     *     void (*sa_tramp)(void *, int, int, siginfo_t *, void *);  // trampoline
-     *     int sa_mask;                        // signal mask
-     *     int sa_flags;                       // flags
-     * }
+     * Layout for the sigaction structure.
+     * <p>
+     * macOS struct __sigaction (24 bytes):
+     * <pre>
+     *     union __sigaction_u __sigaction_u;  // 8 bytes - handler pointer
+     *     void (*sa_tramp)(...);              // 8 bytes - trampoline pointer
+     *     int sa_mask;                        // 4 bytes - signal mask
+     *     int sa_flags;                       // 4 bytes - flags
+     * </pre>
+     * <p>
+     * Linux struct sigaction (152 bytes):
+     * <pre>
+     *     void (*sa_handler)(int);            // 8 bytes - handler pointer
+     *     unsigned long sa_flags;             // 8 bytes - flags
+     *     void (*sa_restorer)(void);          // 8 bytes - restorer (unused)
+     *     sigset_t sa_mask;                   // 128 bytes - signal mask (1024 bits)
+     * </pre>
      */
-    public static final MemoryLayout SIGACTION_LAYOUT = MemoryLayout.structLayout(
-            SIGACTION_U_LAYOUT.withName("__sigaction_u"),
-            C_POINTER.withName("sa_tramp"),  // trampoline pointer (must be NULL for simple handlers)
-            C_INT.withName("sa_mask"),
-            C_INT.withName("sa_flags")
-    );
-    
-    // VarHandle for accessing __sa_handler through the nested union in the struct
-    // Path: struct -> __sigaction_u union -> __sa_handler pointer
-    private static final VarHandle SIGACTION_U_HANDLER = SIGACTION_LAYOUT.varHandle(
-            MemoryLayout.PathElement.groupElement("__sigaction_u"),
-            MemoryLayout.PathElement.groupElement("__sa_handler"));
-    private static final VarHandle SIGACTION_TRAMP = SIGACTION_LAYOUT.varHandle(
-            MemoryLayout.PathElement.groupElement("sa_tramp"));
-    private static final VarHandle SIGACTION_MASK = SIGACTION_LAYOUT.varHandle(
-            MemoryLayout.PathElement.groupElement("sa_mask"));
-    private static final VarHandle SIGACTION_FLAGS = SIGACTION_LAYOUT.varHandle(
-            MemoryLayout.PathElement.groupElement("sa_flags"));
+    public static final MemoryLayout SIGACTION_LAYOUT = PlatformConstants.isMacOS()
+            ? MemoryLayout.structLayout(
+                    SIGACTION_U_LAYOUT_MACOS.withName("__sigaction_u"),
+                    C_POINTER.withName("sa_tramp"),
+                    C_INT.withName("sa_mask"),
+                    C_INT.withName("sa_flags")
+            )
+            : MemoryLayout.structLayout(
+                    C_POINTER.withName("sa_handler"),
+                    ValueLayout.JAVA_LONG.withName("sa_flags"),
+                    C_POINTER.withName("sa_restorer"),
+                    MemoryLayout.sequenceLayout(128, ValueLayout.JAVA_BYTE).withName("sa_mask")
+            );
+
+    // VarHandles for sigaction - platform specific
+    private static final VarHandle SIGACTION_HANDLER = PlatformConstants.isMacOS()
+            ? SIGACTION_LAYOUT.varHandle(
+                    MemoryLayout.PathElement.groupElement("__sigaction_u"),
+                    MemoryLayout.PathElement.groupElement("__sa_handler"))
+            : SIGACTION_LAYOUT.varHandle(
+                    MemoryLayout.PathElement.groupElement("sa_handler"));
+
+    private static final VarHandle SIGACTION_FLAGS = PlatformConstants.isMacOS()
+            ? SIGACTION_LAYOUT.varHandle(
+                    MemoryLayout.PathElement.groupElement("sa_flags"))
+            : SIGACTION_LAYOUT.varHandle(
+                    MemoryLayout.PathElement.groupElement("sa_flags"));
+
+    // macOS-only VarHandles
+    private static final VarHandle SIGACTION_TRAMP = PlatformConstants.isMacOS()
+            ? SIGACTION_LAYOUT.varHandle(
+                    MemoryLayout.PathElement.groupElement("sa_tramp"))
+            : null;
+
+    private static final VarHandle SIGACTION_MASK_MACOS = PlatformConstants.isMacOS()
+            ? SIGACTION_LAYOUT.varHandle(
+                    MemoryLayout.PathElement.groupElement("sa_mask"))
+            : null;
 
     /**
      * Creates a new termios struct in the given arena.
