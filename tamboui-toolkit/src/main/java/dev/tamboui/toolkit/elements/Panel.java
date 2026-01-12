@@ -46,6 +46,7 @@ public final class Panel extends StyledElement<Panel> {
     private Color focusedBorderColor;
     private Padding padding;
     private final List<Element> children = new ArrayList<>();
+    private boolean fitToContent;
 
     public Panel() {
     }
@@ -188,6 +189,63 @@ public final class Panel extends StyledElement<Panel> {
     public Panel add(Element... children) {
         this.children.addAll(Arrays.asList(children));
         return this;
+    }
+
+    /**
+     * Enables automatic height calculation to fit the panel's content.
+     * <p>
+     * When enabled, the constraint is computed dynamically based on:
+     * <ul>
+     *   <li>Border overhead: 2 rows (top and bottom borders)</li>
+     *   <li>Padding overhead: vertical padding if set</li>
+     *   <li>Children height: sum of child heights (1 row each by default,
+     *       or the length from their constraint if specified)</li>
+     * </ul>
+     * <p>
+     * The height is computed when {@link #constraint()} is called, so children
+     * can be added before or after calling this method.
+     *
+     * @return this panel for chaining
+     */
+    public Panel fit() {
+        this.fitToContent = true;
+        return this;
+    }
+
+    @Override
+    public Constraint constraint() {
+        if (fitToContent) {
+            return Constraint.length(computeContentHeight());
+        }
+        return layoutConstraint;
+    }
+
+    /**
+     * Computes the total height required to fit the panel's content.
+     *
+     * @return the computed height including borders, padding, and children
+     */
+    private int computeContentHeight() {
+        // Border overhead: 2 rows for top and bottom (Panel always uses Borders.ALL)
+        int height = 2;
+
+        // Padding overhead
+        if (padding != null) {
+            height += padding.verticalTotal();
+        }
+
+        // Children height: sum of child heights
+        for (Element child : children) {
+            Constraint c = child.constraint();
+            if (c instanceof Constraint.Length) {
+                height += ((Constraint.Length) c).value();
+            } else {
+                // Default: 1 row per child
+                height += 1;
+            }
+        }
+
+        return height;
     }
 
     @Override

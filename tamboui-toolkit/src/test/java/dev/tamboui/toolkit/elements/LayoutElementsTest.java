@@ -108,6 +108,59 @@ class LayoutElementsTest {
 
             assertThat(buffer.get(0, 0).style().fg()).contains(Color.RED);
         }
+
+        @Test
+        @DisplayName("fit() computes height for borders only")
+        void fitEmptyPanel() {
+            Panel p = panel().fit();
+            // Empty panel: 2 rows for borders (top + bottom)
+            assertThat(p.constraint()).isEqualTo(Constraint.length(2));
+        }
+
+        @Test
+        @DisplayName("fit() computes height with children")
+        void fitWithChildren() {
+            Panel p = panel(
+                text("Line 1"),
+                text("Line 2"),
+                text("Line 3")
+            ).fit();
+            // 2 rows for borders + 3 children (1 row each)
+            assertThat(p.constraint()).isEqualTo(Constraint.length(5));
+        }
+
+        @Test
+        @DisplayName("fit() computes height with padding")
+        void fitWithPadding() {
+            Panel p = panel(text("Line 1"))
+                .padding(1)
+                .fit();
+            // 2 rows for borders + 2 rows for padding (top + bottom) + 1 child
+            assertThat(p.constraint()).isEqualTo(Constraint.length(5));
+        }
+
+        @Test
+        @DisplayName("fit() respects child length constraints")
+        void fitRespectsChildConstraints() {
+            Panel p = panel(
+                text("Line 1").length(3),
+                text("Line 2")
+            ).fit();
+            // 2 rows for borders + 3 (from length constraint) + 1 (default)
+            assertThat(p.constraint()).isEqualTo(Constraint.length(6));
+        }
+
+        @Test
+        @DisplayName("fit() is dynamic - computed when constraint() is called")
+        void fitIsDynamic() {
+            Panel p = panel().fit();
+            assertThat(p.constraint()).isEqualTo(Constraint.length(2));
+
+            // Add children after fit()
+            p.add(text("Added"));
+            // Constraint should now include the new child
+            assertThat(p.constraint()).isEqualTo(Constraint.length(3));
+        }
     }
 
     @Nested
