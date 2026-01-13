@@ -235,16 +235,11 @@ public final class WaveText implements StatefulWidget<WaveTextState> {
      * @return the modified color
      */
     private Color applyBrightness(Color color, double brightness) {
-        if (color instanceof Color.Rgb) {
-            Color.Rgb rgb = (Color.Rgb) color;
-            int r = (int) (rgb.r() * brightness);
-            int g = (int) (rgb.g() * brightness);
-            int b = (int) (rgb.b() * brightness);
-            return Color.rgb(r, g, b);
-        }
-        // For indexed colors, we can't easily dim them
-        // Return as-is (could potentially map to different indexed colors)
-        return color;
+        Color.Rgb rgb = color.toRgb();
+        int r = (int) (rgb.r() * brightness);
+        int g = (int) (rgb.g() * brightness);
+        int b = (int) (rgb.b() * brightness);
+        return Color.rgb(r, g, b);
     }
 
     /**

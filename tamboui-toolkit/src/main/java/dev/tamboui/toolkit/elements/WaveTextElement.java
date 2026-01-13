@@ -6,6 +6,7 @@ package dev.tamboui.toolkit.elements;
 
 import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Color;
+import dev.tamboui.style.StylePropertyResolver;
 import dev.tamboui.terminal.Frame;
 import dev.tamboui.toolkit.element.RenderContext;
 import dev.tamboui.toolkit.element.StyledElement;
@@ -38,7 +39,7 @@ import dev.tamboui.widgets.wavetext.WaveTextState;
 public final class WaveTextElement extends StyledElement<WaveTextElement> {
 
     private String text;
-    private Color color = Color.WHITE;
+    private Color color;
     private double dimFactor = 0.3;
     private int peakWidth = 3;
     private int peakCount = 1;
@@ -218,20 +219,29 @@ public final class WaveTextElement extends StyledElement<WaveTextElement> {
         // Advance the animation state
         state.advance();
 
+        // Get the CSS resolver for this element
+        StylePropertyResolver resolver = context.resolveStyle(this)
+                .map(r -> (StylePropertyResolver) r)
+                .orElse(StylePropertyResolver.empty());
+
         // Build the widget
-        WaveText widget = WaveText.builder()
+        WaveText.Builder builder = WaveText.builder()
                 .text(text)
-                .color(color)
+                .styleResolver(resolver)
                 .dimFactor(dimFactor)
                 .peakWidth(peakWidth)
                 .peakCount(peakCount)
                 .speed(speed)
                 .mode(mode)
                 .inverted(inverted)
-                .style(context.currentStyle())
-                .build();
+                .style(context.currentStyle());
+
+        // Only set color explicitly if it was programmatically specified
+        if (color != null) {
+            builder.color(color);
+        }
 
         // Render
-        frame.renderStatefulWidget(widget, area, state);
+        frame.renderStatefulWidget(builder.build(), area, state);
     }
 }

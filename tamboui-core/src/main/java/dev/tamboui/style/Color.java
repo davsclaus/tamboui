@@ -257,4 +257,90 @@ public interface Color {
     static Color hex(String hex) {
         return Rgb.fromHex(hex);
     }
+
+    /**
+     * Converts this color to RGB.
+     * <p>
+     * ANSI and indexed colors are converted using standard terminal color palettes.
+     * Reset colors default to white.
+     *
+     * @return the RGB representation of this color
+     */
+    default Rgb toRgb() {
+        if (this instanceof Rgb) {
+            return (Rgb) this;
+        }
+        if (this instanceof Ansi) {
+            return ansiToRgb(((Ansi) this).color());
+        }
+        if (this instanceof Indexed) {
+            return indexedToRgb(((Indexed) this).index());
+        }
+        // Reset or unknown - default to white
+        return new Rgb(255, 255, 255);
+    }
+
+    /**
+     * Converts an ANSI color to RGB using standard terminal colors.
+     *
+     * @param ansi the ANSI color
+     * @return the RGB representation
+     */
+    static Rgb ansiToRgb(AnsiColor ansi) {
+        switch (ansi) {
+            case BLACK: return new Rgb(0, 0, 0);
+            case RED: return new Rgb(170, 0, 0);
+            case GREEN: return new Rgb(0, 170, 0);
+            case YELLOW: return new Rgb(170, 85, 0);
+            case BLUE: return new Rgb(0, 0, 170);
+            case MAGENTA: return new Rgb(170, 0, 170);
+            case CYAN: return new Rgb(0, 170, 170);
+            case WHITE: return new Rgb(170, 170, 170);
+            case BRIGHT_BLACK: return new Rgb(85, 85, 85);
+            case BRIGHT_RED: return new Rgb(255, 85, 85);
+            case BRIGHT_GREEN: return new Rgb(85, 255, 85);
+            case BRIGHT_YELLOW: return new Rgb(255, 255, 85);
+            case BRIGHT_BLUE: return new Rgb(85, 85, 255);
+            case BRIGHT_MAGENTA: return new Rgb(255, 85, 255);
+            case BRIGHT_CYAN: return new Rgb(85, 255, 255);
+            case BRIGHT_WHITE: return new Rgb(255, 255, 255);
+            default: return new Rgb(255, 255, 255);
+        }
+    }
+
+    /**
+     * Converts a 256-color indexed value to RGB.
+     * <p>
+     * The 256-color palette is:
+     * <ul>
+     *   <li>0-15: Standard ANSI colors</li>
+     *   <li>16-231: 6x6x6 color cube</li>
+     *   <li>232-255: Grayscale ramp</li>
+     * </ul>
+     *
+     * @param index the palette index (0-255)
+     * @return the RGB representation
+     */
+    static Rgb indexedToRgb(int index) {
+        if (index < 16) {
+            // Standard ANSI colors
+            return ansiToRgb(AnsiColor.values()[index]);
+        } else if (index < 232) {
+            // 6x6x6 color cube (indices 16-231)
+            int i = index - 16;
+            int r = (i / 36) % 6;
+            int g = (i / 6) % 6;
+            int b = i % 6;
+            // Each component: 0, 95, 135, 175, 215, 255
+            return new Rgb(
+                    r == 0 ? 0 : 55 + r * 40,
+                    g == 0 ? 0 : 55 + g * 40,
+                    b == 0 ? 0 : 55 + b * 40
+            );
+        } else {
+            // Grayscale ramp (indices 232-255)
+            int gray = 8 + (index - 232) * 10;
+            return new Rgb(gray, gray, gray);
+        }
+    }
 }
