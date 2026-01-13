@@ -11,6 +11,7 @@ import dev.tamboui.style.Color;
 import dev.tamboui.style.Style;
 import dev.tamboui.text.Line;
 import dev.tamboui.text.Text;
+import dev.tamboui.widgets.text.Overflow;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
@@ -221,5 +222,149 @@ class ListWidgetTest {
         dev.tamboui.assertj.BufferAssertions.assertThat(buffer)
             .hasCellAt(2, 1, new Cell("L", highlightStyle)) // Line 2 content (indented, selected)
             .hasCellAt(2, 2, new Cell("L", highlightStyle)); // Line 3 content (indented, selected)
+    }
+
+    // ========== Overflow Mode Tests ==========
+
+    @Test
+    @DisplayName("CLIP overflow truncates text at boundary")
+    void clipOverflow() {
+        List<ListItem> items = Arrays.asList(
+            ListItem.from("Hello World This Is Long")
+        );
+        ListWidget list = ListWidget.builder()
+            .items(items)
+            .overflow(Overflow.CLIP)
+            .highlightSymbol("")
+            .build();
+        Rect area = new Rect(0, 0, 5, 1);
+        Buffer buffer = Buffer.empty(area);
+        ListState state = new ListState();
+
+        list.render(area, buffer, state);
+
+        // Should show "Hello" (5 chars)
+        Buffer expected = Buffer.empty(area);
+        expected.setString(0, 0, "Hello", Style.EMPTY);
+        assertThat(buffer).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("ELLIPSIS overflow truncates with ellipsis at end")
+    void ellipsisOverflow() {
+        List<ListItem> items = Arrays.asList(
+            ListItem.from("Hello World")
+        );
+        ListWidget list = ListWidget.builder()
+            .items(items)
+            .overflow(Overflow.ELLIPSIS)
+            .highlightSymbol("")
+            .build();
+        Rect area = new Rect(0, 0, 8, 1);
+        Buffer buffer = Buffer.empty(area);
+        ListState state = new ListState();
+
+        list.render(area, buffer, state);
+
+        // Should show "Hello..." (5 chars + 3 dots = 8)
+        Buffer expected = Buffer.empty(area);
+        expected.setString(0, 0, "Hello...", Style.EMPTY);
+        assertThat(buffer).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("ELLIPSIS_START overflow truncates with ellipsis at start")
+    void ellipsisStartOverflow() {
+        List<ListItem> items = Arrays.asList(
+            ListItem.from("Hello World")
+        );
+        ListWidget list = ListWidget.builder()
+            .items(items)
+            .overflow(Overflow.ELLIPSIS_START)
+            .highlightSymbol("")
+            .build();
+        Rect area = new Rect(0, 0, 8, 1);
+        Buffer buffer = Buffer.empty(area);
+        ListState state = new ListState();
+
+        list.render(area, buffer, state);
+
+        // Should show "...World" (3 dots + 5 chars = 8)
+        Buffer expected = Buffer.empty(area);
+        expected.setString(0, 0, "...World", Style.EMPTY);
+        assertThat(buffer).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("ELLIPSIS_MIDDLE overflow truncates with ellipsis in middle")
+    void ellipsisMiddleOverflow() {
+        List<ListItem> items = Arrays.asList(
+            ListItem.from("Hello World")
+        );
+        ListWidget list = ListWidget.builder()
+            .items(items)
+            .overflow(Overflow.ELLIPSIS_MIDDLE)
+            .highlightSymbol("")
+            .build();
+        Rect area = new Rect(0, 0, 8, 1);
+        Buffer buffer = Buffer.empty(area);
+        ListState state = new ListState();
+
+        list.render(area, buffer, state);
+
+        // Should show "Hel...ld" (3 left + 3 dots + 2 right = 8)
+        Buffer expected = Buffer.empty(area);
+        expected.setString(0, 0, "Hel...ld", Style.EMPTY);
+        assertThat(buffer).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("Overflow does not modify text that fits")
+    void overflowTextFits() {
+        List<ListItem> items = Arrays.asList(
+            ListItem.from("Hi")
+        );
+        ListWidget list = ListWidget.builder()
+            .items(items)
+            .overflow(Overflow.ELLIPSIS)
+            .highlightSymbol("")
+            .build();
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
+        ListState state = new ListState();
+
+        list.render(area, buffer, state);
+
+        Buffer expected = Buffer.empty(area);
+        expected.setString(0, 0, "Hi", Style.EMPTY);
+        assertThat(buffer).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("Overflow works with highlight symbol")
+    void overflowWithHighlightSymbol() {
+        List<ListItem> items = Arrays.asList(
+            ListItem.from("Hello World This Is Long")
+        );
+        ListWidget list = ListWidget.builder()
+            .items(items)
+            .overflow(Overflow.ELLIPSIS)
+            .highlightSymbol("> ")
+            .build();
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
+        ListState state = new ListState();
+        state.select(0);
+
+        list.render(area, buffer, state);
+
+        // Symbol takes 2 chars, leaving 8 for content
+        // Should show "> Hello..." (> + space + Hello + ...)
+        Style highlightStyle = Style.EMPTY.reversed();
+        Buffer expected = Buffer.empty(area);
+        expected.setStyle(area, highlightStyle);
+        expected.setString(0, 0, "> ", Style.EMPTY);
+        expected.setString(2, 0, "Hello...", highlightStyle);
+        assertThat(buffer).isEqualTo(expected);
     }
 }

@@ -145,7 +145,7 @@ public final class Paragraph implements Widget {
 
         switch (overflow) {
             case CLIP:
-                return lines;
+                return clipLines(lines, maxWidth);
             case WRAP_CHARACTER:
             case WRAP_WORD:
                 return wrapLines(lines, maxWidth);
@@ -158,6 +158,41 @@ public final class Paragraph implements Widget {
             default:
                 return lines;
         }
+    }
+
+    private List<Line> clipLines(List<Line> lines, int maxWidth) {
+        List<Line> result = new ArrayList<>();
+
+        for (Line line : lines) {
+            if (line.width() <= maxWidth) {
+                result.add(line);
+                continue;
+            }
+
+            // Need to clip - preserve spans up to maxWidth
+            List<Span> clippedSpans = new ArrayList<>();
+            int remainingWidth = maxWidth;
+
+            for (Span span : line.spans()) {
+                if (remainingWidth <= 0) {
+                    break;
+                }
+
+                String content = span.content();
+                if (content.length() <= remainingWidth) {
+                    clippedSpans.add(span);
+                    remainingWidth -= content.length();
+                } else {
+                    // Partial span - truncate content
+                    clippedSpans.add(new Span(content.substring(0, remainingWidth), span.style()));
+                    break;
+                }
+            }
+
+            result.add(Line.from(clippedSpans));
+        }
+
+        return result;
     }
 
     private enum EllipsisPosition { START, MIDDLE, END }

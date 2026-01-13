@@ -138,6 +138,7 @@ class MyApp extends ToolkitApp {
 - Run `./gradlew -q test` for quiet output
 - Do not consider the task complete until all tests pass without errors
 - Run `./gradlew -q build` to ensure the project builds successfully
+- Use `BufferAssertions` for testing buffer contents in widget tests
 
 ## Documentation
 

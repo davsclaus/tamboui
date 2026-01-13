@@ -21,13 +21,24 @@ import dev.tamboui.style.StyledProperty;
 import dev.tamboui.style.Width;
 import dev.tamboui.text.Line;
 import dev.tamboui.text.Span;
+import dev.tamboui.style.PropertyKey;
 import dev.tamboui.widget.StatefulWidget;
 import dev.tamboui.widgets.block.Block;
+import dev.tamboui.widgets.text.Overflow;
+import dev.tamboui.widgets.text.OverflowConverter;
 
 /**
  * A list widget for displaying selectable items.
  */
 public final class ListWidget implements StatefulWidget<ListState> {
+
+    /**
+     * Property key for text-overflow property.
+     */
+    public static final PropertyKey<Overflow> TEXT_OVERFLOW =
+            PropertyKey.of("text-overflow", OverflowConverter.INSTANCE);
+
+    private static final String ELLIPSIS = "...";
 
     private final List<ListItem> items;
     private final Block block;
@@ -36,6 +47,7 @@ public final class ListWidget implements StatefulWidget<ListState> {
     private final Line highlightSymbol;
     private final ListDirection direction;
     private final boolean repeatHighlightSymbol;
+    private final Overflow overflow;
 
     private ListWidget(Builder builder) {
         this.block = builder.block;
@@ -43,6 +55,7 @@ public final class ListWidget implements StatefulWidget<ListState> {
         this.direction = builder.direction;
         this.repeatHighlightSymbol = builder.repeatHighlightSymbol;
         this.highlightStyle = builder.highlightStyle;
+        this.overflow = builder.overflow.resolve();
 
         Color resolvedBg = builder.background.resolve();
         Color resolvedFg = builder.foreground.resolve();
@@ -178,21 +191,10 @@ public final class ListWidget implements StatefulWidget<ListState> {
                     }
 
                     Line line = lines.get(lineIdx).patchStyle(itemStyle);
-                    
-                    // Truncate line to fit within available width
-                    int col_x = contentX;
-                    List<Span> spans = line.spans();
-                    for (Span span : spans) {
-                        if (col_x >= listArea.right()) {
-                            break;
-                        }
-                    String text = span.content();
-                    int remainingWidth = Math.min(text.length(), availableWidth - (col_x - contentX));
-                    if (remainingWidth > 0) {
-                        buffer.setString(col_x, itemY, text.substring(0, remainingWidth), span.style());
-                        col_x += remainingWidth;
-                    }
-                    }
+
+                    // Process line according to overflow mode
+                    Line processedLine = processLine(line, availableWidth);
+                    buffer.setLine(contentX, itemY, processedLine);
                     itemY--;
                 }
 
@@ -246,27 +248,123 @@ public final class ListWidget implements StatefulWidget<ListState> {
                     }
 
                     Line line = lines.get(lineIdx).patchStyle(itemStyle);
-                    
-                    // Truncate line to fit within available width
-                    int col_x = contentX;
-                    List<Span> spans = line.spans();
-                    for (Span span : spans) {
-                        if (col_x >= listArea.right()) {
-                            break;
-                        }
-                    String text = span.content();
-                    int remainingWidth = Math.min(text.length(), availableWidth - (col_x - contentX));
-                    if (remainingWidth > 0) {
-                        buffer.setString(col_x, y, text.substring(0, remainingWidth), span.style());
-                        col_x += remainingWidth;
-                    }
-                    }
+
+                    // Process line according to overflow mode
+                    Line processedLine = processLine(line, availableWidth);
+                    buffer.setLine(contentX, y, processedLine);
                     y++;
                 }
 
                 currentOffset += itemHeight;
             }
         }
+    }
+
+    /**
+     * Processes a line according to the overflow mode.
+     */
+    private Line processLine(Line line, int maxWidth) {
+        if (line.width() <= maxWidth) {
+            return line;
+        }
+
+        switch (overflow) {
+            case CLIP:
+                return clipLine(line, maxWidth);
+            case ELLIPSIS:
+                return truncateWithEllipsis(line, maxWidth, EllipsisPosition.END);
+            case ELLIPSIS_START:
+                return truncateWithEllipsis(line, maxWidth, EllipsisPosition.START);
+            case ELLIPSIS_MIDDLE:
+                return truncateWithEllipsis(line, maxWidth, EllipsisPosition.MIDDLE);
+            case WRAP_CHARACTER:
+            case WRAP_WORD:
+                // Wrapping not supported for list items - fall back to clip
+                return clipLine(line, maxWidth);
+            default:
+                return clipLine(line, maxWidth);
+        }
+    }
+
+    private Line clipLine(Line line, int maxWidth) {
+        List<Span> clippedSpans = new ArrayList<>();
+        int remainingWidth = maxWidth;
+
+        for (Span span : line.spans()) {
+            if (remainingWidth <= 0) {
+                break;
+            }
+
+            String content = span.content();
+            if (content.length() <= remainingWidth) {
+                clippedSpans.add(span);
+                remainingWidth -= content.length();
+            } else {
+                clippedSpans.add(new Span(content.substring(0, remainingWidth), span.style()));
+                break;
+            }
+        }
+
+        return Line.from(clippedSpans);
+    }
+
+    private enum EllipsisPosition { START, MIDDLE, END }
+
+    private Line truncateWithEllipsis(Line line, int maxWidth, EllipsisPosition position) {
+        if (maxWidth <= ELLIPSIS.length()) {
+            // Not enough room for ellipsis, just clip
+            return clipLine(line, maxWidth);
+        }
+
+        String fullText = lineToString(line);
+        Style lineStyle = getLineStyle(line);
+
+        String truncated;
+        switch (position) {
+            case END:
+                truncated = truncateEnd(fullText, maxWidth);
+                break;
+            case START:
+                truncated = truncateStart(fullText, maxWidth);
+                break;
+            case MIDDLE:
+                truncated = truncateMiddle(fullText, maxWidth);
+                break;
+            default:
+                truncated = truncateEnd(fullText, maxWidth);
+        }
+
+        return Line.from(new Span(truncated, lineStyle));
+    }
+
+    private String truncateEnd(String text, int maxWidth) {
+        int availableChars = maxWidth - ELLIPSIS.length();
+        return text.substring(0, availableChars) + ELLIPSIS;
+    }
+
+    private String truncateStart(String text, int maxWidth) {
+        int availableChars = maxWidth - ELLIPSIS.length();
+        return ELLIPSIS + text.substring(text.length() - availableChars);
+    }
+
+    private String truncateMiddle(String text, int maxWidth) {
+        int availableChars = maxWidth - ELLIPSIS.length();
+        int leftChars = (availableChars + 1) / 2;
+        int rightChars = availableChars / 2;
+        return text.substring(0, leftChars) + ELLIPSIS + text.substring(text.length() - rightChars);
+    }
+
+    private String lineToString(Line line) {
+        StringBuilder sb = new StringBuilder();
+        for (Span span : line.spans()) {
+            sb.append(span.content());
+        }
+        return sb.toString();
+    }
+
+    private Style getLineStyle(Line line) {
+        List<Span> spans = line.spans();
+        return spans.isEmpty() ? Style.EMPTY : spans.get(0).style();
     }
 
     public static final class Builder {
@@ -281,6 +379,8 @@ public final class ListWidget implements StatefulWidget<ListState> {
         private BiFunction<Integer, Integer, Style> itemStyleResolver;
 
         // Style-aware properties bound to this builder's resolver
+        private final StyledProperty<Overflow> overflow =
+                StyledProperty.of(TEXT_OVERFLOW, Overflow.CLIP, () -> styleResolver);
         private final StyledProperty<Color> background =
                 StyledProperty.of(StandardPropertyKeys.BACKGROUND, null, () -> styleResolver);
         private final StyledProperty<Color> foreground =
@@ -413,6 +513,26 @@ public final class ListWidget implements StatefulWidget<ListState> {
          */
         public Builder repeatHighlightSymbol(boolean repeatHighlightSymbol) {
             this.repeatHighlightSymbol = repeatHighlightSymbol;
+            return this;
+        }
+
+        /**
+         * Sets the overflow mode for list item text.
+         * <p>
+         * Controls how text is handled when it exceeds the available width:
+         * <ul>
+         *   <li>{@code CLIP} - silently truncate at boundary (default)</li>
+         *   <li>{@code ELLIPSIS} - truncate with "..." at end</li>
+         *   <li>{@code ELLIPSIS_START} - truncate with "..." at start</li>
+         *   <li>{@code ELLIPSIS_MIDDLE} - truncate with "..." in middle</li>
+         * </ul>
+         * Note: WRAP_CHARACTER and WRAP_WORD are not supported for list items.
+         *
+         * @param overflow the overflow mode
+         * @return this builder
+         */
+        public Builder overflow(Overflow overflow) {
+            this.overflow.set(overflow);
             return this;
         }
 

@@ -22,6 +22,7 @@ import dev.tamboui.widgets.list.ListWidget;
 import dev.tamboui.widgets.scrollbar.Scrollbar;
 import dev.tamboui.widgets.scrollbar.ScrollbarOrientation;
 import dev.tamboui.widgets.scrollbar.ScrollbarState;
+import dev.tamboui.widgets.text.Overflow;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,6 +71,7 @@ public final class ListContainer<T> extends StyledElement<ListContainer<T>> {
     private boolean showScrollbar;
     private Color scrollbarThumbColor;
     private Color scrollbarTrackColor;
+    private Overflow overflow;
 
     public ListContainer() {
     }
@@ -341,6 +343,35 @@ public final class ListContainer<T> extends StyledElement<ListContainer<T>> {
         return this;
     }
 
+    /**
+     * Sets the overflow mode for list item text.
+     * <p>
+     * Controls how text is handled when it exceeds the available width:
+     * <ul>
+     *   <li>{@code CLIP} - silently truncate at boundary (default)</li>
+     *   <li>{@code ELLIPSIS} - truncate with "..." at end</li>
+     *   <li>{@code ELLIPSIS_START} - truncate with "..." at start</li>
+     *   <li>{@code ELLIPSIS_MIDDLE} - truncate with "..." in middle</li>
+     * </ul>
+     *
+     * @param overflow the overflow mode
+     * @return this element
+     */
+    public ListContainer<T> overflow(Overflow overflow) {
+        this.overflow = overflow;
+        return this;
+    }
+
+    /**
+     * Sets overflow to ELLIPSIS mode (truncate with "..." at end).
+     *
+     * @return this element
+     */
+    public ListContainer<T> ellipsis() {
+        this.overflow = Overflow.ELLIPSIS;
+        return this;
+    }
+
     @Override
     protected void renderContent(Frame frame, Rect area, RenderContext context) {
         if (area.isEmpty()) {
@@ -407,6 +438,10 @@ public final class ListContainer<T> extends StyledElement<ListContainer<T>> {
             .style(context.currentStyle())
             .highlightStyle(effectiveHighlightStyle)
             .highlightSymbol(effectiveHighlightSymbol);
+
+        if (overflow != null) {
+            builder.overflow(overflow);
+        }
 
         if (title != null || borderType != null) {
             Block.Builder blockBuilder = Block.builder().borders(Borders.ALL);
