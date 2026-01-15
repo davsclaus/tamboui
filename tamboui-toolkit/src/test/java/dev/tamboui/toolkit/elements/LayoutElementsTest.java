@@ -4,12 +4,16 @@
  */
 package dev.tamboui.toolkit.elements;
 
+import dev.tamboui.assertj.BufferAssertions;
 import dev.tamboui.buffer.Buffer;
-import dev.tamboui.toolkit.element.RenderContext;
+import dev.tamboui.css.engine.StyleEngine;
 import dev.tamboui.layout.Constraint;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Color;
 import dev.tamboui.terminal.Frame;
+import dev.tamboui.toolkit.element.DefaultRenderContext;
+import dev.tamboui.toolkit.element.RenderContext;
+import dev.tamboui.widgets.text.Overflow;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -309,6 +313,116 @@ class LayoutElementsTest {
     }
 
     @Nested
+    @DisplayName("Width-aware preferred height")
+    class PreferredHeightWithWidthTests {
+
+        @Test
+        @DisplayName("Row.preferredHeight(width) returns max child height")
+        void rowMaxChildHeight() {
+            Row r = row(
+                text("Short"),
+                text("12345678901234567890").overflow(Overflow.WRAP_CHARACTER)
+            );
+            // At width 20, each child gets 10 chars (20/2)
+            // "12345678901234567890" = 20 chars at width 10 = 2 lines
+            assertThat(r.preferredHeight(20, null)).isEqualTo(2);
+
+            // At width 10, each child gets 5 chars (10/2)
+            // "12345678901234567890" = 20 chars at width 5 = 4 lines
+            assertThat(r.preferredHeight(10, null)).isEqualTo(4);
+        }
+
+        @Test
+        @DisplayName("Row.preferredHeight(width) accounts for spacing")
+        void rowWithSpacing() {
+            Row r = row(
+                text("12345678901234567890").overflow(Overflow.WRAP_CHARACTER),
+                text("12345678901234567890").overflow(Overflow.WRAP_CHARACTER)
+            ).spacing(2);
+            // Width 22: 2 spacing + 20 content = 10 per child, each wraps to 2 lines
+            assertThat(r.preferredHeight(22, null)).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("Column.preferredHeight(width) returns sum of child heights")
+        void columnSumChildHeights() {
+            Column c = column(
+                text("Short"),
+                text("12345678901234567890").overflow(Overflow.WRAP_CHARACTER)
+            );
+            // At width 20, first child = 1, second child = 1 (no wrapping)
+            assertThat(c.preferredHeight(20, null)).isEqualTo(2);
+
+            // At width 10, first child = 1, second child = 2 (wraps)
+            assertThat(c.preferredHeight(10, null)).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("Column.preferredHeight(width) accounts for spacing")
+        void columnWithSpacing() {
+            Column c = column(
+                text("A"),
+                text("B"),
+                text("C")
+            ).spacing(1);
+            // 3 children + 2 spacing = 5
+            assertThat(c.preferredHeight(20, null)).isEqualTo(5);
+        }
+
+        @Test
+        @DisplayName("Panel.preferredHeight(width) includes borders")
+        void panelIncludesBorders() {
+            Panel p = panel(text("Content"));
+            // 2 for borders + 1 for content
+            assertThat(p.preferredHeight(20, null)).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("Panel.preferredHeight(width) includes padding")
+        void panelIncludesPadding() {
+            Panel p = panel(text("Content")).padding(1);
+            // 2 for borders + 2 for padding + 1 for content
+            assertThat(p.preferredHeight(20, null)).isEqualTo(5);
+        }
+
+        @Test
+        @DisplayName("Panel.preferredHeight(width) calculates wrapped content height")
+        void panelWithWrappedContent() {
+            Panel p = panel(
+                text("12345678901234567890").overflow(Overflow.WRAP_CHARACTER)
+            );
+            // At width 22: 2 borders, content width = 20, text fits in 1 line
+            assertThat(p.preferredHeight(22, null)).isEqualTo(3);
+
+            // At width 12: 2 borders, content width = 10, text wraps to 2 lines
+            assertThat(p.preferredHeight(12, null)).isEqualTo(4);
+        }
+
+        @Test
+        @DisplayName("Nested row in column calculates height correctly")
+        void nestedRowInColumn() {
+            Column c = column(
+                text("Header"),
+                row(
+                    text("12345678901234567890").overflow(Overflow.WRAP_CHARACTER),
+                    text("Short")
+                )
+            );
+            // At width 20: header = 1, row max = 1 (20 chars / 2 = 10 per child, wraps to 2)
+            // Actually: 20 chars at width 10 = 2 lines
+            assertThat(c.preferredHeight(20, null)).isEqualTo(3); // 1 + 2
+        }
+
+        @Test
+        @DisplayName("Empty containers return sensible defaults")
+        void emptyContainers() {
+            assertThat(row().preferredHeight(20, null)).isEqualTo(1);
+            assertThat(column().preferredHeight(20, null)).isEqualTo(0);
+            assertThat(panel().preferredHeight(20, null)).isEqualTo(2); // Just borders
+        }
+    }
+
+    @Nested
     @DisplayName("Nested layout tests")
     class NestedLayoutTests {
 
@@ -362,6 +476,210 @@ class LayoutElementsTest {
 
             // Should render without error
             assertThat(buffer).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Row with many text elements clips each to its area")
+        void rowWithManyTextElementsClips() {
+            // Simulate the stats row: 10 text elements in a 40-cell wide row
+            // Each element should get ~4 cells and be clipped
+            Rect area = new Rect(0, 0, 40, 1);
+            Buffer buffer = Buffer.empty(area);
+            Frame frame = Frame.forTesting(buffer);
+
+            row(
+                text("A 4"), text("passed"),
+                text("B 3"), text("failed"),
+                text("C 0"), text("skipped"),
+                text("D 0"), text("running"),
+                text("E 0"), text("pending")
+            ).render(frame, area, RenderContext.empty());
+
+            // Check that text doesn't extend beyond the row's area
+            // The last cell (x=39) should be within bounds
+            // If overflow occurred, we'd see content from later elements bleeding over
+
+            // Print buffer for debugging
+            StringBuilder row0 = new StringBuilder();
+            for (int x = 0; x < 40; x++) {
+                row0.append(buffer.get(x, 0).symbol());
+            }
+            System.out.println("Row content: [" + row0 + "]");
+
+            // Each element should be clipped to ~4 cells
+            // With 10 elements in 40 cells, each gets 4 cells
+            // "passed" (6 chars) should be clipped to "pass"
+            // Verify no text appears outside bounds
+            assertThat(buffer.get(39, 0).symbol()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Row text elements are clipped to assigned area - not overflow")
+        void rowTextElementsDoNotOverflow() {
+            // A narrower test case: 2 text elements in 10-cell row
+            // Each should get 5 cells
+            Rect area = new Rect(0, 0, 10, 1);
+            Buffer buffer = Buffer.empty(area);
+            Frame frame = Frame.forTesting(buffer);
+
+            row(
+                text("AAAAAAAAAA"), // 10 chars, should be clipped to 5
+                text("BBBBBBBBBB")  // 10 chars, should be clipped to 5
+            ).render(frame, area, RenderContext.empty());
+
+            // Print buffer for debugging
+            StringBuilder row0 = new StringBuilder();
+            for (int x = 0; x < 10; x++) {
+                row0.append(buffer.get(x, 0).symbol());
+            }
+            System.out.println("Row content: [" + row0 + "]");
+
+            // First 5 chars should be "AAAAA"
+            // Next 5 chars should be "BBBBB"
+            assertThat(buffer.get(0, 0).symbol()).isEqualTo("A");
+            assertThat(buffer.get(4, 0).symbol()).isEqualTo("A");
+            assertThat(buffer.get(5, 0).symbol()).isEqualTo("B");
+            assertThat(buffer.get(9, 0).symbol()).isEqualTo("B");
+        }
+
+        @Test
+        @DisplayName("Row with flex:start still clips text elements")
+        void rowWithFlexStartClipsText() {
+            // Test with flex(START) like the user's CSS
+            Rect area = new Rect(0, 0, 10, 1);
+            Buffer buffer = Buffer.empty(area);
+            Frame frame = Frame.forTesting(buffer);
+
+            row(
+                text("AAAAAAAAAA"), // 10 chars
+                text("BBBBBBBBBB")  // 10 chars
+            ).flex(dev.tamboui.layout.Flex.START)
+             .render(frame, area, RenderContext.empty());
+
+            // Print buffer for debugging
+            StringBuilder row0 = new StringBuilder();
+            for (int x = 0; x < 10; x++) {
+                row0.append(buffer.get(x, 0).symbol());
+            }
+            System.out.println("Row with flex:start content: [" + row0 + "]");
+
+            // With flex:start, elements should still be clipped
+            // Each gets 5 cells, remaining space goes at end
+            assertThat(buffer.get(0, 0).symbol()).isEqualTo("A");
+            assertThat(buffer.get(5, 0).symbol()).isEqualTo("B");
+        }
+
+        @Test
+        @DisplayName("Panel with row inside clips correctly")
+        void panelWithRowClipsCorrectly() {
+            // Test the full structure: Panel > Column > Row > TextElements
+            Rect area = new Rect(0, 0, 20, 5);
+            Buffer buffer = Buffer.empty(area);
+            Frame frame = Frame.forTesting(buffer);
+
+            panel("Test",
+                column(
+                    row(
+                        text("AAAAAAAAAA"),
+                        text("BBBBBBBBBB")
+                    )
+                )
+            ).render(frame, area, RenderContext.empty());
+
+            // Print row 1 (inside the panel, after border)
+            StringBuilder row1 = new StringBuilder();
+            for (int x = 0; x < 20; x++) {
+                row1.append(buffer.get(x, 1).symbol());
+            }
+            System.out.println("Panel row 1: [" + row1 + "]");
+
+            // The row should be inside the panel (border at x=0, x=19)
+            // Inner width = 18, so each text gets 9 chars
+            // Content should be clipped and not overflow the panel border
+            assertThat(buffer.get(0, 1).symbol()).isEqualTo("│"); // left border
+            assertThat(buffer.get(19, 1).symbol()).isEqualTo("│"); // right border
+        }
+
+        @Test
+        @DisplayName("Stats row with CSS does not overflow panel - reproduces user issue")
+        void statsRowWithCssDoesNotOverflowPanel() {
+            // Reproduce the user's issue: Panel > Column > Row with many text elements
+            // CSS has text-overflow: wrap-character on .stats-row
+            // Text should NOT overflow the panel borders
+
+            StyleEngine styleEngine = StyleEngine.create();
+            styleEngine.addStylesheet(
+                ".stats-row { text-overflow: wrap-character; height: 1; flex: start; }\n" +
+                ".success { color: green; }\n" +
+                ".error { color: red; }\n" +
+                ".warning { color: yellow; }\n" +
+                ".info { color: cyan; }\n" +
+                ".dim { color: gray; }"
+            );
+
+            DefaultRenderContext context = DefaultRenderContext.createEmpty();
+            context.setStyleEngine(styleEngine);
+
+            // Panel width 50, simulating user's Tests panel
+            Rect area = new Rect(0, 0, 50, 5);
+            Buffer buffer = Buffer.empty(area);
+            Frame frame = Frame.forTesting(buffer);
+
+            // Create structure matching user's code
+            panel("Tests",
+                column(
+                    row(
+                        text("Header")
+                    ),
+                    row(
+                        text("+ 4").addClass("success"), text("passed"),
+                        text("x 3").addClass("error"), text("failed"),
+                        text("> 0").addClass("warning"), text("skipped"),
+                        text("~ 0").addClass("info"), text("running"),
+                        text("? 0").addClass("dim"), text("pending")
+                    ).addClass("stats-row")
+                )
+            ).render(frame, area, context);
+
+            // The panel borders must be intact - text must NOT overflow
+            // Row 0: top border (┌Tests...┐)
+            // Row 1: Header row with borders
+            // Row 2: Empty row due to column expansion
+            // Row 3: Stats row - THIS IS WHERE THE BUG IS (right border missing)
+            // Row 4: bottom border (└...┘)
+            BufferAssertions.assertThat(buffer)
+                .hasSymbolAt(0, 1, "│")   // left border row 1
+                .hasSymbolAt(49, 1, "│")  // right border row 1
+                .hasSymbolAt(0, 2, "│")   // left border row 2
+                .hasSymbolAt(49, 2, "│")  // right border row 2
+                .hasSymbolAt(0, 3, "│")   // left border row 3 (stats row)
+                .hasSymbolAt(49, 3, "│"); // right border row 3 (stats row) - BUG: this fails!
+        }
+
+        @Test
+        @DisplayName("Simple row in panel does not overflow - minimal reproduction")
+        void simpleRowInPanelDoesNotOverflow() {
+            // Minimal test: Panel > Row with text that exceeds available width
+            // Without any CSS, just pure layout
+            Rect area = new Rect(0, 0, 20, 3);
+            Buffer buffer = Buffer.empty(area);
+            Frame frame = Frame.forTesting(buffer);
+
+            // Inner area should be 18 wide (20 - 2 borders)
+            // Row with 4 text elements, each ~4.5 chars
+            panel("T",
+                row(
+                    text("AAAA"),
+                    text("BBBB"),
+                    text("CCCC"),
+                    text("DDDD")
+                )
+            ).render(frame, area, RenderContext.empty());
+
+            // Right border must be intact at position 19
+            BufferAssertions.assertThat(buffer)
+                .hasSymbolAt(0, 1, "│")   // left border
+                .hasSymbolAt(19, 1, "│"); // right border - must NOT be overwritten
         }
     }
 }

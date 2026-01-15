@@ -464,25 +464,6 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
         int visibleHeight = listArea.height();
         this.lastViewportHeight = visibleHeight;
 
-        // Calculate item heights (assume 1 for each item, could be extended)
-        int[] itemHeights = new int[totalItems];
-        for (int i = 0; i < totalItems; i++) {
-            itemHeights[i] = getItemHeight(effectiveItems.get(i));
-        }
-
-        // Auto-scroll logic
-        if (autoScrollToEnd) {
-            // Scroll to show last items
-            int totalHeight = 0;
-            for (int h : itemHeights) {
-                totalHeight += h;
-            }
-            scrollOffset = Math.max(0, totalHeight - visibleHeight);
-        } else if (autoScroll) {
-            // Scroll to keep selected item visible
-            scrollToSelected(visibleHeight, itemHeights);
-        }
-
         // Resolve highlight style: explicit > CSS > default
         Style effectiveHighlightStyle = highlightStyle;
         if (effectiveHighlightStyle == null) {
@@ -497,6 +478,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
         int symbolWidth = effectiveHighlightSymbol.length();
 
         // Calculate content area (reserve space for symbol)
+        // This must be done before calculating item heights since wrapping depends on width
         int contentX = listArea.left() + symbolWidth;
         int contentWidth = listArea.width() - symbolWidth;
         if (showScrollbar) {
@@ -505,6 +487,25 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
 
         if (contentWidth <= 0) {
             return;
+        }
+
+        // Calculate item heights using content width for proper text wrapping
+        int[] itemHeights = new int[totalItems];
+        for (int i = 0; i < totalItems; i++) {
+            itemHeights[i] = itemHeightOf(effectiveItems.get(i), contentWidth, context);
+        }
+
+        // Auto-scroll logic
+        if (autoScrollToEnd) {
+            // Scroll to show last items
+            int totalHeight = 0;
+            for (int h : itemHeights) {
+                totalHeight += h;
+            }
+            scrollOffset = Math.max(0, totalHeight - visibleHeight);
+        } else if (autoScroll) {
+            // Scroll to keep selected item visible
+            scrollToSelected(visibleHeight, itemHeights);
         }
 
         // Render visible items
@@ -620,16 +621,25 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
     }
 
     /**
-     * Returns the height of an item (in rows).
-     * Currently assumes 1 row per item, but could be extended to support multi-line items.
+     * Returns the height of an item (in rows) given the available content width.
+     * <p>
+     * Uses {@link dev.tamboui.toolkit.element.Element#preferredHeight(int, RenderContext)} to allow
+     * elements like text to calculate wrapped height based on available width and CSS properties.
+     *
+     * @param item the item element
+     * @param contentWidth the available width for content
+     * @param context the render context for CSS resolution
+     * @return the height in rows
      */
-    private int getItemHeight(StyledElement<?> item) {
+    private int itemHeightOf(StyledElement<?> item, int contentWidth, RenderContext context) {
+        // First check for explicit length constraint
         Constraint c = item.constraint();
         if (c instanceof Constraint.Length) {
             return ((Constraint.Length) c).value();
         }
-        // Default to 1 row
-        return 1;
+        // Use width-aware preferred height with context for CSS property resolution
+        int preferred = item.preferredHeight(contentWidth, context);
+        return preferred > 0 ? preferred : 1;
     }
 
     /**

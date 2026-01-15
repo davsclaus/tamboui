@@ -103,6 +103,27 @@ public final class Row extends ContainerElement<Row> {
     }
 
     @Override
+    public int preferredHeight(int availableWidth, RenderContext context) {
+        if (children.isEmpty() || availableWidth <= 0) {
+            return 1;
+        }
+
+        // For a row, calculate max height of children
+        // Give each child an equal share of width as a reasonable approximation
+        int effectiveSpacing = this.spacing != null ? this.spacing : 0;
+        int totalSpacing = effectiveSpacing * Math.max(0, children.size() - 1);
+        int contentWidth = Math.max(1, availableWidth - totalSpacing);
+        int childWidth = Math.max(1, contentWidth / children.size());
+
+        int maxHeight = 1;
+        for (Element child : children) {
+            maxHeight = Math.max(maxHeight, child.preferredHeight(childWidth, context));
+        }
+
+        return maxHeight;
+    }
+
+    @Override
     protected void renderContent(Frame frame, Rect area, RenderContext context) {
         if (children.isEmpty()) {
             return;

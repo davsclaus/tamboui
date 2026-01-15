@@ -172,6 +172,44 @@ public final class TextElement extends StyledElement<TextElement> {
         return lineCount;
     }
 
+    /**
+     * Calculates the height needed for this text when rendered with wrapping at the given width.
+     * <p>
+     * For non-wrapping modes, returns the natural line count.
+     * For wrapping modes, calculates how many lines will be produced after wrapping.
+     *
+     * @param width the available width for rendering
+     * @param effectiveOverflow the overflow mode to use
+     * @return the number of lines needed
+     */
+    private int calculateWrappedHeight(int width, Overflow effectiveOverflow) {
+        if (width <= 0 || content.isEmpty()) {
+            return 1;
+        }
+
+        if (effectiveOverflow != Overflow.WRAP_CHARACTER && effectiveOverflow != Overflow.WRAP_WORD) {
+            return countLines();
+        }
+
+        // For wrapping modes, calculate how many lines we'll need
+        int totalLines = 0;
+        int start = 0;
+        for (int i = 0; i <= content.length(); i++) {
+            if (i == content.length() || content.charAt(i) == '\n') {
+                // Process this logical line
+                int lineLength = i - start;
+                if (lineLength == 0) {
+                    totalLines++;
+                } else {
+                    // Calculate wrapped lines for this segment
+                    totalLines += (lineLength + width - 1) / width;
+                }
+                start = i + 1;
+            }
+        }
+        return Math.max(1, totalLines);
+    }
+
     @Override
     public int preferredWidth() {
         // For multi-line text, return the longest line
@@ -191,6 +229,27 @@ public final class TextElement extends StyledElement<TextElement> {
     @Override
     public int preferredHeight() {
         return countLines();
+    }
+
+    @Override
+    public int preferredHeight(int availableWidth, RenderContext context) {
+        Overflow effectiveOverflow = resolveOverflow(context);
+        return calculateWrappedHeight(availableWidth, effectiveOverflow);
+    }
+
+    /**
+     * Resolves the overflow mode: programmatic value takes precedence, then CSS, then default.
+     */
+    private Overflow resolveOverflow(RenderContext context) {
+        if (overflow != null) {
+            return overflow;
+        }
+        if (context != null) {
+            return context.resolveStyle(this)
+                    .flatMap(resolver -> resolver.get(Paragraph.TEXT_OVERFLOW))
+                    .orElse(Overflow.CLIP);
+        }
+        return Overflow.CLIP;
     }
 
     @Override

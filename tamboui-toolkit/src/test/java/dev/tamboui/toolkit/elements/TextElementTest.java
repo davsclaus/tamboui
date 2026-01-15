@@ -5,6 +5,7 @@
 package dev.tamboui.toolkit.elements;
 
 import dev.tamboui.buffer.Buffer;
+import dev.tamboui.css.cascade.CssStyleResolver;
 import dev.tamboui.toolkit.element.RenderContext;
 import dev.tamboui.layout.Constraint;
 import dev.tamboui.layout.Rect;
@@ -281,6 +282,132 @@ class TextElementTest {
             expected.setString(0, 5, "wrap", Style.EMPTY);
 
             assertThat(buffer).isEqualTo(expected);
+        }
+    }
+
+    @Nested
+    @DisplayName("Width-aware preferred height")
+    class PreferredHeightWithWidthTests {
+
+        @Test
+        @DisplayName("preferredHeight(width) returns 1 for short text without wrapping")
+        void shortTextNoWrapping() {
+            TextElement element = text("Hello");
+            assertThat(element.preferredHeight(20, null)).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("preferredHeight(width) returns line count for non-wrapping overflow modes")
+        void nonWrappingModes() {
+            TextElement element = text("Hello\nWorld").overflow(Overflow.CLIP);
+            assertThat(element.preferredHeight(5, null)).isEqualTo(2);
+
+            TextElement ellipsis = text("Hello\nWorld\nTest").overflow(Overflow.ELLIPSIS);
+            assertThat(ellipsis.preferredHeight(5, null)).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("preferredHeight(width) calculates wrapped lines for WRAP_CHARACTER")
+        void wrapCharacterCalculation() {
+            // 20 chars should wrap to 2 lines at width 10
+            TextElement element = text("12345678901234567890").overflow(Overflow.WRAP_CHARACTER);
+            assertThat(element.preferredHeight(10, null)).isEqualTo(2);
+
+            // 25 chars should wrap to 3 lines at width 10
+            TextElement longer = text("1234567890123456789012345").overflow(Overflow.WRAP_CHARACTER);
+            assertThat(longer.preferredHeight(10, null)).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("preferredHeight(width) calculates wrapped lines for WRAP_WORD")
+        void wrapWordCalculation() {
+            // Same calculation as WRAP_CHARACTER for preferredHeight
+            TextElement element = text("12345678901234567890").overflow(Overflow.WRAP_WORD);
+            assertThat(element.preferredHeight(10, null)).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("preferredHeight(width) handles multi-line text with wrapping")
+        void multiLineWithWrapping() {
+            // Two lines, each 15 chars, should wrap to 4 lines at width 10
+            TextElement element = text("123456789012345\n123456789012345").overflow(Overflow.WRAP_CHARACTER);
+            assertThat(element.preferredHeight(10, null)).isEqualTo(4);
+        }
+
+        @Test
+        @DisplayName("preferredHeight(width) returns 1 for empty content")
+        void emptyContent() {
+            TextElement element = text("").overflow(Overflow.WRAP_CHARACTER);
+            assertThat(element.preferredHeight(10, null)).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("preferredHeight(width) returns 1 for zero or negative width")
+        void zeroWidth() {
+            TextElement element = text("Hello World").overflow(Overflow.WRAP_CHARACTER);
+            assertThat(element.preferredHeight(0, null)).isEqualTo(1);
+            assertThat(element.preferredHeight(-5, null)).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("preferredHeight(width) handles exact width match")
+        void exactWidthMatch() {
+            // 10 chars at width 10 should be exactly 1 line
+            TextElement element = text("1234567890").overflow(Overflow.WRAP_CHARACTER);
+            assertThat(element.preferredHeight(10, null)).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("preferredHeight(width) handles width of 1")
+        void widthOfOne() {
+            TextElement element = text("ABC").overflow(Overflow.WRAP_CHARACTER);
+            assertThat(element.preferredHeight(1, null)).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("preferredHeight() without width delegates to line count")
+        void preferredHeightWithoutWidth() {
+            TextElement single = text("Hello World");
+            assertThat(single.preferredHeight()).isEqualTo(1);
+
+            TextElement multi = text("Line1\nLine2\nLine3");
+            assertThat(multi.preferredHeight()).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("preferredHeight resolves overflow from CSS via RenderContext")
+        void resolvesOverflowFromCss() {
+            // Create element without programmatic overflow
+            TextElement element = text("12345678901234567890");
+
+            // Create CSS resolver with text-overflow: wrap-character
+            CssStyleResolver cssResolver = CssStyleResolver.builder()
+                    .property("text-overflow", "wrap-character")
+                    .build();
+
+            // Create mock RenderContext that returns the resolver for this element
+            RenderContext context = new RenderContext() {
+                @Override
+                public boolean isFocused(String elementId) {
+                    return false;
+                }
+
+                @Override
+                public boolean hasFocus() {
+                    return false;
+                }
+
+                @Override
+                public java.util.Optional<CssStyleResolver> resolveStyle(dev.tamboui.css.Styleable styleable) {
+                    return java.util.Optional.of(cssResolver);
+                }
+            };
+
+            // Without CSS (null context), should return 1 (CLIP mode)
+            assertThat(element.preferredHeight(10, null)).isEqualTo(1);
+
+            // With CSS providing wrap-character, should wrap to 2 lines
+            assertThat(element.preferredHeight(10, context)).isEqualTo(2);
         }
     }
 }

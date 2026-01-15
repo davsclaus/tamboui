@@ -147,4 +147,33 @@ class LayoutTest {
         assertThat(rects.get(0).height()).isEqualTo(33);
         assertThat(rects.get(1).height()).isEqualTo(66);
     }
+
+    @Test
+    @DisplayName("Horizontal layout with 4 fill constraints does not exceed bounds")
+    void fourFillConstraintsDoNotExceedBounds() {
+        // Simulates Row in Panel: inner area (1, 1, 18, 1), 4 children with fill()
+        Rect area = new Rect(1, 1, 18, 1);
+        Layout layout = Layout.horizontal()
+            .constraints(
+                Constraint.fill(),
+                Constraint.fill(),
+                Constraint.fill(),
+                Constraint.fill()
+            );
+
+        List<Rect> rects = layout.split(area);
+
+        assertThat(rects).hasSize(4);
+
+        // Total width should equal input width (18)
+        int totalWidth = rects.stream().mapToInt(Rect::width).sum();
+        assertThat(totalWidth).as("total width").isEqualTo(area.width());
+
+        // All rects should be within the input area bounds
+        for (int i = 0; i < rects.size(); i++) {
+            Rect rect = rects.get(i);
+            assertThat(rect.left()).as("rect[" + i + "] left").isGreaterThanOrEqualTo(area.left());
+            assertThat(rect.right()).as("rect[" + i + "] right").isLessThanOrEqualTo(area.right());
+        }
+    }
 }

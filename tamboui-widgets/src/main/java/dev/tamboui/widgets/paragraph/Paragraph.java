@@ -148,8 +148,6 @@ public final class Paragraph implements Widget {
         }
 
         switch (overflow) {
-            case CLIP:
-                return clipLines(lines, maxWidth);
             case WRAP_CHARACTER:
             case WRAP_WORD:
                 return wrapLines(lines, maxWidth);
@@ -159,8 +157,10 @@ public final class Paragraph implements Widget {
                 return truncateWithEllipsis(lines, maxWidth, EllipsisPosition.START);
             case ELLIPSIS_MIDDLE:
                 return truncateWithEllipsis(lines, maxWidth, EllipsisPosition.MIDDLE);
+            case CLIP:
             default:
-                return lines;
+                // Always clip as safety measure to prevent rendering outside bounds
+                return clipLines(lines, maxWidth);
         }
     }
 

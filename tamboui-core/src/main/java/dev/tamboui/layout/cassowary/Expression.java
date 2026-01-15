@@ -6,7 +6,7 @@ package dev.tamboui.layout.cassowary;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -119,7 +119,7 @@ public final class Expression {
      * @return a new expression representing the sum
      */
     public Expression plus(Expression other) {
-        Map<Variable, Double> coefficients = new HashMap<>();
+        Map<Variable, Double> coefficients = new LinkedHashMap<>();
 
         for (Term term : this.terms) {
             coefficients.merge(term.variable(), term.coefficient(), Double::sum);

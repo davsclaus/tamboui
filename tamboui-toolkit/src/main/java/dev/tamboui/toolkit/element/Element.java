@@ -63,6 +63,23 @@ public interface Element {
     }
 
     /**
+     * Returns the preferred height of this element given an available width and render context.
+     * <p>
+     * This is useful for elements that may wrap content (like text) where the
+     * height depends on the available width. The render context allows CSS-aware
+     * height calculation where properties like {@code text-overflow} may be set via CSS.
+     * <p>
+     * When context is null, implementations should use programmatic property values only.
+     *
+     * @param availableWidth the available width in cells
+     * @param context the render context for CSS resolution, may be null
+     * @return the preferred height given the available width
+     */
+    default int preferredHeight(int availableWidth, RenderContext context) {
+        return preferredHeight();
+    }
+
+    /**
      * Returns whether this element can receive focus.
      *
      * @return true if focusable, false otherwise

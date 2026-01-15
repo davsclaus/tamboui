@@ -302,6 +302,53 @@ public final class Panel extends ContainerElement<Panel> {
         return layoutConstraint;
     }
 
+    @Override
+    public int preferredHeight(int availableWidth, RenderContext context) {
+        if (availableWidth <= 0) {
+            return 2; // Just borders
+        }
+
+        // Border overhead: 2 rows for top and bottom
+        int height = 2;
+
+        // Padding overhead
+        if (padding != null) {
+            height += padding.verticalTotal();
+        }
+
+        // Content width after borders and padding
+        int paddingHorizontal = padding != null ? padding.horizontalTotal() : 0;
+        int contentWidth = Math.max(1, availableWidth - 2 - paddingHorizontal);
+
+        if (children.isEmpty()) {
+            return height;
+        }
+
+        // Determine layout direction (default vertical)
+        Direction effectiveDirection = this.direction != null ? this.direction : Direction.VERTICAL;
+        int effectiveSpacing = this.spacing != null ? this.spacing : 0;
+
+        if (effectiveDirection == Direction.VERTICAL) {
+            // Sum of children heights + spacing
+            int totalSpacing = effectiveSpacing * Math.max(0, children.size() - 1);
+            for (Element child : children) {
+                height += child.preferredHeight(contentWidth, context);
+            }
+            height += totalSpacing;
+        } else {
+            // Horizontal: max height of children with equal width distribution
+            int totalSpacing = effectiveSpacing * Math.max(0, children.size() - 1);
+            int childWidth = Math.max(1, (contentWidth - totalSpacing) / children.size());
+            int maxChildHeight = 1;
+            for (Element child : children) {
+                maxChildHeight = Math.max(maxChildHeight, child.preferredHeight(childWidth, context));
+            }
+            height += maxChildHeight;
+        }
+
+        return height;
+    }
+
     /**
      * Computes the total height required to fit the panel's content.
      *

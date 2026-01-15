@@ -88,12 +88,15 @@ public final class LayoutSolver {
         // Solve and extract results
         solver.updateVariables();
 
-        int[] result = new int[n];
+        // Get float values and round with constraint preservation.
+        // Note: Using doubles can cause cumulative rounding errors. A more robust
+        // solution would use exact Fraction arithmetic - see issue #91.
+        double[] floatSizes = new double[n];
         for (int i = 0; i < n; i++) {
-            result[i] = Math.max(0, (int) Math.round(solver.valueOf(sizes[i])));
+            floatSizes[i] = Math.max(0, solver.valueOf(sizes[i]));
         }
 
-        return result;
+        return roundWithConstraint(floatSizes, available);
     }
 
     /**
@@ -238,5 +241,44 @@ public final class LayoutSolver {
                     Expression.variable(sizes[i])
                             .equalTo(Expression.variable(sizes[i + 1]), ALL_SEGMENT_GROW));
         }
+    }
+
+    /**
+     * Rounds float sizes to integers while ensuring the sum does not exceed the target.
+     *
+     * <p>Uses standard rounding (Math.round) for each value, then if the sum exceeds
+     * the target, shrinks values starting from the end until the sum is within bounds.
+     *
+     * @param floatSizes the float sizes from the solver
+     * @param target     the maximum sum (available space)
+     * @return integer sizes that sum to at most target
+     */
+    private int[] roundWithConstraint(double[] floatSizes, int target) {
+        int n = floatSizes.length;
+        int[] result = new int[n];
+
+        // Round each value normally
+        int sum = 0;
+        for (int i = 0; i < n; i++) {
+            result[i] = (int) Math.round(floatSizes[i]);
+            sum += result[i];
+        }
+
+        // If sum exceeds target, shrink values to fit
+        if (sum > target) {
+            int excess = sum - target;
+            // Shrink from the end, distributing reduction across all segments
+            // This uses largest remainder method in reverse to fairly reduce
+            for (int pass = 0; excess > 0 && pass < n; pass++) {
+                for (int i = n - 1; i >= 0 && excess > 0; i--) {
+                    if (result[i] > 0) {
+                        result[i]--;
+                        excess--;
+                    }
+                }
+            }
+        }
+
+        return result;
     }
 }

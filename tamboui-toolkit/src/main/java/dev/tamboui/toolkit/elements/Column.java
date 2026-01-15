@@ -103,6 +103,25 @@ public final class Column extends ContainerElement<Column> {
     }
 
     @Override
+    public int preferredHeight(int availableWidth, RenderContext context) {
+        if (children.isEmpty() || availableWidth <= 0) {
+            return 0;
+        }
+
+        // Calculate effective spacing
+        int effectiveSpacing = this.spacing != null ? this.spacing : 0;
+        int totalSpacing = effectiveSpacing * Math.max(0, children.size() - 1);
+
+        // Sum heights of all children (Column is vertical, so all children get full width)
+        int totalHeight = 0;
+        for (Element child : children) {
+            totalHeight += child.preferredHeight(availableWidth, context);
+        }
+
+        return totalHeight + totalSpacing;
+    }
+
+    @Override
     protected void renderContent(Frame frame, Rect area, RenderContext context) {
         if (children.isEmpty()) {
             return;
