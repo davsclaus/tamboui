@@ -17,6 +17,9 @@ import java.util.Map;
  * complex expressions. They can be combined using arithmetic operations
  * and converted to constraints.
  *
+ * <p>This implementation uses {@link Fraction} for exact arithmetic,
+ * avoiding the cumulative rounding errors that occur with floating-point.
+ *
  * <p>Example usage:
  * <pre>
  * Variable x = new Variable("x");
@@ -33,12 +36,12 @@ import java.util.Map;
  */
 public final class Expression {
 
-    private static final Expression ZERO = new Expression(Collections.emptyList(), 0.0);
+    private static final Expression ZERO = new Expression(Collections.emptyList(), Fraction.ZERO);
 
     private final List<Term> terms;
-    private final double constant;
+    private final Fraction constant;
 
-    private Expression(List<Term> terms, double constant) {
+    private Expression(List<Term> terms, Fraction constant) {
         this.terms = terms;
         this.constant = constant;
     }
@@ -58,11 +61,21 @@ public final class Expression {
      * @param value the constant value
      * @return an expression representing the constant
      */
-    public static Expression constant(double value) {
-        if (value == 0.0) {
+    public static Expression constant(Fraction value) {
+        if (value.isZero()) {
             return ZERO;
         }
         return new Expression(Collections.emptyList(), value);
+    }
+
+    /**
+     * Creates an expression with only a constant value.
+     *
+     * @param value the constant value
+     * @return an expression representing the constant
+     */
+    public static Expression constant(long value) {
+        return constant(Fraction.of(value));
     }
 
     /**
@@ -72,7 +85,7 @@ public final class Expression {
      * @return an expression representing the variable
      */
     public static Expression variable(Variable variable) {
-        return new Expression(Collections.singletonList(new Term(variable, 1.0)), 0.0);
+        return new Expression(Collections.singletonList(new Term(variable, Fraction.ONE)), Fraction.ZERO);
     }
 
     /**
@@ -82,7 +95,7 @@ public final class Expression {
      * @return an expression containing the term
      */
     public static Expression term(Term term) {
-        return new Expression(Collections.singletonList(term), 0.0);
+        return new Expression(Collections.singletonList(term), Fraction.ZERO);
     }
 
     /**
@@ -99,7 +112,7 @@ public final class Expression {
      *
      * @return the constant
      */
-    public double constant() {
+    public Fraction constant() {
         return constant;
     }
 
@@ -119,23 +132,23 @@ public final class Expression {
      * @return a new expression representing the sum
      */
     public Expression plus(Expression other) {
-        Map<Variable, Double> coefficients = new LinkedHashMap<>();
+        Map<Variable, Fraction> coefficients = new LinkedHashMap<>();
 
         for (Term term : this.terms) {
-            coefficients.merge(term.variable(), term.coefficient(), Double::sum);
+            coefficients.merge(term.variable(), term.coefficient(), Fraction::add);
         }
         for (Term term : other.terms) {
-            coefficients.merge(term.variable(), term.coefficient(), Double::sum);
+            coefficients.merge(term.variable(), term.coefficient(), Fraction::add);
         }
 
         List<Term> newTerms = new ArrayList<>();
-        for (Map.Entry<Variable, Double> entry : coefficients.entrySet()) {
-            if (!nearZero(entry.getValue())) {
+        for (Map.Entry<Variable, Fraction> entry : coefficients.entrySet()) {
+            if (!entry.getValue().isZero()) {
                 newTerms.add(new Term(entry.getKey(), entry.getValue()));
             }
         }
 
-        return new Expression(newTerms, this.constant + other.constant);
+        return new Expression(newTerms, this.constant.add(other.constant));
     }
 
     /**
@@ -144,8 +157,18 @@ public final class Expression {
      * @param value the constant to add
      * @return a new expression with the added constant
      */
-    public Expression plus(double value) {
-        return new Expression(terms, constant + value);
+    public Expression plus(Fraction value) {
+        return new Expression(terms, constant.add(value));
+    }
+
+    /**
+     * Adds a constant to this expression.
+     *
+     * @param value the constant to add
+     * @return a new expression with the added constant
+     */
+    public Expression plus(long value) {
+        return plus(Fraction.of(value));
     }
 
     /**
@@ -184,8 +207,18 @@ public final class Expression {
      * @param value the constant to subtract
      * @return a new expression with the subtracted constant
      */
-    public Expression minus(double value) {
-        return new Expression(terms, constant - value);
+    public Expression minus(Fraction value) {
+        return new Expression(terms, constant.subtract(value));
+    }
+
+    /**
+     * Subtracts a constant from this expression.
+     *
+     * @param value the constant to subtract
+     * @return a new expression with the subtracted constant
+     */
+    public Expression minus(long value) {
+        return minus(Fraction.of(value));
     }
 
     /**
@@ -204,11 +237,11 @@ public final class Expression {
      * @param coefficient the scalar to multiply by
      * @return a new scaled expression
      */
-    public Expression times(double coefficient) {
-        if (nearZero(coefficient)) {
+    public Expression times(Fraction coefficient) {
+        if (coefficient.isZero()) {
             return ZERO;
         }
-        if (coefficient == 1.0) {
+        if (coefficient.equals(Fraction.ONE)) {
             return this;
         }
 
@@ -216,7 +249,17 @@ public final class Expression {
         for (Term term : terms) {
             newTerms.add(term.times(coefficient));
         }
-        return new Expression(newTerms, constant * coefficient);
+        return new Expression(newTerms, constant.multiply(coefficient));
+    }
+
+    /**
+     * Multiplies this expression by a scalar.
+     *
+     * @param coefficient the scalar to multiply by
+     * @return a new scaled expression
+     */
+    public Expression times(long coefficient) {
+        return times(Fraction.of(coefficient));
     }
 
     /**
@@ -224,13 +267,24 @@ public final class Expression {
      *
      * @param divisor the scalar to divide by
      * @return a new divided expression
-     * @throws IllegalArgumentException if divisor is zero
+     * @throws ArithmeticException if divisor is zero
      */
-    public Expression divide(double divisor) {
-        if (nearZero(divisor)) {
-            throw new IllegalArgumentException("Cannot divide by zero");
+    public Expression divide(Fraction divisor) {
+        if (divisor.isZero()) {
+            throw new ArithmeticException("Cannot divide by zero");
         }
-        return times(1.0 / divisor);
+        return times(divisor.reciprocal());
+    }
+
+    /**
+     * Divides this expression by a scalar.
+     *
+     * @param divisor the scalar to divide by
+     * @return a new divided expression
+     * @throws ArithmeticException if divisor is zero
+     */
+    public Expression divide(long divisor) {
+        return divide(Fraction.of(divisor));
     }
 
     /**
@@ -239,7 +293,7 @@ public final class Expression {
      * @return a new negated expression
      */
     public Expression negate() {
-        return times(-1.0);
+        return times(Fraction.NEG_ONE);
     }
 
     /**
@@ -260,8 +314,19 @@ public final class Expression {
      * @param strength the constraint strength
      * @return a new equality constraint
      */
-    public CassowaryConstraint equalTo(double value, Strength strength) {
+    public CassowaryConstraint equalTo(Fraction value, Strength strength) {
         return equalTo(Expression.constant(value), strength);
+    }
+
+    /**
+     * Creates an equality constraint: this == value.
+     *
+     * @param value    the right-hand side constant
+     * @param strength the constraint strength
+     * @return a new equality constraint
+     */
+    public CassowaryConstraint equalTo(long value, Strength strength) {
+        return equalTo(Fraction.of(value), strength);
     }
 
     /**
@@ -282,8 +347,19 @@ public final class Expression {
      * @param strength the constraint strength
      * @return a new inequality constraint
      */
-    public CassowaryConstraint lessThanOrEqual(double value, Strength strength) {
+    public CassowaryConstraint lessThanOrEqual(Fraction value, Strength strength) {
         return lessThanOrEqual(Expression.constant(value), strength);
+    }
+
+    /**
+     * Creates a less-than-or-equal constraint: this &lt;= value.
+     *
+     * @param value    the right-hand side constant
+     * @param strength the constraint strength
+     * @return a new inequality constraint
+     */
+    public CassowaryConstraint lessThanOrEqual(long value, Strength strength) {
+        return lessThanOrEqual(Fraction.of(value), strength);
     }
 
     /**
@@ -304,12 +380,19 @@ public final class Expression {
      * @param strength the constraint strength
      * @return a new inequality constraint
      */
-    public CassowaryConstraint greaterThanOrEqual(double value, Strength strength) {
+    public CassowaryConstraint greaterThanOrEqual(Fraction value, Strength strength) {
         return greaterThanOrEqual(Expression.constant(value), strength);
     }
 
-    private static boolean nearZero(double value) {
-        return Math.abs(value) < 1e-8;
+    /**
+     * Creates a greater-than-or-equal constraint: this &gt;= value.
+     *
+     * @param value    the right-hand side constant
+     * @param strength the constraint strength
+     * @return a new inequality constraint
+     */
+    public CassowaryConstraint greaterThanOrEqual(long value, Strength strength) {
+        return greaterThanOrEqual(Fraction.of(value), strength);
     }
 
     @Override
@@ -321,14 +404,14 @@ public final class Expression {
             return false;
         }
         Expression that = (Expression) o;
-        return Double.compare(that.constant, constant) == 0
+        return constant.equals(that.constant)
                 && terms.equals(that.terms);
     }
 
     @Override
     public int hashCode() {
         int result = terms.hashCode();
-        result = 31 * result + Double.hashCode(constant);
+        result = 31 * result + constant.hashCode();
         return result;
     }
 
@@ -339,28 +422,29 @@ public final class Expression {
 
         for (Term term : terms) {
             if (!first) {
-                if (term.coefficient() >= 0) {
+                if (!term.coefficient().isNegative()) {
                     sb.append(" + ");
                 } else {
                     sb.append(" - ");
                 }
-                sb.append(Math.abs(term.coefficient()) == 1.0
+                Fraction absCoeff = term.coefficient().abs();
+                sb.append(absCoeff.equals(Fraction.ONE)
                         ? term.variable().toString()
-                        : Math.abs(term.coefficient()) + "*" + term.variable());
+                        : absCoeff + "*" + term.variable());
             } else {
                 sb.append(term);
                 first = false;
             }
         }
 
-        if (constant != 0.0 || terms.isEmpty()) {
+        if (!constant.isZero() || terms.isEmpty()) {
             if (!first) {
-                if (constant >= 0) {
+                if (!constant.isNegative()) {
                     sb.append(" + ");
                 } else {
                     sb.append(" - ");
                 }
-                sb.append(Math.abs(constant));
+                sb.append(constant.abs());
             } else {
                 sb.append(constant);
             }

@@ -9,11 +9,14 @@ package dev.tamboui.layout.cassowary;
  *
  * <p>Terms are the building blocks of linear expressions. A term consists of
  * a variable and a coefficient, representing the product {@code coefficient * variable}.
+ *
+ * <p>This implementation uses {@link Fraction} for exact arithmetic,
+ * avoiding the cumulative rounding errors that occur with floating-point.
  */
 public final class Term {
 
     private final Variable variable;
-    private final double coefficient;
+    private final Fraction coefficient;
 
     /**
      * Creates a new term with the given variable and coefficient.
@@ -21,9 +24,12 @@ public final class Term {
      * @param variable    the variable
      * @param coefficient the coefficient
      */
-    public Term(Variable variable, double coefficient) {
+    public Term(Variable variable, Fraction coefficient) {
         if (variable == null) {
             throw new IllegalArgumentException("Variable cannot be null");
+        }
+        if (coefficient == null) {
+            throw new IllegalArgumentException("Coefficient cannot be null");
         }
         this.variable = variable;
         this.coefficient = coefficient;
@@ -35,7 +41,7 @@ public final class Term {
      * @param variable the variable
      */
     public Term(Variable variable) {
-        this(variable, 1.0);
+        this(variable, Fraction.ONE);
     }
 
     /**
@@ -52,7 +58,7 @@ public final class Term {
      *
      * @return the coefficient
      */
-    public double coefficient() {
+    public Fraction coefficient() {
         return coefficient;
     }
 
@@ -62,7 +68,7 @@ public final class Term {
      * @return a term with the negated coefficient
      */
     public Term negate() {
-        return new Term(variable, -coefficient);
+        return new Term(variable, coefficient.negate());
     }
 
     /**
@@ -71,8 +77,8 @@ public final class Term {
      * @param factor the factor to multiply by
      * @return a new term with the scaled coefficient
      */
-    public Term times(double factor) {
-        return new Term(variable, coefficient * factor);
+    public Term times(Fraction factor) {
+        return new Term(variable, coefficient.multiply(factor));
     }
 
     /**
@@ -93,23 +99,23 @@ public final class Term {
             return false;
         }
         Term term = (Term) o;
-        return Double.compare(term.coefficient, coefficient) == 0
+        return coefficient.equals(term.coefficient)
                 && variable.equals(term.variable);
     }
 
     @Override
     public int hashCode() {
         int result = variable.hashCode();
-        result = 31 * result + Double.hashCode(coefficient);
+        result = 31 * result + coefficient.hashCode();
         return result;
     }
 
     @Override
     public String toString() {
-        if (coefficient == 1.0) {
+        if (coefficient.equals(Fraction.ONE)) {
             return variable.toString();
         }
-        if (coefficient == -1.0) {
+        if (coefficient.equals(Fraction.NEG_ONE)) {
             return "-" + variable;
         }
         return coefficient + "*" + variable;

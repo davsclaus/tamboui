@@ -9,11 +9,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.within;
 
 class SolverTest {
-
-    private static final double EPSILON = 1e-6;
 
     @Test
     @DisplayName("Simple equality constraint")
@@ -26,7 +23,7 @@ class SolverTest {
                         .equalTo(100, Strength.REQUIRED));
         solver.updateVariables();
 
-        assertThat(solver.valueOf(x)).isCloseTo(100.0, within(EPSILON));
+        assertThat(solver.valueOf(x)).isEqualTo(Fraction.of(100));
     }
 
     @Test
@@ -47,8 +44,8 @@ class SolverTest {
                         .equalTo(50, Strength.REQUIRED));
         solver.updateVariables();
 
-        assertThat(solver.valueOf(left)).isCloseTo(50.0, within(EPSILON));
-        assertThat(solver.valueOf(right)).isCloseTo(150.0, within(EPSILON));
+        assertThat(solver.valueOf(left)).isEqualTo(Fraction.of(50));
+        assertThat(solver.valueOf(right)).isEqualTo(Fraction.of(150));
     }
 
     @Test
@@ -67,7 +64,7 @@ class SolverTest {
                         .equalTo(50, Strength.WEAK));
         solver.updateVariables();
 
-        assertThat(solver.valueOf(x)).isGreaterThanOrEqualTo(100.0);
+        assertThat(solver.valueOf(x).compareTo(Fraction.of(100))).isGreaterThanOrEqualTo(0);
     }
 
     @Test
@@ -86,7 +83,7 @@ class SolverTest {
                         .equalTo(100, Strength.WEAK));
         solver.updateVariables();
 
-        assertThat(solver.valueOf(x)).isLessThanOrEqualTo(50.0);
+        assertThat(solver.valueOf(x).compareTo(Fraction.of(50))).isLessThanOrEqualTo(0);
     }
 
     @Test
@@ -105,7 +102,7 @@ class SolverTest {
                         .equalTo(200, Strength.WEAK));
         solver.updateVariables();
 
-        assertThat(solver.valueOf(x)).isCloseTo(100.0, within(EPSILON));
+        assertThat(solver.valueOf(x)).isEqualTo(Fraction.of(100));
     }
 
     @Test
@@ -152,12 +149,12 @@ class SolverTest {
 
         solver.addConstraint(c1);
         solver.updateVariables();
-        assertThat(solver.valueOf(x)).isCloseTo(100.0, within(EPSILON));
+        assertThat(solver.valueOf(x)).isEqualTo(Fraction.of(100));
 
         solver.removeConstraint(c1);
         solver.addConstraint(c2);
         solver.updateVariables();
-        assertThat(solver.valueOf(x)).isCloseTo(200.0, within(EPSILON));
+        assertThat(solver.valueOf(x)).isEqualTo(Fraction.of(200));
     }
 
     @Test
@@ -202,9 +199,9 @@ class SolverTest {
 
         solver.updateVariables();
 
-        assertThat(solver.valueOf(x)).isCloseTo(10.0, within(EPSILON));
-        assertThat(solver.valueOf(y)).isCloseTo(30.0, within(EPSILON));
-        assertThat(solver.valueOf(z)).isCloseTo(60.0, within(EPSILON));
+        assertThat(solver.valueOf(x)).isEqualTo(Fraction.of(10));
+        assertThat(solver.valueOf(y)).isEqualTo(Fraction.of(30));
+        assertThat(solver.valueOf(z)).isEqualTo(Fraction.of(60));
     }
 
     @Test
@@ -230,7 +227,7 @@ class SolverTest {
 
         solver.updateVariables();
 
-        assertThat(solver.valueOf(z)).isCloseTo(80.0, within(EPSILON));
+        assertThat(solver.valueOf(z)).isEqualTo(Fraction.of(80));
     }
 
     @Test
@@ -242,11 +239,11 @@ class SolverTest {
         solver.addConstraint(
                 Expression.variable(x).equalTo(100, Strength.REQUIRED));
         solver.updateVariables();
-        assertThat(solver.valueOf(x)).isCloseTo(100.0, within(EPSILON));
+        assertThat(solver.valueOf(x)).isEqualTo(Fraction.of(100));
 
         solver.reset();
         solver.updateVariables();
-        assertThat(solver.valueOf(x)).isCloseTo(0.0, within(EPSILON));
+        assertThat(solver.valueOf(x)).isEqualTo(Fraction.ZERO);
     }
 
     @Test

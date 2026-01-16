@@ -11,6 +11,9 @@ package dev.tamboui.layout.cassowary;
  * constraints take absolute precedence over lower-strength ones. The strength
  * is computed using three weight levels that are combined into a single value.
  *
+ * <p>This implementation uses {@link Fraction} for exact arithmetic,
+ * avoiding the cumulative rounding errors that occur with floating-point.
+ *
  * <p>Predefined strengths in decreasing order of priority:
  * <ul>
  *   <li>{@link #REQUIRED} - Must be satisfied; failure throws an exception</li>
@@ -21,32 +24,35 @@ package dev.tamboui.layout.cassowary;
  */
 public final class Strength {
 
+    private static final Fraction THOUSAND = Fraction.of(1000);
+    private static final Fraction MILLION = Fraction.of(1_000_000);
+
     /**
      * Required constraints must be satisfied. Adding an unsatisfiable
      * required constraint will throw an exception.
      */
-    public static final Strength REQUIRED = new Strength(1000.0, 1000.0, 1000.0);
+    public static final Strength REQUIRED = new Strength(THOUSAND, THOUSAND, THOUSAND);
 
     /**
      * Strong preference - high priority but can be violated if necessary.
      */
-    public static final Strength STRONG = new Strength(1.0, 0.0, 0.0);
+    public static final Strength STRONG = new Strength(Fraction.ONE, Fraction.ZERO, Fraction.ZERO);
 
     /**
      * Medium preference - moderate priority.
      */
-    public static final Strength MEDIUM = new Strength(0.0, 1.0, 0.0);
+    public static final Strength MEDIUM = new Strength(Fraction.ZERO, Fraction.ONE, Fraction.ZERO);
 
     /**
      * Weak preference - low priority, easily overridden.
      */
-    public static final Strength WEAK = new Strength(0.0, 0.0, 1.0);
+    public static final Strength WEAK = new Strength(Fraction.ZERO, Fraction.ZERO, Fraction.ONE);
 
-    private final double strong;
-    private final double medium;
-    private final double weak;
+    private final Fraction strong;
+    private final Fraction medium;
+    private final Fraction weak;
 
-    private Strength(double strong, double medium, double weak) {
+    private Strength(Fraction strong, Fraction medium, Fraction weak) {
         this.strong = strong;
         this.medium = medium;
         this.weak = weak;
@@ -63,8 +69,23 @@ public final class Strength {
      * @param weak   the weak weight (lowest priority)
      * @return a new strength with the given weights
      */
-    public static Strength create(double strong, double medium, double weak) {
+    public static Strength create(Fraction strong, Fraction medium, Fraction weak) {
         return new Strength(strong, medium, weak);
+    }
+
+    /**
+     * Creates a custom strength with the given weights.
+     *
+     * <p>The weights are combined using a polynomial scheme where the strong
+     * weight has the highest significance, followed by medium, then weak.
+     *
+     * @param strong the strong weight (highest priority)
+     * @param medium the medium weight
+     * @param weak   the weak weight (lowest priority)
+     * @return a new strength with the given weights
+     */
+    public static Strength create(long strong, long medium, long weak) {
+        return create(Fraction.of(strong), Fraction.of(medium), Fraction.of(weak));
     }
 
     /**
@@ -75,8 +96,8 @@ public final class Strength {
      *
      * @return the computed strength value
      */
-    public double computeValue() {
-        return strong * 1_000_000.0 + medium * 1_000.0 + weak;
+    public Fraction computeValue() {
+        return strong.multiply(MILLION).add(medium.multiply(THOUSAND)).add(weak);
     }
 
     /**
@@ -85,7 +106,9 @@ public final class Strength {
      * @return true if this constraint is required
      */
     public boolean isRequired() {
-        return strong >= 1000.0 && medium >= 1000.0 && weak >= 1000.0;
+        return strong.compareTo(THOUSAND) >= 0
+                && medium.compareTo(THOUSAND) >= 0
+                && weak.compareTo(THOUSAND) >= 0;
     }
 
     /**
@@ -93,7 +116,7 @@ public final class Strength {
      *
      * @return the strong weight
      */
-    public double strong() {
+    public Fraction strong() {
         return strong;
     }
 
@@ -102,7 +125,7 @@ public final class Strength {
      *
      * @return the medium weight
      */
-    public double medium() {
+    public Fraction medium() {
         return medium;
     }
 
@@ -111,7 +134,7 @@ public final class Strength {
      *
      * @return the weak weight
      */
-    public double weak() {
+    public Fraction weak() {
         return weak;
     }
 
@@ -124,16 +147,16 @@ public final class Strength {
             return false;
         }
         Strength strength = (Strength) o;
-        return Double.compare(strength.strong, strong) == 0
-                && Double.compare(strength.medium, medium) == 0
-                && Double.compare(strength.weak, weak) == 0;
+        return strong.equals(strength.strong)
+                && medium.equals(strength.medium)
+                && weak.equals(strength.weak);
     }
 
     @Override
     public int hashCode() {
-        int result = Double.hashCode(strong);
-        result = 31 * result + Double.hashCode(medium);
-        result = 31 * result + Double.hashCode(weak);
+        int result = strong.hashCode();
+        result = 31 * result + medium.hashCode();
+        result = 31 * result + weak.hashCode();
         return result;
     }
 

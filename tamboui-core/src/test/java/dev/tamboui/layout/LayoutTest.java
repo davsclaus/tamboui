@@ -145,7 +145,9 @@ class LayoutTest {
 
         assertThat(rects).hasSize(2);
         assertThat(rects.get(0).height()).isEqualTo(33);
-        assertThat(rects.get(1).height()).isEqualTo(66);
+        // With exact Fraction arithmetic, 2/3 of 100 = 66.66... rounds to 67
+        // using largest remainder method to preserve the total of 100
+        assertThat(rects.get(1).height()).isEqualTo(67);
     }
 
     @Test

@@ -17,7 +17,7 @@ class ExpressionTest {
     void zeroExpression() {
         Expression zero = Expression.zero();
         assertThat(zero.isConstant()).isTrue();
-        assertThat(zero.constant()).isEqualTo(0.0);
+        assertThat(zero.constant()).isEqualTo(Fraction.ZERO);
         assertThat(zero.terms()).isEmpty();
     }
 
@@ -26,7 +26,7 @@ class ExpressionTest {
     void constantExpression() {
         Expression expr = Expression.constant(42);
         assertThat(expr.isConstant()).isTrue();
-        assertThat(expr.constant()).isEqualTo(42.0);
+        assertThat(expr.constant()).isEqualTo(Fraction.of(42));
         assertThat(expr.terms()).isEmpty();
     }
 
@@ -37,10 +37,10 @@ class ExpressionTest {
         Expression expr = Expression.variable(x);
 
         assertThat(expr.isConstant()).isFalse();
-        assertThat(expr.constant()).isEqualTo(0.0);
+        assertThat(expr.constant()).isEqualTo(Fraction.ZERO);
         assertThat(expr.terms()).hasSize(1);
         assertThat(expr.terms().get(0).variable()).isEqualTo(x);
-        assertThat(expr.terms().get(0).coefficient()).isEqualTo(1.0);
+        assertThat(expr.terms().get(0).coefficient()).isEqualTo(Fraction.ONE);
     }
 
     @Test
@@ -53,7 +53,7 @@ class ExpressionTest {
         Expression expr2 = Expression.variable(y).plus(20);
         Expression sum = expr1.plus(expr2);
 
-        assertThat(sum.constant()).isEqualTo(30.0);
+        assertThat(sum.constant()).isEqualTo(Fraction.of(30));
         assertThat(sum.terms()).hasSize(2);
     }
 
@@ -64,7 +64,7 @@ class ExpressionTest {
 
         Expression expr = Expression.variable(x).plus(100).minus(30);
 
-        assertThat(expr.constant()).isEqualTo(70.0);
+        assertThat(expr.constant()).isEqualTo(Fraction.of(70));
     }
 
     @Test
@@ -73,9 +73,9 @@ class ExpressionTest {
         Variable x = new Variable("x");
         Expression expr = Expression.variable(x).plus(10).times(3);
 
-        assertThat(expr.constant()).isEqualTo(30.0);
+        assertThat(expr.constant()).isEqualTo(Fraction.of(30));
         assertThat(expr.terms()).hasSize(1);
-        assertThat(expr.terms().get(0).coefficient()).isEqualTo(3.0);
+        assertThat(expr.terms().get(0).coefficient()).isEqualTo(Fraction.of(3));
     }
 
     @Test
@@ -84,8 +84,8 @@ class ExpressionTest {
         Variable x = new Variable("x");
         Expression expr = Expression.variable(x).times(6).plus(12).divide(3);
 
-        assertThat(expr.constant()).isEqualTo(4.0);
-        assertThat(expr.terms().get(0).coefficient()).isEqualTo(2.0);
+        assertThat(expr.constant()).isEqualTo(Fraction.of(4));
+        assertThat(expr.terms().get(0).coefficient()).isEqualTo(Fraction.of(2));
     }
 
     @Test
@@ -93,7 +93,7 @@ class ExpressionTest {
     void divisionByZeroThrows() {
         Expression expr = Expression.constant(10);
         assertThatThrownBy(() -> expr.divide(0))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(ArithmeticException.class);
     }
 
     @Test
@@ -102,8 +102,8 @@ class ExpressionTest {
         Variable x = new Variable("x");
         Expression expr = Expression.variable(x).plus(10).negate();
 
-        assertThat(expr.constant()).isEqualTo(-10.0);
-        assertThat(expr.terms().get(0).coefficient()).isEqualTo(-1.0);
+        assertThat(expr.constant()).isEqualTo(Fraction.of(-10));
+        assertThat(expr.terms().get(0).coefficient()).isEqualTo(Fraction.NEG_ONE);
     }
 
     @Test
@@ -146,7 +146,7 @@ class ExpressionTest {
         Expression expr = Expression.variable(x).plus(Expression.variable(x).times(2));
 
         assertThat(expr.terms()).hasSize(1);
-        assertThat(expr.terms().get(0).coefficient()).isEqualTo(3.0);
+        assertThat(expr.terms().get(0).coefficient()).isEqualTo(Fraction.of(3));
     }
 
     @Test
@@ -156,7 +156,7 @@ class ExpressionTest {
         Expression expr = Expression.variable(x).minus(Expression.variable(x));
 
         assertThat(expr.terms()).isEmpty();
-        assertThat(expr.constant()).isEqualTo(0.0);
+        assertThat(expr.constant()).isEqualTo(Fraction.ZERO);
     }
 
     @Test

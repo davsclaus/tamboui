@@ -17,6 +17,9 @@ import java.util.Map;
  *   <li>Hierarchical constraint priorities</li>
  * </ul>
  *
+ * <p>This implementation uses {@link Fraction} for exact arithmetic,
+ * avoiding the cumulative rounding errors that occur with floating-point.
+ *
  * <p>Example usage:
  * <pre>
  * Solver solver = new Solver();
@@ -36,7 +39,7 @@ import java.util.Map;
  *         .greaterThanOrEqual(100, Strength.REQUIRED));
  *
  * solver.updateVariables();
- * double resolvedWidth = solver.valueOf(width);
+ * Fraction resolvedWidth = solver.valueOf(width);
  * </pre>
  *
  * @see Variable
@@ -44,8 +47,6 @@ import java.util.Map;
  * @see Expression
  */
 public final class Solver {
-
-    private static final double EPSILON = 1e-8;
 
     /**
      * Tag associated with a constraint in the solver.
@@ -62,7 +63,7 @@ public final class Solver {
     private static final class EditInfo {
         Tag tag;
         CassowaryConstraint constraint;
-        double constant;
+        Fraction constant;
     }
 
     // Maps constraints to their internal tags
@@ -72,7 +73,7 @@ public final class Solver {
     // Maps symbols to their containing rows (basic variables)
     private final Map<Symbol, Row> rows;
     // Maps external variables to their resolved values
-    private final Map<Variable, Double> values;
+    private final Map<Variable, Fraction> values;
     // Maps edit variables to their edit info
     private final Map<Variable, EditInfo> edits;
     // The objective row for optimization
@@ -110,7 +111,7 @@ public final class Solver {
         Symbol subject = chooseSubject(row, tag);
 
         if (subject == null && allDummies(row)) {
-            if (!nearZero(row.constant())) {
+            if (!row.constant().isZero()) {
                 throw new UnsatisfiableConstraintException(constraint);
             }
             // The row is trivially satisfied
@@ -198,7 +199,7 @@ public final class Solver {
         EditInfo info = new EditInfo();
         info.tag = constraints.get(constraint);
         info.constraint = constraint;
-        info.constant = 0.0;
+        info.constant = Fraction.ZERO;
         edits.put(variable, info);
     }
 
@@ -235,44 +236,36 @@ public final class Solver {
      * @param value    the suggested value
      * @throws SolverException if the variable is not an edit variable
      */
-    public void suggestValue(Variable variable, double value) {
+    public void suggestValue(Variable variable, Fraction value) {
         EditInfo info = edits.get(variable);
         if (info == null) {
             throw new SolverException("Unknown edit variable: " + variable);
         }
 
-        double delta = value - info.constant;
+        Fraction delta = value.subtract(info.constant);
         info.constant = value;
 
         // Try to update the marker row directly
         Row row = rows.get(info.tag.marker);
         if (row != null) {
-            if (row.constant() - delta < 0) {
-                row.setConstant(row.constant() - delta);
-            } else {
-                row.setConstant(row.constant() - delta);
-            }
+            row.setConstant(row.constant().subtract(delta));
             return;
         }
 
         // Try to update the other row directly
         row = rows.get(info.tag.other);
         if (row != null) {
-            if (row.constant() + delta < 0) {
-                row.setConstant(row.constant() + delta);
-            } else {
-                row.setConstant(row.constant() + delta);
-            }
+            row.setConstant(row.constant().add(delta));
             return;
         }
 
         // The symbol is not basic - update all rows that contain it
         for (Map.Entry<Symbol, Row> entry : rows.entrySet()) {
-            double coeff = entry.getValue().coefficientFor(info.tag.marker);
-            if (!nearZero(coeff)
+            Fraction coeff = entry.getValue().coefficientFor(info.tag.marker);
+            if (!coeff.isZero()
                     && entry.getKey().type() != Symbol.Type.EXTERNAL) {
                 entry.getValue().setConstant(
-                        entry.getValue().constant() + delta * coeff);
+                        entry.getValue().constant().add(delta.multiply(coeff)));
             }
         }
 
@@ -290,7 +283,7 @@ public final class Solver {
             Symbol symbol = entry.getValue();
             Row row = rows.get(symbol);
             if (row == null) {
-                values.put(variable, 0.0);
+                values.put(variable, Fraction.ZERO);
             } else {
                 values.put(variable, row.constant());
             }
@@ -301,11 +294,11 @@ public final class Solver {
      * Returns the current value of a variable.
      *
      * @param variable the variable to query
-     * @return the computed value, or 0.0 if not in the system
+     * @return the computed value, or 0 if not in the system
      */
-    public double valueOf(Variable variable) {
-        Double value = values.get(variable);
-        return value != null ? value : 0.0;
+    public Fraction valueOf(Variable variable) {
+        Fraction value = values.get(variable);
+        return value != null ? value : Fraction.ZERO;
     }
 
     /**
@@ -332,7 +325,7 @@ public final class Solver {
 
         // Add terms, substituting basic variables
         for (Term term : expr.terms()) {
-            if (!nearZero(term.coefficient())) {
+            if (!term.coefficient().isZero()) {
                 Symbol symbol = getVarSymbol(term.variable());
                 Row basicRow = rows.get(symbol);
                 if (basicRow != null) {
@@ -347,14 +340,14 @@ public final class Solver {
         switch (constraint.relation()) {
             case LE:
             case GE: {
-                double coeff = constraint.relation() == Relation.LE ? 1.0 : -1.0;
+                Fraction coeff = constraint.relation() == Relation.LE ? Fraction.ONE : Fraction.NEG_ONE;
                 Symbol slack = Symbol.slack();
                 tag.marker = slack;
                 row.insertSymbol(slack, coeff);
                 if (!constraint.strength().isRequired()) {
                     Symbol error = Symbol.error();
                     tag.other = error;
-                    row.insertSymbol(error, -coeff);
+                    row.insertSymbol(error, coeff.negate());
                     objective.insertSymbol(error, constraint.strength().computeValue());
                 }
                 break;
@@ -363,15 +356,15 @@ public final class Solver {
                 if (constraint.strength().isRequired()) {
                     Symbol dummy = Symbol.dummy();
                     tag.marker = dummy;
-                    row.insertSymbol(dummy, 1.0);
+                    row.insertSymbol(dummy, Fraction.ONE);
                 } else {
                     Symbol errplus = Symbol.error();
                     Symbol errminus = Symbol.error();
                     tag.marker = errplus;
                     tag.other = errminus;
-                    row.insertSymbol(errplus, -1.0);
-                    row.insertSymbol(errminus, 1.0);
-                    double weight = constraint.strength().computeValue();
+                    row.insertSymbol(errplus, Fraction.NEG_ONE);
+                    row.insertSymbol(errminus, Fraction.ONE);
+                    Fraction weight = constraint.strength().computeValue();
                     objective.insertSymbol(errplus, weight);
                     objective.insertSymbol(errminus, weight);
                 }
@@ -380,7 +373,7 @@ public final class Solver {
         }
 
         // Ensure the row constant is non-negative
-        if (row.constant() < 0) {
+        if (row.constant().isNegative()) {
             row.reverseSign();
         }
 
@@ -402,14 +395,14 @@ public final class Solver {
         if (tag.marker != null
                 && (tag.marker.type() == Symbol.Type.SLACK
                 || tag.marker.type() == Symbol.Type.ERROR)) {
-            if (row.coefficientFor(tag.marker) < 0) {
+            if (row.coefficientFor(tag.marker).isNegative()) {
                 return tag.marker;
             }
         }
         if (tag.other != null
                 && (tag.other.type() == Symbol.Type.SLACK
                 || tag.other.type() == Symbol.Type.ERROR)) {
-            if (row.coefficientFor(tag.other) < 0) {
+            if (row.coefficientFor(tag.other).isNegative()) {
                 return tag.other;
             }
         }
@@ -446,7 +439,7 @@ public final class Solver {
         optimize(artificial);
 
         // Check if the artificial objective was minimized to zero
-        boolean success = nearZero(artificial.constant());
+        boolean success = artificial.constant().isZero();
         artificial = null;
 
         // Remove the artificial variable from the tableau
@@ -509,7 +502,7 @@ public final class Solver {
             Symbol leaving = null;
             for (Map.Entry<Symbol, Row> entry : rows.entrySet()) {
                 if (entry.getKey().type() != Symbol.Type.EXTERNAL
-                        && entry.getValue().constant() < 0) {
+                        && entry.getValue().constant().isNegative()) {
                     leaving = entry.getKey();
                     break;
                 }
@@ -519,13 +512,13 @@ public final class Solver {
             }
 
             Symbol entering = null;
-            double minRatio = Double.MAX_VALUE;
+            Fraction minRatio = null;
             Row row = rows.get(leaving);
-            for (Map.Entry<Symbol, Double> entry : row.cells().entrySet()) {
-                if (entry.getValue() > 0 && entry.getKey().type() != Symbol.Type.DUMMY) {
-                    double objCoeff = objective.coefficientFor(entry.getKey());
-                    double ratio = objCoeff / entry.getValue();
-                    if (ratio < minRatio) {
+            for (Map.Entry<Symbol, Fraction> entry : row.cells().entrySet()) {
+                if (entry.getValue().isPositive() && entry.getKey().type() != Symbol.Type.DUMMY) {
+                    Fraction objCoeff = objective.coefficientFor(entry.getKey());
+                    Fraction ratio = objCoeff.divide(entry.getValue());
+                    if (minRatio == null || ratio.compareTo(minRatio) < 0) {
                         minRatio = ratio;
                         entering = entry.getKey();
                     }
@@ -543,8 +536,8 @@ public final class Solver {
      * Finds the entering symbol for the simplex method.
      */
     private Symbol findEnteringSymbol(Row objective) {
-        for (Map.Entry<Symbol, Double> entry : objective.cells().entrySet()) {
-            if (entry.getKey().type() != Symbol.Type.DUMMY && entry.getValue() < 0) {
+        for (Map.Entry<Symbol, Fraction> entry : objective.cells().entrySet()) {
+            if (entry.getKey().type() != Symbol.Type.DUMMY && entry.getValue().isNegative()) {
                 return entry.getKey();
             }
         }
@@ -555,14 +548,14 @@ public final class Solver {
      * Finds the leaving symbol for a pivot operation.
      */
     private Symbol findLeavingSymbol(Symbol entering) {
-        double minRatio = Double.MAX_VALUE;
+        Fraction minRatio = null;
         Symbol result = null;
         for (Map.Entry<Symbol, Row> entry : rows.entrySet()) {
             if (entry.getKey().type() != Symbol.Type.EXTERNAL) {
-                double coeff = entry.getValue().coefficientFor(entering);
-                if (coeff < 0) {
-                    double ratio = -entry.getValue().constant() / coeff;
-                    if (ratio < minRatio) {
+                Fraction coeff = entry.getValue().coefficientFor(entering);
+                if (coeff.isNegative()) {
+                    Fraction ratio = entry.getValue().constant().negate().divide(coeff);
+                    if (minRatio == null || ratio.compareTo(minRatio) < 0) {
                         minRatio = ratio;
                         result = entry.getKey();
                     }
@@ -576,22 +569,22 @@ public final class Solver {
      * Finds a leaving symbol for removing a marker.
      */
     private Symbol findLeavingSymbolForMarker(Symbol marker) {
-        double minRatio = Double.MAX_VALUE;
+        Fraction minRatio = null;
         Symbol first = null;
         Symbol second = null;
         Symbol third = null;
 
         for (Map.Entry<Symbol, Row> entry : rows.entrySet()) {
-            double coeff = entry.getValue().coefficientFor(marker);
-            if (nearZero(coeff)) {
+            Fraction coeff = entry.getValue().coefficientFor(marker);
+            if (coeff.isZero()) {
                 continue;
             }
 
             if (entry.getKey().type() == Symbol.Type.EXTERNAL) {
                 third = entry.getKey();
-            } else if (coeff < 0) {
-                double ratio = -entry.getValue().constant() / coeff;
-                if (ratio < minRatio) {
+            } else if (coeff.isNegative()) {
+                Fraction ratio = entry.getValue().constant().negate().divide(coeff);
+                if (minRatio == null || ratio.compareTo(minRatio) < 0) {
                     minRatio = ratio;
                     first = entry.getKey();
                 }
@@ -662,13 +655,9 @@ public final class Solver {
     private void removeMarkerEffects(Symbol marker, Strength strength) {
         Row row = rows.get(marker);
         if (row != null) {
-            objective.insertRow(row, -strength.computeValue());
+            objective.insertRow(row, strength.computeValue().negate());
         } else {
-            objective.insertSymbol(marker, -strength.computeValue());
+            objective.insertSymbol(marker, strength.computeValue().negate());
         }
-    }
-
-    private static boolean nearZero(double value) {
-        return Math.abs(value) < EPSILON;
     }
 }

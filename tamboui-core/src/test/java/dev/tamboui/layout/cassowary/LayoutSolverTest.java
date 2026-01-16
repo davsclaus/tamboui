@@ -57,8 +57,9 @@ class LayoutSolverTest {
 
         int[] sizes = solver.solve(constraints, 100, 0, Flex.START);
 
-        // Integer division: 100*1/3=33, 100*2/3=66
-        assertThat(sizes).containsExactly(33, 66);
+        // With exact Fraction arithmetic: 100*1/3=33.33..., 100*2/3=66.66...
+        // Using largest remainder method preserves total of 100: [33, 67]
+        assertThat(sizes).containsExactly(33, 67);
     }
 
     @Test

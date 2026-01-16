@@ -19,6 +19,9 @@ import java.util.List;
  * then adds constraints based on the TamboUI constraint types and the
  * selected Flex distribution mode.
  *
+ * <p>This implementation uses {@link Fraction} for exact arithmetic,
+ * avoiding the cumulative rounding errors that occur with floating-point.
+ *
  * @see Solver
  * @see dev.tamboui.layout.Layout
  */
@@ -26,12 +29,11 @@ public final class LayoutSolver {
 
     // Constraint strengths matching ratatui's hierarchy (higher = more important)
     // These ensure consistent priority ordering for constraint resolution
-    private static final Strength MIN_SIZE_GE = Strength.create(100.0, 0, 0);      // Hard minimum
-    private static final Strength MAX_SIZE_LE = Strength.create(100.0, 0, 0);      // Hard maximum
-    private static final Strength LENGTH_SIZE_EQ = Strength.create(10.0, 0, 0);    // Fixed length
+    private static final Strength LENGTH_SIZE_EQ = Strength.create(10, 0, 0);      // Fixed length
     private static final Strength PERCENTAGE_SIZE_EQ = Strength.STRONG;             // Percentage
-    private static final Strength RATIO_SIZE_EQ = Strength.create(0.1, 0, 0);      // Ratio
-    private static final Strength MAX_SIZE_EQ = Strength.create(0, 10.0, 0);       // Max tries to reach value
+    private static final Strength RATIO_SIZE_EQ = Strength.create(
+            Fraction.of(1, 10), Fraction.ZERO, Fraction.ZERO);                      // Ratio
+    private static final Strength MAX_SIZE_EQ = Strength.create(0, 10, 0);         // Max tries to reach value
     private static final Strength FILL_GROW = Strength.MEDIUM;                      // Fill/Min growth
     private static final Strength ALL_SEGMENT_GROW = Strength.WEAK;                 // Equal-size tiebreaker
 
@@ -88,15 +90,15 @@ public final class LayoutSolver {
         // Solve and extract results
         solver.updateVariables();
 
-        // Get float values and round with constraint preservation.
-        // Note: Using doubles can cause cumulative rounding errors. A more robust
-        // solution would use exact Fraction arithmetic - see issue #91.
-        double[] floatSizes = new double[n];
+        // Get exact Fraction values and convert to integers.
+        // Using Fraction arithmetic avoids cumulative rounding errors.
+        Fraction[] fractionSizes = new Fraction[n];
         for (int i = 0; i < n; i++) {
-            floatSizes[i] = Math.max(0, solver.valueOf(sizes[i]));
+            Fraction value = solver.valueOf(sizes[i]);
+            fractionSizes[i] = value.isNegative() ? Fraction.ZERO : value;
         }
 
-        return roundWithConstraint(floatSizes, available);
+        return roundWithConstraint(fractionSizes, available);
     }
 
     /**
@@ -145,16 +147,19 @@ public final class LayoutSolver {
 
         } else if (c instanceof Constraint.Percentage) {
             // Percentage: size == available * percent / 100
+            // Use exact Fraction arithmetic: available * percent / 100
             int percent = ((Constraint.Percentage) c).value();
-            int target = available * percent / 100;
+            Fraction target = Fraction.of(available).multiply(Fraction.of(percent, 100));
             solver.addConstraint(
                     Expression.variable(size)
                             .equalTo(target, PERCENTAGE_SIZE_EQ));
 
         } else if (c instanceof Constraint.Ratio) {
             // Ratio: size == available * num / denom
+            // Use exact Fraction arithmetic
             Constraint.Ratio ratio = (Constraint.Ratio) c;
-            int target = available * ratio.numerator() / ratio.denominator();
+            Fraction target = Fraction.of(available).multiply(
+                    Fraction.of(ratio.numerator(), ratio.denominator()));
             solver.addConstraint(
                     Expression.variable(size)
                             .equalTo(target, RATIO_SIZE_EQ));
@@ -200,10 +205,10 @@ public final class LayoutSolver {
         // Find all Fill and Min constraints (Min behaves like Fill in non-legacy mode)
         for (int i = 0; i < n; i++) {
             for (int j = i + 1; j < n; j++) {
-                double leftScale = getFillScale(constraints.get(i));
-                double rightScale = getFillScale(constraints.get(j));
+                Fraction leftScale = getFillScale(constraints.get(i));
+                Fraction rightScale = getFillScale(constraints.get(j));
 
-                if (leftScale > 0 && rightScale > 0) {
+                if (!leftScale.isZero() && !rightScale.isZero()) {
                     // rightScale * leftSize == leftScale * rightSize
                     // This ensures Fill(2) is twice as large as Fill(1)
                     solver.addConstraint(
@@ -217,16 +222,16 @@ public final class LayoutSolver {
     /**
      * Returns the fill scale for a constraint, or 0 if it's not a fill-like constraint.
      */
-    private double getFillScale(Constraint c) {
+    private Fraction getFillScale(Constraint c) {
         if (c instanceof Constraint.Fill) {
             int weight = ((Constraint.Fill) c).weight();
-            // Use epsilon for weight 0 to allow proportional collapse
-            return weight == 0 ? 1e-6 : weight;
+            // Use small fraction for weight 0 to allow proportional collapse
+            return weight == 0 ? Fraction.of(1, 1_000_000) : Fraction.of(weight);
         } else if (c instanceof Constraint.Min) {
             // Min behaves like Fill(1) for proportionality
-            return 1.0;
+            return Fraction.ONE;
         }
-        return 0;
+        return Fraction.ZERO;
     }
 
     /**
@@ -244,31 +249,57 @@ public final class LayoutSolver {
     }
 
     /**
-     * Rounds float sizes to integers while ensuring the sum does not exceed the target.
+     * Converts Fraction sizes to integers while ensuring the sum does not exceed the target.
      *
-     * <p>Uses standard rounding (Math.round) for each value, then if the sum exceeds
-     * the target, shrinks values starting from the end until the sum is within bounds.
+     * <p>Uses largest remainder method for fair rounding. First takes the floor of each
+     * value, then distributes the remaining space to fractions with the largest remainders.
      *
-     * @param floatSizes the float sizes from the solver
-     * @param target     the maximum sum (available space)
+     * @param fractionSizes the exact Fraction sizes from the solver
+     * @param target        the maximum sum (available space)
      * @return integer sizes that sum to at most target
      */
-    private int[] roundWithConstraint(double[] floatSizes, int target) {
-        int n = floatSizes.length;
+    private int[] roundWithConstraint(Fraction[] fractionSizes, int target) {
+        int n = fractionSizes.length;
         int[] result = new int[n];
 
-        // Round each value normally
+        // First, take the floor of each value
         int sum = 0;
         for (int i = 0; i < n; i++) {
-            result[i] = (int) Math.round(floatSizes[i]);
+            // Use truncation toward zero (floor for positive values)
+            result[i] = fractionSizes[i].toInt();
             sum += result[i];
         }
 
-        // If sum exceeds target, shrink values to fit
-        if (sum > target) {
+        // Calculate remaining space to distribute
+        int remaining = target - sum;
+
+        if (remaining > 0) {
+            // Calculate fractional parts and sort indices by remainder (descending)
+            Fraction[] remainders = new Fraction[n];
+            for (int i = 0; i < n; i++) {
+                remainders[i] = fractionSizes[i].subtract(Fraction.of(result[i]));
+            }
+
+            // Distribute remaining space to fractions with largest remainders
+            // Simple approach: repeatedly find the largest remainder and allocate 1
+            for (int r = 0; r < remaining; r++) {
+                int maxIdx = -1;
+                Fraction maxRemainder = Fraction.ZERO;
+                for (int i = 0; i < n; i++) {
+                    if (remainders[i].compareTo(maxRemainder) > 0) {
+                        maxRemainder = remainders[i];
+                        maxIdx = i;
+                    }
+                }
+                if (maxIdx >= 0 && maxRemainder.isPositive()) {
+                    result[maxIdx]++;
+                    remainders[maxIdx] = Fraction.ZERO; // Mark as allocated
+                }
+            }
+        } else if (sum > target) {
+            // If sum exceeds target, shrink values to fit
             int excess = sum - target;
             // Shrink from the end, distributing reduction across all segments
-            // This uses largest remainder method in reverse to fairly reduce
             for (int pass = 0; excess > 0 && pass < n; pass++) {
                 for (int i = n - 1; i >= 0 && excess > 0; i--) {
                     if (result[i] > 0) {

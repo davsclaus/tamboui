@@ -14,19 +14,20 @@ import java.util.Map;
  * {@code constant + sum(coefficient * symbol) = 0}
  *
  * <p>Each row represents a basic variable expressed in terms of non-basic variables.
+ *
+ * <p>This implementation uses {@link Fraction} for exact arithmetic,
+ * avoiding the cumulative rounding errors that occur with floating-point.
  */
 final class Row {
 
-    private static final double EPSILON = 1e-8;
-
-    private double constant;
-    private final Map<Symbol, Double> cells;
+    private Fraction constant;
+    private final Map<Symbol, Fraction> cells;
 
     /**
      * Creates an empty row with constant 0.
      */
     Row() {
-        this.constant = 0.0;
+        this.constant = Fraction.ZERO;
         this.cells = new LinkedHashMap<>();
     }
 
@@ -35,7 +36,7 @@ final class Row {
      *
      * @param constant the constant value
      */
-    Row(double constant) {
+    Row(Fraction constant) {
         this.constant = constant;
         this.cells = new LinkedHashMap<>();
     }
@@ -55,7 +56,7 @@ final class Row {
      *
      * @return the constant
      */
-    double constant() {
+    Fraction constant() {
         return constant;
     }
 
@@ -64,7 +65,7 @@ final class Row {
      *
      * @param constant the new constant
      */
-    void setConstant(double constant) {
+    void setConstant(Fraction constant) {
         this.constant = constant;
     }
 
@@ -73,7 +74,7 @@ final class Row {
      *
      * @return the cells map
      */
-    Map<Symbol, Double> cells() {
+    Map<Symbol, Fraction> cells() {
         return cells;
     }
 
@@ -83,25 +84,25 @@ final class Row {
      * @param symbol the symbol to look up
      * @return the coefficient
      */
-    double coefficientFor(Symbol symbol) {
-        Double coeff = cells.get(symbol);
-        return coeff != null ? coeff : 0.0;
+    Fraction coefficientFor(Symbol symbol) {
+        Fraction coeff = cells.get(symbol);
+        return coeff != null ? coeff : Fraction.ZERO;
     }
 
     /**
      * Adds a symbol to this row with the given coefficient.
      *
      * <p>If the symbol already exists, the coefficients are added.
-     * If the resulting coefficient is near zero, the symbol is removed.
+     * If the resulting coefficient is zero, the symbol is removed.
      *
      * @param symbol      the symbol to add
      * @param coefficient the coefficient to add
      */
-    void insertSymbol(Symbol symbol, double coefficient) {
-        Double existing = cells.get(symbol);
-        double newCoeff = (existing != null ? existing : 0.0) + coefficient;
+    void insertSymbol(Symbol symbol, Fraction coefficient) {
+        Fraction existing = cells.get(symbol);
+        Fraction newCoeff = (existing != null ? existing : Fraction.ZERO).add(coefficient);
 
-        if (nearZero(newCoeff)) {
+        if (newCoeff.isZero()) {
             cells.remove(symbol);
         } else {
             cells.put(symbol, newCoeff);
@@ -125,11 +126,11 @@ final class Row {
      * @param other       the row to insert
      * @param coefficient the scale factor
      */
-    void insertRow(Row other, double coefficient) {
-        constant += other.constant * coefficient;
+    void insertRow(Row other, Fraction coefficient) {
+        constant = constant.add(other.constant.multiply(coefficient));
 
-        for (Map.Entry<Symbol, Double> entry : other.cells.entrySet()) {
-            insertSymbol(entry.getKey(), entry.getValue() * coefficient);
+        for (Map.Entry<Symbol, Fraction> entry : other.cells.entrySet()) {
+            insertSymbol(entry.getKey(), entry.getValue().multiply(coefficient));
         }
     }
 
@@ -137,9 +138,9 @@ final class Row {
      * Reverses the sign of all coefficients and the constant.
      */
     void reverseSign() {
-        constant = -constant;
-        for (Map.Entry<Symbol, Double> entry : cells.entrySet()) {
-            entry.setValue(-entry.getValue());
+        constant = constant.negate();
+        for (Map.Entry<Symbol, Fraction> entry : cells.entrySet()) {
+            entry.setValue(entry.getValue().negate());
         }
     }
 
@@ -155,12 +156,12 @@ final class Row {
      * @param symbol the symbol to solve for
      */
     void solveFor(Symbol symbol) {
-        double coeff = cells.remove(symbol);
-        double reciprocal = -1.0 / coeff;
+        Fraction coeff = cells.remove(symbol);
+        Fraction reciprocal = Fraction.NEG_ONE.divide(coeff);
 
-        constant *= reciprocal;
-        for (Map.Entry<Symbol, Double> entry : cells.entrySet()) {
-            entry.setValue(entry.getValue() * reciprocal);
+        constant = constant.multiply(reciprocal);
+        for (Map.Entry<Symbol, Fraction> entry : cells.entrySet()) {
+            entry.setValue(entry.getValue().multiply(reciprocal));
         }
     }
 
@@ -174,7 +175,7 @@ final class Row {
      * @param rhs the entering symbol
      */
     void solveFor(Symbol lhs, Symbol rhs) {
-        insertSymbol(lhs, -1.0);
+        insertSymbol(lhs, Fraction.NEG_ONE);
         solveFor(rhs);
     }
 
@@ -188,28 +189,24 @@ final class Row {
      * @param row    the row to substitute in place of the symbol
      */
     void substitute(Symbol symbol, Row row) {
-        Double coeff = cells.remove(symbol);
+        Fraction coeff = cells.remove(symbol);
         if (coeff != null) {
             insertRow(row, coeff);
         }
-    }
-
-    private static boolean nearZero(double value) {
-        return Math.abs(value) < EPSILON;
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(constant);
-        for (Map.Entry<Symbol, Double> entry : cells.entrySet()) {
-            double coeff = entry.getValue();
-            if (coeff >= 0) {
+        for (Map.Entry<Symbol, Fraction> entry : cells.entrySet()) {
+            Fraction coeff = entry.getValue();
+            if (!coeff.isNegative()) {
                 sb.append(" + ");
             } else {
                 sb.append(" - ");
             }
-            sb.append(Math.abs(coeff)).append("*").append(entry.getKey());
+            sb.append(coeff.abs()).append("*").append(entry.getKey());
         }
         return sb.toString();
     }

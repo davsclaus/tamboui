@@ -179,6 +179,7 @@ class TableTest {
             .rows(Arrays.asList(Row.from("Left", "Right")))
             .widths(Constraint.percentage(50), Constraint.percentage(50))
             .highlightSymbol("")
+            .columnSpacing(0)
             .build();
 
         Rect area = new Rect(0, 0, 20, 1);
@@ -188,8 +189,9 @@ class TableTest {
         table.render(area, buffer, state);
 
         // Both columns should render
+        // With 50% + 50% and no spacing, columns are 10 + 10
         assertThat(buffer.get(0, 0).symbol()).isEqualTo("L");
-        // Second column roughly at middle (with spacing)
+        // Second column starts at position 10
         assertThat(buffer.get(10, 0).symbol()).isEqualTo("R");
     }
 
