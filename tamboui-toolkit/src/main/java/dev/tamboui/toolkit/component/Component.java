@@ -16,6 +16,8 @@ import dev.tamboui.terminal.Frame;
 import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.tui.event.MouseEvent;
 
+import java.util.UUID;
+
 /**
  * Base class for stateful components with event handling.
  * <p>
@@ -67,9 +69,9 @@ public abstract class Component<T extends Component<T>> extends StyledElement<T>
 
     @Override
     protected final void renderContent(Frame frame, Rect area, RenderContext renderContext) {
+        // Auto-generate ID if not set (Component is always focusable)
         if (elementId == null) {
-            throw new IllegalStateException(
-                    "Component " + getClass().getSimpleName() + " must have an id. Use .id(\"myId\") when creating the component.");
+            elementId = UUID.randomUUID().toString();
         }
 
         DefaultRenderContext internalContext = (DefaultRenderContext) renderContext;

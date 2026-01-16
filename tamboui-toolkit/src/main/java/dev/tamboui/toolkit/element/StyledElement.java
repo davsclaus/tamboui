@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 
 /**
@@ -230,24 +231,15 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
         if (context instanceof DefaultRenderContext) {
             DefaultRenderContext ctx = (DefaultRenderContext) context;
             ctx.withElement(this, effectiveStyle, cssResolver, () -> renderContent(frame, area, context));
-            // Self-register for event routing if this element needs events
-            if (needsEventRouting()) {
-                ctx.registerElement(this, area);
+            // Auto-generate ID for focusable elements that don't have one
+            if (isFocusable() && elementId == null) {
+                elementId = UUID.randomUUID().toString();
             }
+            ctx.registerElement(this, area);
         } else {
             // Fallback for non-default contexts (e.g., testing)
             renderContent(frame, area, context);
         }
-    }
-
-    /**
-     * Returns whether this element needs to be registered with the event router.
-     * <p>
-     * Elements are registered if they are focusable (to receive keyboard events),
-     * draggable, or have explicit event handlers.
-     */
-    protected boolean needsEventRouting() {
-        return isFocusable() || draggable || keyHandler != null || mouseHandler != null;
     }
 
     /**
@@ -302,7 +294,22 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
     // Focusable
 
     /**
-     * Makes this element focusable for keyboard event handling.
+     * Makes this element focusable, allowing it to participate in TAB navigation.
+     * <p>
+     * When an element is focusable:
+     * <ul>
+     *   <li>It is included in the focus chain for TAB/Shift+TAB navigation</li>
+     *   <li>It receives keyboard events via {@link #handleKeyEvent(KeyEvent, boolean)} when focused</li>
+     *   <li>An ID is required for focus management - if not set via {@link #id(String)},
+     *       one will be auto-generated at render time</li>
+     * </ul>
+     * <p>
+     * Note: {@code focusable()} and {@link #onKeyEvent(KeyEventHandler)} are orthogonal:
+     * <ul>
+     *   <li>Use {@code focusable()} when the element should participate in TAB navigation</li>
+     *   <li>Use {@code onKeyEvent()} to handle keyboard events (works regardless of focusability)</li>
+     *   <li>Use both when you want TAB navigation AND custom key handling</li>
+     * </ul>
      *
      * @return this element for chaining
      */
@@ -312,10 +319,11 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
     }
 
     /**
-     * Sets whether this element is focusable.
+     * Sets whether this element is focusable for TAB navigation.
      *
      * @param focusable true to make focusable, false otherwise
      * @return this element for chaining
+     * @see #focusable() for more details on focusability
      */
     public T focusable(boolean focusable) {
         this.focusable = focusable;
@@ -329,7 +337,20 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
 
     // ID for focus management
 
+    /**
+     * Sets the element's ID for focus management and CSS targeting.
+     * <p>
+     * The ID is immutable once set and cannot be changed. If an ID is needed
+     * but not explicitly provided, calling {@link #focusable()} will auto-generate one.
+     *
+     * @param id the unique identifier for this element
+     * @return this element for chaining
+     * @throws IllegalStateException if the ID has already been set
+     */
     public T id(String id) {
+        if (this.elementId != null) {
+            throw new IllegalStateException("Element ID cannot be changed once set. Current ID: " + this.elementId);
+        }
         this.elementId = id;
         return self();
     }
@@ -414,11 +435,25 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
     // Event handlers
 
     /**
-     * Sets the key event handler for this element.
-     * The handler receives key events when this element is focused.
+     * Sets a key event handler for this element.
+     * <p>
+     * The handler receives keyboard events when:
+     * <ul>
+     *   <li>This element is focused (receives events directly)</li>
+     *   <li>A focused descendant doesn't handle the event (bubbles up)</li>
+     * </ul>
+     * <p>
+     * <strong>Relationship with {@link #focusable()}:</strong>
+     * <ul>
+     *   <li>{@code onKeyEvent()} registers a handler but does NOT make the element focusable</li>
+     *   <li>{@code focusable()} adds the element to TAB navigation but does NOT add a handler</li>
+     *   <li>Use both together when you want TAB navigation AND custom key handling</li>
+     *   <li>Use only {@code onKeyEvent()} for handling keys from focused children or global shortcuts</li>
+     * </ul>
      *
      * @param handler the key event handler
      * @return this element for chaining
+     * @see #focusable()
      */
     public T onKeyEvent(KeyEventHandler handler) {
         this.keyHandler = handler;

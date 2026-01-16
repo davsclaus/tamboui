@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * Default implementation of RenderContext with internal framework methods.
@@ -40,6 +41,8 @@ import java.util.Set;
  * are framework internals that should never be called directly from element implementations.
  */
 public final class DefaultRenderContext implements RenderContext {
+
+    private static final Logger LOGGER = Logger.getLogger(DefaultRenderContext.class.getName());
 
     private final FocusManager focusManager;
     private final EventRouter eventRouter;
@@ -316,8 +319,15 @@ public final class DefaultRenderContext implements RenderContext {
      */
     public void registerElement(Element element, Rect area) {
         eventRouter.registerElement(element, area);
-        if (element.isFocusable() && element.id() != null) {
-            focusManager.registerFocusable(element.id(), area);
+        if (element.isFocusable()) {
+            if (element.id() != null) {
+                focusManager.registerFocusable(element.id(), area);
+            } else {
+                // This should only happen if a subclass overrides isFocusable() without ensuring an ID
+                LOGGER.warning("Focusable element of type " + element.getClass().getSimpleName()
+                        + " has no ID and will not be registered in the focus chain. "
+                        + "Ensure the element has an ID set.");
+            }
         }
     }
 
