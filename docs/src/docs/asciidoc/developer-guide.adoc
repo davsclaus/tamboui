@@ -196,8 +196,10 @@ var counter2 = new CounterCard().id("counter-2");
 // Define bindings
 var bindings = BindingSets.standard()
     .toBuilder()
-    .bind("increment", KeyTrigger.ch('+'), KeyTrigger.ch('='))
-    .bind("decrement", KeyTrigger.ch('-'), KeyTrigger.ch('_'))
+    .bind(KeyTrigger.ch('+'), "increment")
+    .bind(KeyTrigger.ch('='), "increment")
+    .bind(KeyTrigger.ch('-'), "decrement")
+    .bind(KeyTrigger.ch('_'), "decrement")
     .build();
 
 try (var runner = ToolkitRunner.builder()

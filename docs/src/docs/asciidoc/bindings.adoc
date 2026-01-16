@@ -73,9 +73,10 @@ Start from a preset and customize:
 ----
 Bindings custom = BindingSets.standard()
     .toBuilder()
-    .bind("delete", KeyTrigger.ch('d'), KeyTrigger.key(KeyCode.DELETE))
-    .bind("save", KeyTrigger.ctrl('s'))
-    .bind("contextMenu", MouseTrigger.rightClick())
+    .bind(KeyTrigger.ch('d'), "delete")
+    .bind(KeyTrigger.key(KeyCode.DELETE), "delete")
+    .bind(KeyTrigger.ctrl('s'), "save")
+    .bind(MouseTrigger.rightClick(), "contextMenu")
     .build();
 ----
 
@@ -98,6 +99,17 @@ ActionHandler actions = new ActionHandler(BindingSets.vim())
     // Handle other events...
     return false;
 }
+----
+
+Handlers can optionally receive the action name that triggered them:
+
+[source,java]
+----
+// Handler with action name (useful when same handler serves multiple actions)
+ActionHandler actions = new ActionHandler(bindings)
+    .on("red", (event, action) -> setColor(action))
+    .on("blue", (event, action) -> setColor(action))
+    .on("green", (event, action) -> setColor(action));
 ----
 
 == @OnAction Annotation

@@ -36,8 +36,8 @@ import java.util.Optional;
  * // Customizing bindings
  * Bindings custom = BindingSets.standard()
  *     .toBuilder()
- *     .bind(Actions.QUIT, KeyTrigger.ch('x'))
- *     .bind("myAction", MouseTrigger.rightClick())
+ *     .bind(KeyTrigger.ch('x'), Actions.QUIT)
+ *     .bind(MouseTrigger.rightClick(), "myAction")
  *     .build();
  * }</pre>
  *
@@ -97,24 +97,24 @@ public interface Bindings {
     interface Builder {
 
         /**
-         * Binds an action to one or more triggers.
+         * Binds a trigger to an action.
          * <p>
          * This adds to existing triggers for the action.
          *
-         * @param action   the action to bind
-         * @param triggers the input triggers
+         * @param trigger the input trigger
+         * @param action  the action to bind to
          * @return this builder
          */
-        Builder bind(String action, InputTrigger... triggers);
+        Builder bind(InputTrigger trigger, String action);
 
         /**
-         * Replaces all triggers for an action.
+         * Replaces all triggers for an action with the given trigger.
          *
-         * @param action   the action
-         * @param triggers the new triggers (replaces existing)
+         * @param trigger the new trigger (replaces existing triggers)
+         * @param action  the action
          * @return this builder
          */
-        Builder rebind(String action, InputTrigger... triggers);
+        Builder rebind(InputTrigger trigger, String action);
 
         /**
          * Removes all triggers for an action.

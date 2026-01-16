@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -40,7 +41,7 @@ import java.util.function.Consumer;
 public final class ActionHandler {
 
     private Bindings bindings;
-    private final Map<String, List<Consumer<Event>>> handlers = new HashMap<>();
+    private final Map<String, List<BiConsumer<Event, String>>> handlers = new HashMap<>();
 
     /**
      * Creates a new action handler with the given bindings.
@@ -62,6 +63,24 @@ public final class ActionHandler {
      * @return this handler for method chaining
      */
     public ActionHandler on(String action, Consumer<Event> handler) {
+        handlers.computeIfAbsent(action, k -> new ArrayList<>()).add((e, a) -> handler.accept(e));
+        return this;
+    }
+
+    /**
+     * Registers a handler for the specified action that also receives the action name.
+     * <p>
+     * This is useful when the same handler is registered for multiple actions
+     * and needs to know which action triggered it.
+     * <p>
+     * Multiple handlers can be registered for the same action; they will
+     * be invoked in registration order when the action is triggered.
+     *
+     * @param action  the action name to handle
+     * @param handler the handler to invoke, receiving the event and action name
+     * @return this handler for method chaining
+     */
+    public ActionHandler on(String action, BiConsumer<Event, String> handler) {
         handlers.computeIfAbsent(action, k -> new ArrayList<>()).add(handler);
         return this;
     }
@@ -112,10 +131,11 @@ public final class ActionHandler {
     public boolean dispatch(Event event) {
         Optional<String> action = bindings.actionFor(event);
         if (action.isPresent()) {
-            List<Consumer<Event>> list = handlers.get(action.get());
+            String actionName = action.get();
+            List<BiConsumer<Event, String>> list = handlers.get(actionName);
             if (list != null && !list.isEmpty()) {
-                for (Consumer<Event> h : list) {
-                    h.accept(event);
+                for (BiConsumer<Event, String> h : list) {
+                    h.accept(event, actionName);
                 }
                 return true;
             }
@@ -130,7 +150,7 @@ public final class ActionHandler {
      * @return true if handlers are registered, false otherwise
      */
     public boolean hasHandlers(String action) {
-        List<Consumer<Event>> list = handlers.get(action);
+        List<BiConsumer<Event, String>> list = handlers.get(action);
         return list != null && !list.isEmpty();
     }
 

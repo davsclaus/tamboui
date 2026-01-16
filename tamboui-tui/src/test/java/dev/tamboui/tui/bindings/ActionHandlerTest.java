@@ -30,7 +30,7 @@ class ActionHandlerTest {
     @Test
     void onRegistersHandler() {
         List<Event> received = new ArrayList<>();
-        handler.on("moveUp", received::add);
+        handler.on("moveUp", e -> received.add(e));
 
         assertThat(handler.hasHandlers("moveUp")).isTrue();
         assertThat(handler.hasHandlers("moveDown")).isFalse();
@@ -57,7 +57,7 @@ class ActionHandlerTest {
     @Test
     void dispatchInvokesMatchingHandlers() {
         List<Event> received = new ArrayList<>();
-        handler.on(Actions.MOVE_UP, received::add);
+        handler.on(Actions.MOVE_UP, e -> received.add(e));
 
         KeyEvent upEvent = KeyEvent.ofKey(KeyCode.UP, bindings);
         boolean handled = handler.dispatch(upEvent);
@@ -109,7 +109,7 @@ class ActionHandlerTest {
 
         // With custom bindings that only have Ctrl+C for quit, 'q' doesn't trigger quit
         Bindings noQuitOnQ = DefaultBindings.builder()
-                .bind(Actions.QUIT, KeyTrigger.ctrl('c'))
+                .bind(KeyTrigger.ctrl('c'), Actions.QUIT)
                 .build();
         handler.setBindings(noQuitOnQ);
         KeyEvent qEventNoQuit = KeyEvent.ofChar('q', noQuitOnQ);
@@ -143,17 +143,40 @@ class ActionHandlerTest {
         // Create bindings with custom action
         Bindings custom = BindingSets.standard()
                 .toBuilder()
-                .bind("save", KeyTrigger.ctrl('s'))
+                .bind(KeyTrigger.ctrl('s'), "save")
                 .build();
         handler.setBindings(custom);
 
         List<Event> received = new ArrayList<>();
-        handler.on("save", received::add);
+        handler.on("save", e -> received.add(e));
 
         KeyEvent ctrlS = KeyEvent.ofChar('s', KeyModifiers.CTRL, custom);
         boolean handled = handler.dispatch(ctrlS);
 
         assertThat(handled).isTrue();
         assertThat(received).hasSize(1);
+    }
+
+    @Test
+    void onWithBiConsumerReceivesActionName() {
+        List<String> receivedActions = new ArrayList<>();
+        handler.on(Actions.MOVE_UP, (event, action) -> receivedActions.add(action));
+
+        KeyEvent upEvent = KeyEvent.ofKey(KeyCode.UP, bindings);
+        handler.dispatch(upEvent);
+
+        assertThat(receivedActions).containsExactly(Actions.MOVE_UP);
+    }
+
+    @Test
+    void onWithBiConsumerWorksForMultipleActions() {
+        List<String> receivedActions = new ArrayList<>();
+        handler.on(Actions.MOVE_UP, (event, action) -> receivedActions.add(action));
+        handler.on(Actions.MOVE_DOWN, (event, action) -> receivedActions.add(action));
+
+        handler.dispatch(KeyEvent.ofKey(KeyCode.UP, bindings));
+        handler.dispatch(KeyEvent.ofKey(KeyCode.DOWN, bindings));
+
+        assertThat(receivedActions).containsExactly(Actions.MOVE_UP, Actions.MOVE_DOWN);
     }
 }

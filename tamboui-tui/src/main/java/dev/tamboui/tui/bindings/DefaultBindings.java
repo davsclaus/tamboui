@@ -122,15 +122,17 @@ public final class DefaultBindings implements Bindings {
         }
 
         @Override
-        public Builder bind(String action, InputTrigger... newTriggers) {
+        public Builder bind(InputTrigger trigger, String action) {
             triggers.computeIfAbsent(validateActionName(action), k -> new ArrayList<>())
-                    .addAll(Arrays.asList(newTriggers));
+                    .add(trigger);
             return this;
         }
 
         @Override
-        public Builder rebind(String action, InputTrigger... newTriggers) {
-            triggers.put(validateActionName(action), new ArrayList<>(Arrays.asList(newTriggers)));
+        public Builder rebind(InputTrigger trigger, String action) {
+            List<InputTrigger> list = new ArrayList<>();
+            list.add(trigger);
+            triggers.put(validateActionName(action), list);
             return this;
         }
 

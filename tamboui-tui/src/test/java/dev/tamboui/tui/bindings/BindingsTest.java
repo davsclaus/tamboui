@@ -192,7 +192,7 @@ class BindingsTest {
     void customBindingsCanBeBuilt() {
         Bindings custom = BindingSets.standard()
             .toBuilder()
-            .bind(Actions.QUIT, KeyTrigger.ch('x'))
+            .bind(KeyTrigger.ch('x'), Actions.QUIT)
             .build();
 
         KeyEvent x = KeyEvent.ofChar('x', custom);
@@ -250,7 +250,7 @@ class BindingsTest {
     void customBindingsCanIncludeMouseTriggers() {
         Bindings custom = BindingSets.standard()
             .toBuilder()
-            .bind("customAction", MouseTrigger.click())
+            .bind(MouseTrigger.click(), "customAction")
             .build();
 
         MouseEvent click = MouseEvent.press(MouseButton.LEFT, 0, 0, custom);

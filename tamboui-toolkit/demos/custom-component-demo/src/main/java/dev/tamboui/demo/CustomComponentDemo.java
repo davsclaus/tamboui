@@ -234,8 +234,8 @@ public class CustomComponentDemo implements Element {
         // Create bindings with increment/decrement actions for ProgressCard
         var bindings = BindingSets.standard()
                 .toBuilder()
-                .bind("increment", KeyTrigger.ch('+'))
-                .bind("decrement", KeyTrigger.ch('-'))
+                .bind(KeyTrigger.ch('+'), "increment")
+                .bind(KeyTrigger.ch('-'), "decrement")
                 .build();
 
         var config = TuiConfig.builder()

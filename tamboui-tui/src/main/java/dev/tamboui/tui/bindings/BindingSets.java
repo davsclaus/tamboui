@@ -37,8 +37,8 @@ import java.util.Properties;
  * // Customize a predefined set
  * Bindings custom = BindingSets.standard()
  *     .toBuilder()
- *     .bind(Actions.QUIT, KeyTrigger.ch('x'))
- *     .bind("contextMenu", MouseTrigger.rightClick())
+ *     .bind(KeyTrigger.ch('x'), Actions.QUIT)
+ *     .bind(MouseTrigger.rightClick(), "contextMenu")
  *     .build();
  * }</pre>
  */
@@ -311,7 +311,7 @@ public final class BindingSets {
     }
 
     private static Bindings loadFromProperties(Properties props, Bindings base) throws IOException {
-        DefaultBindings.Builder builder;
+        Bindings.Builder builder;
         if (base != null) {
             builder = base.toBuilder();
         } else {
@@ -321,13 +321,10 @@ public final class BindingSets {
         for (String actionName : props.stringPropertyNames()) {
             String bindingsStr = props.getProperty(actionName);
             String[] parts = bindingsStr.split(",");
-            List<InputTrigger> triggers = new ArrayList<>();
 
             for (String part : parts) {
-                triggers.add(parseTrigger(part.trim()));
+                builder.bind(parseTrigger(part.trim()), actionName);
             }
-
-            builder.bind(actionName, triggers.toArray(new InputTrigger[0]));
         }
 
         return builder.build();
