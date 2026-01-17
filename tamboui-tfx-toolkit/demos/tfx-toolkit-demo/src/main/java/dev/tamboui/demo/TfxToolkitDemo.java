@@ -21,13 +21,15 @@ import static dev.tamboui.toolkit.Toolkit.*;
  * Demo showcasing TFX effects integration with the Toolkit DSL.
  * <p>
  * This demo shows how to use ToolkitEffects to apply visual effects
- * to specific elements by ID using the Builder pattern.
+ * to specific elements by ID or CSS selectors.
  * <p>
  * Controls:
- * - 1: Apply effect to header panel
- * - 2: Apply effect to content panel
- * - 3: Apply effect to footer panel
+ * - 1: Apply effect to header panel (by ID)
+ * - 2: Apply effect to content panel (by ID)
+ * - 3: Apply effect to footer panel (by ID)
  * - 4: Apply global effect
+ * - 5: Apply effect to all panels (by CSS selector ".main-panel")
+ * - 6: Apply effect to all Panel types (by type selector "Panel")
  * - Space: Clear all effects
  * - q/ESC: Quit
  */
@@ -73,14 +75,15 @@ public class TfxToolkitDemo {
 
     private Element buildUI() {
         return column(
-            // Header panel
+            // Header panel - has .main-panel class
             panel("Header",
                 column(
                     text("TFX Toolkit Integration Demo").bold().cyan(),
-                    text("Effects can target elements by ID").dim()
+                    text("Effects target by ID or CSS selector").dim()
                 )
             )
                 .id("header")
+                .addClass("main-panel")
                 .rounded()
                 .borderColor(HEADER_COLOR)
                 .length(5)
@@ -89,18 +92,18 @@ public class TfxToolkitDemo {
 
             // Main content row with content panel and looping panel
             row(
-                // Content panel
+                // Content panel - has .main-panel class
                 panel("Content",
                     column(
-                        text("Press 1-4 to apply effects:").fg(Color.WHITE),
-                        text("  1 - Effect on header").fg(Color.GRAY),
-                        text("  2 - Effect on content").fg(Color.GRAY),
-                        text("  3 - Effect on footer").fg(Color.GRAY),
-                        text("  4 - Global effect").fg(Color.GRAY),
+                        text("Press 1-6 to apply effects:").fg(Color.WHITE),
+                        text("  1-3: By ID (header/content/footer)").fg(Color.GRAY),
+                        text("  4: Global effect").fg(Color.GRAY),
+                        text("  5: By class (.main-panel)").fg(Color.GRAY),
+                        text("  6: By type (Panel)").fg(Color.GRAY),
                         text(""),
                         text("Status: " + statusMessage).yellow()
                     )
-                ).id("content").rounded().borderColor(CONTENT_COLOR).fill(),
+                ).id("content").addClass("main-panel").rounded().borderColor(CONTENT_COLOR).fill(),
 
                 // Looping effects panel - individual words have effects
                 panel("Looping Effects",
@@ -128,7 +131,7 @@ public class TfxToolkitDemo {
                 ).id("looping-panel").rounded().borderColor(ACCENT_COLOR).length(30)
             ).fill(),
 
-            // Footer panel
+            // Footer panel - has .main-panel class
             panel("Footer",
                 row(
                     text("Effects running: " + (effects.isRunning() ? "yes" : "no")).fg(Color.GRAY),
@@ -138,7 +141,7 @@ public class TfxToolkitDemo {
                     text("q/ESC").bold().fg(Color.WHITE),
                     text(" Quit").fg(Color.GRAY)
                 )
-            ).id("footer").rounded().borderColor(FOOTER_COLOR).length(3)
+            ).id("footer").addClass("main-panel").rounded().borderColor(FOOTER_COLOR).length(3)
         );
     }
 
@@ -164,6 +167,20 @@ public class TfxToolkitDemo {
         if (event.isChar('4')) {
             effects.addGlobalEffect(Fx.dissolve(1500, Interpolation.QuadOut));
             statusMessage = "Applied global dissolve effect";
+            return EventResult.HANDLED;
+        }
+
+        if (event.isChar('5')) {
+            // CSS class selector - targets all elements with .main-panel class
+            effects.addEffectBySelector(".main-panel", Fx.fadeToFg(ACCENT_COLOR, 400, Interpolation.SineInOut));
+            statusMessage = "Applied effect to .main-panel (3 panels)";
+            return EventResult.HANDLED;
+        }
+
+        if (event.isChar('6')) {
+            // Type selector - targets all Panel elements
+            effects.addEffectBySelector("Panel", Fx.fadeToFg(Color.WHITE, 300, Interpolation.QuadOut));
+            statusMessage = "Applied effect to all Panel types (4 panels)";
             return EventResult.HANDLED;
         }
 

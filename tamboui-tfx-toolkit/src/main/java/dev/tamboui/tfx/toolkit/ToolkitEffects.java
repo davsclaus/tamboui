@@ -98,6 +98,37 @@ public final class ToolkitEffects {
     }
 
     /**
+     * Adds an effect that targets all elements matching a CSS-like selector.
+     * <p>
+     * Each matching element receives a copy of the effect. The effect is applied
+     * once the elements are rendered and their areas are available.
+     * <p>
+     * Supported selectors:
+     * <ul>
+     *   <li>{@code #id} - matches element by ID</li>
+     *   <li>{@code .class} - matches elements by CSS class</li>
+     *   <li>{@code Type} - matches elements by type name (e.g., Panel, Button)</li>
+     *   <li>{@code Type.class} - combined type and class</li>
+     *   <li>{@code .class1.class2} - multiple classes (all must match)</li>
+     * </ul>
+     * <p>
+     * Example:
+     * <pre>{@code
+     * // Apply effect to all elements with class "highlight"
+     * effects.addEffectBySelector(".highlight", Fx.fadeToFg(Color.YELLOW, 500));
+     *
+     * // Apply effect to all Panel elements
+     * effects.addEffectBySelector("Panel", Fx.fadeToFg(Color.CYAN, 500));
+     * }</pre>
+     *
+     * @param selector the CSS-like selector
+     * @param effect   the effect to add (copied for each matching element)
+     */
+    public void addEffectBySelector(String selector, Effect effect) {
+        registry.addEffectBySelector(selector, effect);
+    }
+
+    /**
      * Adds a global effect that applies to the entire frame area.
      * <p>
      * Global effects are not targeted to any specific element.

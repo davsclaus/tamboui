@@ -146,6 +146,19 @@ public final class Effect {
     Shader shader() {
         return shader;
     }
+
+    /**
+     * Creates a copy of this effect with a fresh internal state.
+     * <p>
+     * The copy has the same configuration (area, filter, color space, pattern,
+     * loop mode) but its own independent timer state. This is useful when you
+     * need to apply the same effect to multiple elements independently.
+     *
+     * @return A new Effect instance that is a copy of this one
+     */
+    public Effect copy() {
+        return new Effect(shader.copy());
+    }
     
     /**
      * Creates a new Effect with the shader's reverse flag toggled.

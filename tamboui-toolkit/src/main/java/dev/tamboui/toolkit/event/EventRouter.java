@@ -4,11 +4,15 @@
  */
 package dev.tamboui.toolkit.event;
 
+import dev.tamboui.css.Styleable;
 import dev.tamboui.toolkit.element.Element;
 import dev.tamboui.toolkit.element.ElementRegistry;
 import dev.tamboui.toolkit.element.StyledElement;
 import dev.tamboui.toolkit.focus.FocusManager;
 import dev.tamboui.layout.Rect;
+
+import java.util.Collections;
+import java.util.Set;
 import dev.tamboui.tui.bindings.ActionHandler;
 import dev.tamboui.tui.event.Event;
 import dev.tamboui.tui.event.KeyEvent;
@@ -101,8 +105,8 @@ public final class EventRouter {
      * If an element is already registered, this updates its area but
      * does not add a duplicate entry.
      * <p>
-     * Elements with IDs are also registered in the {@link ElementRegistry}
-     * for lookup by external systems (like effects).
+     * Elements are also registered in the {@link ElementRegistry}
+     * for CSS-like queries by external systems (like effects).
      */
     public void registerElement(Element element, Rect area) {
         // Prevent duplicate registration (element identity check)
@@ -111,11 +115,18 @@ public final class EventRouter {
         }
         elementAreas.put(element, area);
 
-        // Register in ElementRegistry for ID-based lookups
+        // Register in ElementRegistry for CSS-like queries
         String id = element.id();
-        if (id != null) {
-            elementRegistry.register(id, area);
+        String type = null;
+        Set<String> cssClasses = Collections.emptySet();
+
+        if (element instanceof Styleable) {
+            Styleable styleable = (Styleable) element;
+            type = styleable.styleType();
+            cssClasses = styleable.cssClasses();
         }
+
+        elementRegistry.register(id, type, cssClasses, area);
     }
 
     /**

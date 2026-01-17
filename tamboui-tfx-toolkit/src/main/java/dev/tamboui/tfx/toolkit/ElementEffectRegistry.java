@@ -51,8 +51,22 @@ public final class ElementEffectRegistry {
 
     private final ReentrantLock lock = new ReentrantLock();
     private final Map<String, List<Effect>> pendingEffects = new LinkedHashMap<>();
+    private final List<SelectorEffect> pendingSelectors = new ArrayList<>();
     private final EffectManager globalEffects = new EffectManager();
     private final EffectManager runningEffects = new EffectManager();
+
+    /**
+     * A pending effect targeting elements matching a CSS selector.
+     */
+    private static final class SelectorEffect {
+        final String selector;
+        final Effect effect;
+
+        SelectorEffect(String selector, Effect effect) {
+            this.selector = selector;
+            this.effect = effect;
+        }
+    }
 
     /**
      * Creates a new ElementEffectRegistry.
@@ -96,6 +110,36 @@ public final class ElementEffectRegistry {
     }
 
     /**
+     * Adds an effect that targets elements matching a CSS-like selector.
+     * <p>
+     * The effect will be applied to all elements matching the selector when
+     * {@link #resolvePendingEffects(ElementRegistry)} is called. Each matching
+     * element receives a copy of the effect.
+     * <p>
+     * Supported selectors:
+     * <ul>
+     *   <li>{@code #id} - matches element by ID</li>
+     *   <li>{@code .class} - matches elements by CSS class</li>
+     *   <li>{@code Type} - matches elements by type name</li>
+     *   <li>{@code Type.class} - combined type and class</li>
+     *   <li>{@code .class1.class2} - multiple classes</li>
+     * </ul>
+     *
+     * @param selector the CSS-like selector
+     * @param effect   the effect to add (copied for each matching element)
+     * @return the number of elements that matched (0 if selector is deferred)
+     */
+    public int addEffectBySelector(String selector, Effect effect) {
+        lock.lock();
+        try {
+            pendingSelectors.add(new SelectorEffect(selector, effect));
+            return 0; // Matches counted during resolution
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
      * Adds a global effect that applies to the entire frame area.
      * <p>
      * Global effects are processed without targeting a specific element.
@@ -118,6 +162,9 @@ public final class ElementEffectRegistry {
      * pending effects to the running effects list. Effects targeting
      * elements that are not currently rendered remain pending.
      * <p>
+     * Selector-based effects are resolved using the registry's query methods
+     * and apply to all matching elements.
+     * <p>
      * This should be called after rendering completes but before
      * {@link #processEffects(TFxDuration, Buffer, Rect)}.
      *
@@ -126,6 +173,7 @@ public final class ElementEffectRegistry {
     public void resolvePendingEffects(ElementRegistry registry) {
         lock.lock();
         try {
+            // Resolve ID-based effects
             List<String> resolved = new ArrayList<>();
 
             for (Map.Entry<String, List<Effect>> entry : pendingEffects.entrySet()) {
@@ -145,6 +193,16 @@ public final class ElementEffectRegistry {
             for (String id : resolved) {
                 pendingEffects.remove(id);
             }
+
+            // Resolve selector-based effects
+            for (SelectorEffect se : pendingSelectors) {
+                List<ElementRegistry.ElementInfo> matches = registry.queryAll(se.selector);
+                for (ElementRegistry.ElementInfo info : matches) {
+                    // Each match gets a copy of the effect
+                    runningEffects.addEffect(se.effect.copy().withArea(info.area()));
+                }
+            }
+            pendingSelectors.clear();
         } finally {
             lock.unlock();
         }
@@ -180,7 +238,8 @@ public final class ElementEffectRegistry {
         try {
             return globalEffects.isRunning() ||
                    runningEffects.isRunning() ||
-                   !pendingEffects.isEmpty();
+                   !pendingEffects.isEmpty() ||
+                   !pendingSelectors.isEmpty();
         } finally {
             lock.unlock();
         }
@@ -193,6 +252,7 @@ public final class ElementEffectRegistry {
         lock.lock();
         try {
             pendingEffects.clear();
+            pendingSelectors.clear();
             globalEffects.clear();
             runningEffects.clear();
         } finally {
