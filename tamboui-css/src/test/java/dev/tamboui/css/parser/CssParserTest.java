@@ -126,6 +126,34 @@ class CssParserTest {
     }
 
     @Test
+    void whitespaceDistinguishesCompoundFromDescendant() {
+        // Text.muted - compound selector (Text element WITH class muted)
+        Stylesheet compound = CssParser.parse("Text.muted { color: gray; }");
+        assertThat(compound.rules()).hasSize(1);
+        assertThat(compound.rules().get(0).selector()).isInstanceOf(CompoundSelector.class);
+        CompoundSelector compoundSel = (CompoundSelector) compound.rules().get(0).selector();
+        assertThat(compoundSel.parts()).hasSize(2);
+        assertThat(compoundSel.parts().get(0)).isInstanceOf(TypeSelector.class);
+        assertThat(compoundSel.parts().get(1)).isInstanceOf(ClassSelector.class);
+
+        // Text .muted - descendant selector (element with class muted INSIDE Text)
+        Stylesheet descendant1 = CssParser.parse("Text .muted { color: gray; }");
+        assertThat(descendant1.rules()).hasSize(1);
+        assertThat(descendant1.rules().get(0).selector()).isInstanceOf(DescendantSelector.class);
+        DescendantSelector desc1 = (DescendantSelector) descendant1.rules().get(0).selector();
+        assertThat(desc1.ancestor()).isInstanceOf(TypeSelector.class);
+        assertThat(desc1.descendant()).isInstanceOf(ClassSelector.class);
+
+        // .muted Text - descendant selector (Text element INSIDE element with class muted)
+        Stylesheet descendant2 = CssParser.parse(".muted Text { color: gray; }");
+        assertThat(descendant2.rules()).hasSize(1);
+        assertThat(descendant2.rules().get(0).selector()).isInstanceOf(DescendantSelector.class);
+        DescendantSelector desc2 = (DescendantSelector) descendant2.rules().get(0).selector();
+        assertThat(desc2.ancestor()).isInstanceOf(ClassSelector.class);
+        assertThat(desc2.descendant()).isInstanceOf(TypeSelector.class);
+    }
+
+    @Test
     void parsesChildSelector() {
         Stylesheet stylesheet = CssParser.parse("Panel > Button { color: gray; }");
 

@@ -232,6 +232,50 @@ class SelectorTest {
     }
 
     @Test
+    void whitespaceDistinguishesCompoundFromDescendantMatching() {
+        // Setup: Text element with class "muted"
+        Styleable textWithMuted = createStyleable("Text", null, new HashSet<>(Arrays.asList("muted")));
+        // Setup: Text element without class "muted"
+        Styleable textWithoutMuted = createStyleable("Text", null, Collections.<String>emptySet());
+        // Setup: Span element with class "muted"
+        Styleable spanWithMuted = createStyleable("Span", null, new HashSet<>(Arrays.asList("muted")));
+        // Setup: Container with class "muted"
+        Styleable containerWithMuted = createStyleable("Container", null, new HashSet<>(Arrays.asList("muted")));
+
+        // Text.muted - compound selector: Text element WITH class muted
+        CompoundSelector compoundSelector = new CompoundSelector(Arrays.<Selector>asList(
+                new TypeSelector("Text"),
+                new ClassSelector("muted")
+        ));
+        assertThat(compoundSelector.matches(textWithMuted, PseudoClassState.NONE, Collections.<Styleable>emptyList()))
+                .as("Text.muted should match Text element with class muted").isTrue();
+        assertThat(compoundSelector.matches(textWithoutMuted, PseudoClassState.NONE, Collections.<Styleable>emptyList()))
+                .as("Text.muted should NOT match Text element without class muted").isFalse();
+        assertThat(compoundSelector.matches(spanWithMuted, PseudoClassState.NONE, Collections.<Styleable>emptyList()))
+                .as("Text.muted should NOT match Span element even with class muted").isFalse();
+
+        // Text .muted - descendant selector: element with class muted INSIDE Text
+        DescendantSelector descendant1 = new DescendantSelector(
+                new TypeSelector("Text"),
+                new ClassSelector("muted")
+        );
+        assertThat(descendant1.matches(spanWithMuted, PseudoClassState.NONE, Arrays.asList(textWithoutMuted)))
+                .as("Text .muted should match element with class muted inside Text").isTrue();
+        assertThat(descendant1.matches(spanWithMuted, PseudoClassState.NONE, Collections.<Styleable>emptyList()))
+                .as("Text .muted should NOT match element with class muted without Text ancestor").isFalse();
+
+        // .muted Text - descendant selector: Text element INSIDE element with class muted
+        DescendantSelector descendant2 = new DescendantSelector(
+                new ClassSelector("muted"),
+                new TypeSelector("Text")
+        );
+        assertThat(descendant2.matches(textWithoutMuted, PseudoClassState.NONE, Arrays.asList(containerWithMuted)))
+                .as(".muted Text should match Text element inside element with class muted").isTrue();
+        assertThat(descendant2.matches(textWithoutMuted, PseudoClassState.NONE, Collections.<Styleable>emptyList()))
+                .as(".muted Text should NOT match Text element without muted ancestor").isFalse();
+    }
+
+    @Test
     void childSelectorMatchesDirectChild() {
         ChildSelector selector = new ChildSelector(
                 new TypeSelector("Panel"),
