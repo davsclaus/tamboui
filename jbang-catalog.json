@@ -49,6 +49,12 @@
     "tfx-demo": {
       "script-ref": "tamboui-tfx/demos/tfx-demo/src/main/java/dev/tamboui/demo/TFxBasicEffectsDemo.java"
     },
+    "tfx-toolkit-demo": {
+      "script-ref": "tamboui-tfx-toolkit/demos/tfx-toolkit-demo/src/main/java/dev/tamboui/demo/TfxToolkitDemo.java"
+    },
+    "tfx-tui-demo": {
+      "script-ref": "tamboui-tfx-tui/demos/tfx-tui-demo/src/main/java/dev/tamboui/demo/TfxTuiDemo.java"
+    },
     "action-handler-demo": {
       "script-ref": "tamboui-toolkit/demos/action-handler-demo/src/main/java/dev/tamboui/demo/actionhandler/ActionHandlerDemo.java"
     },
