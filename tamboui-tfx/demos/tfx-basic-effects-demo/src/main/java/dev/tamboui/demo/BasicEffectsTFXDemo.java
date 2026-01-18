@@ -28,7 +28,6 @@ import dev.tamboui.style.Color;
 import dev.tamboui.style.Style;
 import dev.tamboui.tui.TuiConfig;
 import dev.tamboui.tui.TuiRunner;
-import dev.tamboui.tui.event.KeyCode;
 import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.tui.event.TickEvent;
 import dev.tamboui.widgets.block.Block;
@@ -61,7 +60,7 @@ import java.util.function.Supplier;
  * - 't': Toggle between text and colored blocks view
  * - 'q': Quit
  */
-public class TFxDemo {
+public class BasicEffectsTFXDemo {
     
     private Instant lastFrame = Instant.now();
     private EffectManager effectManager;
@@ -85,7 +84,7 @@ public class TFxDemo {
     }
     
     public static void main(String[] args) throws Exception {
-        new TFxDemo().run();
+        new BasicEffectsTFXDemo().run();
     }
     
     private void run() throws Exception {

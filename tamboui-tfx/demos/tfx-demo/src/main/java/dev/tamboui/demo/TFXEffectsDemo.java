@@ -9,11 +9,9 @@
  */
 package dev.tamboui.demo;
 
-import dev.tamboui.tfx.CellFilter;
 import dev.tamboui.tfx.TFxDuration;
 import dev.tamboui.tfx.Effect;
 import dev.tamboui.tfx.EffectManager;
-import dev.tamboui.tfx.EffectTimer;
 import dev.tamboui.tfx.ExpandDirection;
 import dev.tamboui.tfx.Fx;
 import dev.tamboui.tfx.Interpolation;
@@ -55,7 +53,7 @@ import java.util.function.Supplier;
  * - r: Random transition
  * - ESC: Quit
  */
-public class TFxBasicEffectsDemo {
+public class TFXEffectsDemo {
 
     private Instant lastFrame;
     private EffectManager effectManager;
@@ -78,7 +76,7 @@ public class TFxBasicEffectsDemo {
     private static final Color YELLOW_BRIGHT = Color.rgb(0xfa, 0xbd, 0x2f);
     
     public static void main(String[] args) throws Exception {
-        new TFxBasicEffectsDemo().run();
+        new TFXEffectsDemo().run();
     }
     
     private void run() throws Exception {

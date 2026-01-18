@@ -10,10 +10,10 @@ dependencies {
 }
 
 application {
-    mainClass.set("dev.tamboui.demo.TFxDemo")
+    mainClass.set("dev.tamboui.demo.BasicEffectsTFXDemo")
 }
 
 demo {
-    displayName = "TamboUI TFX Demo"
+    displayName = "TamboUI Basic Effects TFX Demo"
     tags = setOf("tfx", "effects", "animation", "progress", "widgets")
 }
