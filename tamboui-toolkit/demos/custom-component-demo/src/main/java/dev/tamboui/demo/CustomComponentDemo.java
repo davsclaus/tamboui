@@ -87,11 +87,11 @@ public class CustomComponentDemo implements Element {
             color: #888888;
         }
 
-        .progress-complete {
+        .progress-complete GaugeElement-filled {
             color: green;
         }
 
-        .progress-in-progress {
+        .progress-in-progress GaugeElement-filled {
             color: yellow;
         }
 
@@ -126,11 +126,11 @@ public class CustomComponentDemo implements Element {
         }
 
         .editor-column {
-            height: 50%;
+            width: 50%;
         }
 
         .preview-column {
-            height: fill;
+            width: fill;
         }
 
         .main-row {
