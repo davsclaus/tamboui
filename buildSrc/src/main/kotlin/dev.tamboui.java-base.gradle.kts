@@ -1,3 +1,5 @@
+import dev.tamboui.build.JavadocTheming
+import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.api.tasks.compile.JavaCompile
 
 plugins {
@@ -35,6 +37,10 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+tasks.withType<Javadoc>().configureEach {
+    JavadocTheming.configure(this, project)
 }
 
 group = "dev.tamboui"

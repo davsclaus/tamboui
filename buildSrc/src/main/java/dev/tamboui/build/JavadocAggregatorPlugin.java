@@ -14,10 +14,17 @@ import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.CompatibilityCheckDetails;
 import org.gradle.api.attributes.MultipleCandidatesDetails;
 import org.gradle.api.attributes.Usage;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.external.javadoc.StandardJavadocDocletOptions;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
@@ -40,7 +47,7 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
                 });
             }
         });
-        Provider<Javadoc> javadocProvider = project.getTasks().register("javadoc", Javadoc.class, javadoc -> {
+        project.getTasks().register("javadoc", Javadoc.class, javadoc -> {
             javadoc.setDescription("Generate javadocs from all child projects as if it was a single project");
             javadoc.setGroup("Documentation");
 
@@ -52,7 +59,29 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
             options.addBooleanOption("notimestamp", true);
             javadoc.setSource(javadocAggregator);
             javadoc.setClasspath(javadocAggregatorClasspath);
+
+            // Configure theming with package-to-dir-path mapping for GitHub links
+            // For aggregated Javadoc we can't infer the Gradle module name from document.title,
+            // so we generate a small mapping that the JS can use to build correct GitHub links.
+            JavadocTheming.configure(javadoc, project, () -> {
+                List<Project> participantProjects = findParticipantProjects(project);
+                Map<String, String> packageToDirPath = computePackageToDirPath(participantProjects);
+                return "window.__TAMBOUI_GITHUB_PACKAGE_TO_DIR_PATH=" + toJsonObject(packageToDirPath) + ";\n";
+            });
         });
+    }
+
+    private static List<Project> findParticipantProjects(Project project) {
+        List<Project> participants = new ArrayList<>();
+        project.getRootProject().getSubprojects().forEach(p -> {
+            if (p == project) {
+                return;
+            }
+            if (p.getPlugins().hasPlugin(AggregatedJavadocParticipantPlugin.class)) {
+                participants.add(p);
+            }
+        });
+        return participants;
     }
 
     private Configuration createAggregationConfiguration(Project project, Configuration javadocAggregatorBase) {
@@ -82,6 +111,71 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
             conf.setCanBeConsumed(false);
             conf.setCanBeResolved(false);
         });
+    }
+
+    private static Map<String, String> computePackageToDirPath(List<Project> participantProjects) {
+        Map<String, String> packageToDirPath = new LinkedHashMap<>();
+        Set<String> ambiguousPackages = new HashSet<>();
+
+        for (Project p : participantProjects) {
+            File srcDir = new File(p.getProjectDir(), "src/main/java");
+            if (!srcDir.exists()) {
+                continue;
+            }
+            // Walk the tree with JDK APIs.
+            try {
+                Files.walk(srcDir.toPath())
+                        .filter(path -> Files.isRegularFile(path) && path.toString().endsWith(".java"))
+                        .forEach(path -> {
+                            String rel = srcDir.toPath().relativize(path).toString().replace(File.separatorChar, '/');
+                            int lastSlash = rel.lastIndexOf('/');
+                            String pkgPath = lastSlash >= 0 ? rel.substring(0, lastSlash) : "";
+                            if (pkgPath.isEmpty()) {
+                                return;
+                            }
+                            String pkg = pkgPath.replace('/', '.');
+                            String dirPath = p.getName() + "/src/main/java/" + pkgPath;
+
+                            String existing = packageToDirPath.get(pkg);
+                            if (existing == null) {
+                                if (!ambiguousPackages.contains(pkg)) {
+                                    packageToDirPath.put(pkg, dirPath);
+                                }
+                            } else if (!existing.equals(dirPath)) {
+                                packageToDirPath.remove(pkg);
+                                ambiguousPackages.add(pkg);
+                            }
+                        });
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to scan sources under " + srcDir, e);
+            }
+        }
+
+        return packageToDirPath;
+    }
+
+    private static String toJsonObject(Map<String, String> map) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        boolean first = true;
+        for (Map.Entry<String, String> e : map.entrySet()) {
+            if (!first) {
+                sb.append(",");
+            }
+            first = false;
+            sb.append("\"").append(jsonEscape(e.getKey())).append("\":\"").append(jsonEscape(e.getValue())).append("\"");
+        }
+        sb.append("}");
+        return sb.toString();
+    }
+
+    private static String jsonEscape(String s) {
+        return s
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 
     public static class AggregationCompatibilityRule implements AttributeCompatibilityRule<Usage> {
