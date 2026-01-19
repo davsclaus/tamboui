@@ -89,6 +89,7 @@ public final class TuiRunner implements AutoCloseable {
     private final RenderErrorHandler errorHandler;
     private final PrintStream errorOutput;
     private final AtomicReference<Instant> lastTick;
+    private final AtomicReference<Instant> nextTickTime;
     private final AtomicReference<Size> lastSize;
     private final AtomicBoolean resizePending;
     private final AtomicReference<Renderer> activeRenderer;
@@ -110,6 +111,8 @@ public final class TuiRunner implements AutoCloseable {
         this.activeRenderer = new AtomicReference<>();
         this.frameCount = new AtomicLong(0);
         this.lastTick = new AtomicReference<>(Instant.now());
+        this.nextTickTime = new AtomicReference<>(
+            config.tickRate() != null ? Instant.now().plus(config.tickRate()) : null);
         this.errorHandler = config.errorHandler();
         this.errorOutput = config.errorOutput();
 
@@ -636,14 +639,20 @@ public final class TuiRunner implements AutoCloseable {
             }
         }
 
-        // Generate tick event if ticks are enabled AND tick rate has elapsed
+        // Generate tick event if ticks are enabled AND it's time for the next tick
         if (config.ticksEnabled() && config.tickRate() != null) {
             Instant now = Instant.now();
-            Instant previous = lastTick.get();
-            Duration elapsed = Duration.between(previous, now);
+            Instant targetTime = nextTickTime.get();
 
-            if (elapsed.compareTo(config.tickRate()) >= 0) {
-                lastTick.set(now);
+            if (targetTime != null && !now.isBefore(targetTime)) {
+                // Compute elapsed since last tick for the event
+                Instant previous = lastTick.getAndSet(now);
+                Duration elapsed = Duration.between(previous, now);
+
+                // Schedule next tick from the target time to maintain steady rate
+                // This ensures we don't lose ticks due to scheduler jitter
+                nextTickTime.set(targetTime.plus(config.tickRate()));
+
                 long frame = frameCount.incrementAndGet();
                 eventQueue.offer(TickEvent.of(frame, elapsed));
             }
