@@ -28,6 +28,7 @@ import dev.tamboui.tui.event.KeyCode;
 import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.tui.event.ResizeEvent;
 import dev.tamboui.tui.event.TickEvent;
+import dev.tamboui.tui.event.UiRunnable;
 import dev.tamboui.tui.overlay.DebugOverlay;
 import dev.tamboui.widgets.block.Block;
 import dev.tamboui.widgets.block.BorderType;
@@ -88,6 +89,7 @@ public final class TuiRunner implements AutoCloseable {
     private final RenderErrorHandler errorHandler;
     private final PrintStream errorOutput;
     private final AtomicReference<Instant> lastTick;
+    private final AtomicReference<Instant> nextTickTime;
     private final AtomicReference<Size> lastSize;
     private final AtomicBoolean resizePending;
     private final AtomicReference<Renderer> activeRenderer;
@@ -109,6 +111,8 @@ public final class TuiRunner implements AutoCloseable {
         this.activeRenderer = new AtomicReference<>();
         this.frameCount = new AtomicLong(0);
         this.lastTick = new AtomicReference<>(Instant.now());
+        this.nextTickTime = new AtomicReference<>(
+            config.tickRate() != null ? Instant.now().plus(config.tickRate()) : null);
         this.errorHandler = config.errorHandler();
         this.errorOutput = config.errorOutput();
 
@@ -221,26 +225,29 @@ public final class TuiRunner implements AutoCloseable {
      * @throws Exception if an error occurs during execution that cannot be handled
      */
     public void run(EventHandler handler, Renderer renderer) throws Exception {
-        // Wrap renderer to add post-render processors and FPS overlay
-        Renderer wrappedRenderer = frame -> {
-            debugOverlay.recordFrame();
-            renderer.render(frame);
-
-            // Call post-render processors
-            for (PostRenderProcessor processor : postRenderProcessors) {
-                processor.process(frame);
-            }
-
-            // FPS overlay is always last
-            if (debugOverlay.isVisible()) {
-                debugOverlay.render(frame, frame.area());
-            }
-        };
-
-        // Store renderer for scheduler-triggered redraws (e.g., on resize)
-        this.activeRenderer.set(wrappedRenderer);
+        // Mark this thread as the render thread
+        RenderThread.setRenderThread(Thread.currentThread());
 
         try {
+            // Wrap renderer to add post-render processors and FPS overlay
+            Renderer wrappedRenderer = frame -> {
+                debugOverlay.recordFrame();
+                renderer.render(frame);
+
+                // Call post-render processors
+                for (PostRenderProcessor processor : postRenderProcessors) {
+                    processor.process(frame);
+                }
+
+                // FPS overlay is always last
+                if (debugOverlay.isVisible()) {
+                    debugOverlay.render(frame, frame.area());
+                }
+            };
+
+            // Store renderer for scheduler-triggered redraws (e.g., on resize)
+            this.activeRenderer.set(wrappedRenderer);
+
             // Initial draw
             safeRender(wrappedRenderer);
 
@@ -252,6 +259,22 @@ public final class TuiRunner implements AutoCloseable {
 
                 Event event = pollEvent(config.pollTimeout());
                 if (event != null) {
+                    // Handle UiRunnable events (scheduled work from other threads)
+                    if (event instanceof UiRunnable) {
+                        try {
+                            ((UiRunnable) event).run();
+                        } catch (Throwable t) {
+                            handleRenderError(t);
+                        }
+                        continue;
+                    }
+
+                    // Handle resize events by forcing a redraw
+                    if (event instanceof ResizeEvent) {
+                        safeRender(wrappedRenderer);
+                        continue;
+                    }
+
                     // Handle debug overlay toggle
                     if (config.bindings().matches(event, Actions.TOGGLE_DEBUG_OVERLAY)) {
                         debugOverlay.toggle();
@@ -272,12 +295,13 @@ public final class TuiRunner implements AutoCloseable {
                 }
             }
         } finally {
-            // Ensure cleanup even on unexpected exit
-            // Note: actual cleanup happens in close()
+            // Clear render thread reference
+            RenderThread.clearRenderThread();
         }
     }
 
     private void safeRender(Renderer renderer) {
+        RenderThread.checkRenderThread();
         try {
             terminal.draw(renderer::render);
         } catch (Throwable t) {
@@ -361,6 +385,7 @@ public final class TuiRunner implements AutoCloseable {
             return;
         }
 
+        RenderThread.checkRenderThread();
         try {
             terminal.draw(frame -> {
                 Rect area = frame.area();
@@ -508,6 +533,55 @@ public final class TuiRunner implements AutoCloseable {
     }
 
     /**
+     * Executes an action on the render thread.
+     * <p>
+     * If called from the render thread, the action is executed immediately.
+     * If called from another thread, the action is queued for execution
+     * on the render thread.
+     * <p>
+     * This is the primary API for safely updating UI state from background threads:
+     * <pre>{@code
+     * // From a background thread:
+     * runner.runOnRenderThread(() -> {
+     *     updateState();
+     *     // UI will redraw on next event
+     * });
+     * }</pre>
+     *
+     * @param action the action to execute on the render thread
+     */
+    public void runOnRenderThread(Runnable action) {
+        if (RenderThread.isRenderThread()) {
+            action.run();
+        } else {
+            eventQueue.offer(new UiRunnable(action));
+        }
+    }
+
+    /**
+     * Queues an action to be executed on the render thread.
+     * <p>
+     * Unlike {@link #runOnRenderThread(Runnable)}, this method always queues
+     * the action even if called from the render thread. This is useful when
+     * you want to defer execution until after the current event handling
+     * completes.
+     *
+     * @param action the action to execute on the render thread
+     */
+    public void runLater(Runnable action) {
+        eventQueue.offer(new UiRunnable(action));
+    }
+
+    /**
+     * Returns whether the current thread is the render thread.
+     *
+     * @return true if called from the render thread
+     */
+    public boolean isRenderThread() {
+        return RenderThread.isRenderThread();
+    }
+
+    /**
      * Returns the underlying terminal.
      */
     public Terminal<Backend> terminal() {
@@ -547,34 +621,41 @@ public final class TuiRunner implements AutoCloseable {
     /**
      * Scheduler callback that handles both tick events and resize-triggered redraws.
      * <p>
-     * When a resize is detected, this directly triggers a redraw independent of
-     * the main event loop, ensuring the UI updates even when the loop is blocked.
+     * When a resize is detected, this posts a ResizeEvent to the event queue
+     * to be processed on the render thread.
      */
     private void schedulerCallback() {
         if (!running.get()) {
             return;
         }
 
-        // Check for pending resize and trigger redraw directly
+        // Check for pending resize and post event to trigger redraw on render thread
         if (resizePending.getAndSet(false)) {
-            Renderer renderer = activeRenderer.get();
-            if (renderer != null) {
-                try {
-                    terminal.draw(renderer::render);
-                } catch (IOException e) {
-                    // Ignore redraw errors during resize
-                }
+            try {
+                Size newSize = backend.size();
+                eventQueue.offer(ResizeEvent.of(newSize.width(), newSize.height()));
+            } catch (IOException e) {
+                // Ignore resize errors
             }
         }
 
-        // Generate tick event if ticks are enabled
-        if (config.ticksEnabled()) {
+        // Generate tick event if ticks are enabled AND it's time for the next tick
+        if (config.ticksEnabled() && config.tickRate() != null) {
             Instant now = Instant.now();
-            Instant previous = lastTick.getAndSet(now);
-            Duration elapsed = Duration.between(previous, now);
+            Instant targetTime = nextTickTime.get();
 
-            long frame = frameCount.incrementAndGet();
-            eventQueue.offer(TickEvent.of(frame, elapsed));
+            if (targetTime != null && !now.isBefore(targetTime)) {
+                // Compute elapsed since last tick for the event
+                Instant previous = lastTick.getAndSet(now);
+                Duration elapsed = Duration.between(previous, now);
+
+                // Schedule next tick from the target time to maintain steady rate
+                // This ensures we don't lose ticks due to scheduler jitter
+                nextTickTime.set(targetTime.plus(config.tickRate()));
+
+                long frame = frameCount.incrementAndGet();
+                eventQueue.offer(TickEvent.of(frame, elapsed));
+            }
         }
     }
 

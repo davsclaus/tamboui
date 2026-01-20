@@ -96,11 +96,21 @@ class MyApp extends ToolkitApp {
 ### Event System
 
 - `TuiRunner` provides the main event loop with `EventHandler` callback
-- Event types: `KeyEvent`, `MouseEvent`, `TickEvent`, `ResizeEvent`
+- Event types: `KeyEvent`, `MouseEvent`, `TickEvent`, `ResizeEvent`, `UiRunnable`
 - `KeyEvent` provides semantic methods (`isQuit()`, `isUp()`, `isDown()`, `isSelect()`, etc.) that respect configured bindings
 - Bindings map physical inputs to semantic actions; use `BindingSets.standard()`, `BindingSets.vim()`, or custom bindings
 - `@OnAction` annotation on Component methods handles actions; use annotation processor for compile-time generation
 - Toolkit elements handle events via `handleKeyEvent()`/`handleMouseEvent()` or handler lambdas
+
+### Threading Model
+
+- TamboUI TUI framework uses a dedicated **render thread model** similar to JavaFX or Swing
+- All rendering and UI state modifications must happen on the render thread (the thread running `TuiRunner.run()`)
+- `RenderThread.isRenderThread()` checks if current thread is render thread; `RenderThread.checkRenderThread()` asserts it
+- `TuiRunner.runOnRenderThread(Runnable)` executes on render thread (immediately if already on it, queued otherwise)
+- `TuiRunner.runLater(Runnable)` always queues for later execution
+- Scheduled actions via `ToolkitRunner.schedule()` run on scheduler thread; use `runOnRenderThread()` for UI state changes
+- Thread checks only enforce when render thread is set (allows unit tests without special setup)
 
 ### Key Packages
 
@@ -109,7 +119,7 @@ class MyApp extends ToolkitApp {
 - `dev.tamboui.style` - Style, Color, Modifier
 - `dev.tamboui.text` - Text, Span, Line for styled text
 - `dev.tamboui.widgets.*` - Widget implementations (block, paragraph, list, table, chart, canvas, etc.)
-- `dev.tamboui.tui` - TuiRunner, TuiConfig, event types
+- `dev.tamboui.tui` - TuiRunner, TuiConfig, RenderThread, event types
 - `dev.tamboui.tui.bindings` - Bindings, BindingSets, KeyTrigger, MouseTrigger, ActionHandler, @OnAction
 - `dev.tamboui.toolkit` - Toolkit DSL factory methods, Element interface, element implementations
 - `dev.tamboui.css` - StyleEngine, CssParser, selectors, cascade resolution

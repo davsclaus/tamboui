@@ -302,6 +302,86 @@ var config = TuiConfig.builder()
     .build();
 ----
 
+=== Threading Model
+
+{project-name} uses a dedicated *render thread model* similar to other UI frameworks.
+All rendering and UI state modifications must happen on the render thread - the thread running `TuiRunner.run()`.
+
+This model provides:
+
+* **Thread safety**: No locks needed in UI code since everything runs on one thread
+* **Predictable behavior**: UI updates happen in a well-defined order
+* **Clear error reporting**: Wrong-thread access throws `IllegalStateException` with diagnostic info
+
+==== The render thread
+
+When `TuiRunner.run()` starts, it marks the current thread as the render thread.
+All event handling and rendering callbacks execute on this thread.
+When `run()` exits, the render thread is cleared.
+
+[source,java]
+----
+// Check if on render thread
+if (runner.isRenderThread()) {
+    // Safe to modify UI state
+}
+
+// Or use the static utility
+if (RenderThread.isRenderThread()) {
+    // ...
+}
+----
+
+==== Updating UI from Background Threads
+
+To safely update UI state from background threads (network callbacks, timers, async tasks), use `runOnRenderThread()`:
+
+[source,java]
+----
+// From a background thread:
+runner.runOnRenderThread(() -> {
+    // This runs on the render thread
+    status = "Download complete";
+    // UI will redraw on next event
+});
+----
+
+If called from the render thread, the action executes immediately.
+If called from another thread, it's queued and runs during the next event loop iteration.
+
+For actions that should always be deferred (even when on render thread), use `runLater()`:
+
+[source,java]
+----
+// Always queues, never executes immediately
+runner.runLater(() -> {
+    // Runs after current event handling completes
+    processNextItem();
+});
+----
+
+==== Scheduled Actions
+
+Scheduled actions via `ToolkitRunner.schedule()`, `scheduleRepeating()`, and `scheduleWithFixedDelay()` run on the scheduler thread.
+If they modify UI state, use `runOnRenderThread()`:
+
+[source,java]
+----
+// Action runs on scheduler thread - use runOnRenderThread for UI state
+runner.schedule(() -> {
+    runner.runOnRenderThread(() -> {
+        countdown--;
+    });
+}, Duration.ofSeconds(1));
+
+// Same pattern for repeating actions
+runner.scheduleRepeating(() -> {
+    runner.runOnRenderThread(() -> animationFrame++);
+}, Duration.ofMillis(16));
+----
+
+This explicit approach gives you control - you can do background work in the scheduled action and only post the UI update portion to the render thread.
+
 === Semantic Key Checks
 
 `KeyEvent` provides semantic methods that respect the configured bindings:

@@ -44,7 +44,7 @@ import java.util.List;
  * <b>Thread Safety:</b>
  * <p>
  * EffectManager is not thread-safe. All operations should be performed on the
- * same thread that handles rendering (typically the main UI thread).
+ * same thread that handles rendering (typically the main render thread).
  */
 public final class EffectManager {
     
@@ -93,15 +93,17 @@ public final class EffectManager {
      * @param area The area within which effects should be rendered
      */
     public void processEffects(TFxDuration duration, Buffer buffer, Rect area) {
+        // Iterate over a copy to allow concurrent additions during processing
+        List<Effect> snapshot = new ArrayList<>(effects);
         List<Effect> toRemove = new ArrayList<>();
-        
-        for (Effect effect : effects) {
+
+        for (Effect effect : snapshot) {
             effect.process(duration, buffer, area);
             if (effect.done()) {
                 toRemove.add(effect);
             }
         }
-        
+
         effects.removeAll(toRemove);
     }
     

@@ -31,6 +31,7 @@ public final class DebugOverlay {
 
     private static final int OVERLAY_HEIGHT = 7;
     private static final int MIN_OVERLAY_WIDTH = 18;
+    private static final long MIN_WINDOW_NANOS = 2_000_000_000L;  // 2 seconds minimum
     private final int overlayWidth;
 
     private boolean visible;
@@ -39,6 +40,12 @@ public final class DebugOverlay {
     private final Duration tickRate;
     private final long startTimeNanos;
     private long renderCount;
+
+    // FPS measurement window
+    private final long windowDurationNanos;
+    private long windowStartNanos;
+    private int windowFrameCount;
+    private double lastFps;
 
     /**
      * Creates a new debug overlay.
@@ -55,6 +62,13 @@ public final class DebugOverlay {
         this.startTimeNanos = System.nanoTime();
         // Width = "Backend: " (9) + backend name + border (2)
         this.overlayWidth = Math.max(MIN_OVERLAY_WIDTH, 9 + backendName.length() + 2);
+
+        // FPS window = max(tickRate, 2 seconds)
+        long tickRateNanos = tickRate != null ? tickRate.toNanos() : 0;
+        this.windowDurationNanos = Math.max(tickRateNanos, MIN_WINDOW_NANOS);
+        this.windowStartNanos = System.nanoTime();
+        this.windowFrameCount = 0;
+        this.lastFps = 0;
     }
 
     /**
@@ -81,6 +95,18 @@ public final class DebugOverlay {
      */
     public void recordFrame() {
         renderCount++;
+        windowFrameCount++;
+
+        // Check if measurement window has elapsed
+        long now = System.nanoTime();
+        long elapsed = now - windowStartNanos;
+        if (elapsed >= windowDurationNanos) {
+            // Calculate FPS for this window and start a new one
+            double elapsedSeconds = elapsed / 1_000_000_000.0;
+            lastFps = windowFrameCount / elapsedSeconds;
+            windowStartNanos = now;
+            windowFrameCount = 0;
+        }
     }
 
     /**
@@ -91,11 +117,24 @@ public final class DebugOverlay {
     }
 
     /**
-     * Computes actual average FPS over the entire runtime.
+     * Returns the current FPS estimate.
+     * <p>
+     * Uses the last completed window if available, otherwise calculates
+     * a preliminary estimate from the current incomplete window.
      */
     private double computeFps() {
-        double runtime = computeRuntimeSeconds();
-        return runtime > 0 ? renderCount / runtime : 0;
+        if (lastFps > 0) {
+            return lastFps;
+        }
+        // No completed window yet - calculate preliminary FPS from current window
+        if (windowFrameCount < 2) {
+            return 0;
+        }
+        long elapsed = System.nanoTime() - windowStartNanos;
+        if (elapsed <= 0) {
+            return 0;
+        }
+        return windowFrameCount / (elapsed / 1_000_000_000.0);
     }
 
     /**
