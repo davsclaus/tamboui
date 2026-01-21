@@ -136,7 +136,7 @@ Combine multiple styles in a single tag by separating them with spaces:
 [bold underlined yellow]Warning![/]
 ----
 
-The first token becomes the primary tag name (used for CSS class targeting).
+All tokens in a compound style become CSS classes for targeting (see <<CSS Class Targeting>>).
 
 === Background Colors
 
@@ -263,22 +263,36 @@ Text t4 = MarkupParser.parse("[error italic]Message[/]", resolver);
 
 == CSS Class Targeting
 
-All tags (including compound styles) create a CSS class that can be targeted with stylesheets.
-The primary tag name (first token in compound styles) becomes the class:
+All tokens in a tag become CSS classes that can be targeted with stylesheets.
+For compound styles, every token (except `on`) becomes a CSS class:
 
 [source,java]
 ----
 Text text = MarkupParser.parse("[error]message[/]");
 // The span has Tags extension containing "error"
 
-Text compound = MarkupParser.parse("[error bold]message[/]");
-// The span has Tags extension containing "error" (primary tag)
+Text compound = MarkupParser.parse("[bold underlined yellow]Warning![/]");
+// The span has Tags extension containing "bold", "underlined", "yellow"
+
+Text background = MarkupParser.parse("[white on blue]text[/]");
+// The span has Tags extension containing "white", "blue" (not "on")
 ----
 
-This allows external CSS to style markup-based text:
+This allows external CSS to target any style token:
 
 [source,css]
 ----
+/* Target all bold text */
+.bold {
+    text-style: bold;
+}
+
+/* Target all yellow text */
+.yellow {
+    color: #ffcc00;
+}
+
+/* Target error messages */
 .error {
     color: red;
     text-style: bold;

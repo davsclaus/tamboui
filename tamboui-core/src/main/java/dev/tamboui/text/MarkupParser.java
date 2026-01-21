@@ -291,11 +291,20 @@ public final class MarkupParser {
             // Flush current text with current style
             flushCurrentText();
 
-            // Use first token as the tag name for Tags (for CSS targeting)
-            String primaryTag = tagName.split("\\s+")[0];
+            // Parse all tokens for CSS class targeting
+            String[] tokens = tagName.split("\\s+");
+            String primaryTag = tokens[0];  // First token used for closing tag matching
 
-            // Create a Tags extension for this tag name
-            Style tagStyle = Style.EMPTY.withExtension(Tags.class, Tags.of(primaryTag));
+            // Collect all tokens as CSS class tags (excluding "on" keyword)
+            List<String> tagList = new ArrayList<>();
+            for (String token : tokens) {
+                if (!token.isEmpty() && !"on".equals(token)) {
+                    tagList.add(token);
+                }
+            }
+
+            // Create a Tags extension with all tokens
+            Style tagStyle = Style.EMPTY.withExtension(Tags.class, Tags.of(tagList.toArray(new String[0])));
 
             // Check for link tag
             if ("link".equals(primaryTag) && attribute != null) {

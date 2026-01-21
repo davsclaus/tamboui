@@ -377,13 +377,39 @@ class MarkupParserTest {
     }
 
     @Test
-    @DisplayName("compound style preserves Tags for CSS targeting")
+    @DisplayName("compound style preserves all Tags for CSS targeting")
     void compoundStylePreservesTags() {
         Text text = MarkupParser.parse("[bold red]styled[/]");
 
         Tags tags = text.lines().get(0).spans().get(0).style()
             .extension(Tags.class, Tags.empty());
+        // All tokens become CSS classes
         assertThat(tags.contains("bold")).isTrue();
+        assertThat(tags.contains("red")).isTrue();
+    }
+
+    @Test
+    @DisplayName("compound style with multiple tokens all become tags")
+    void compoundStyleAllTokensBecomeTags() {
+        Text text = MarkupParser.parse("[bold underlined yellow]Warning![/]");
+
+        Tags tags = text.lines().get(0).spans().get(0).style()
+            .extension(Tags.class, Tags.empty());
+        assertThat(tags.contains("bold")).isTrue();
+        assertThat(tags.contains("underlined")).isTrue();
+        assertThat(tags.contains("yellow")).isTrue();
+    }
+
+    @Test
+    @DisplayName("compound style with background excludes 'on' keyword from tags")
+    void compoundStyleExcludesOnKeyword() {
+        Text text = MarkupParser.parse("[white on blue]highlighted[/]");
+
+        Tags tags = text.lines().get(0).spans().get(0).style()
+            .extension(Tags.class, Tags.empty());
+        assertThat(tags.contains("white")).isTrue();
+        assertThat(tags.contains("blue")).isTrue();
+        assertThat(tags.contains("on")).isFalse();
     }
 
     @Test
@@ -433,23 +459,27 @@ class MarkupParserTest {
         Style style = text.lines().get(0).spans().get(0).style();
         assertThat(style.fg()).contains(Color.RED);
         assertThat(style.bg()).isEmpty();  // "foo" is not a color
-        // Primary tag is "red" for CSS targeting
+        // All tokens (except "on") become CSS classes
         Tags tags = style.extension(Tags.class, Tags.empty());
         assertThat(tags.contains("red")).isTrue();
+        assertThat(tags.contains("foo")).isTrue();
+        assertThat(tags.contains("on")).isFalse();
     }
 
     @Test
-    @DisplayName("custom tag with background color - primary tag used for CSS")
+    @DisplayName("custom tag with background color - all tokens become CSS classes")
     void customTagWithBackgroundColor() {
-        // [foo on red] - "foo" becomes the CSS class, red becomes background
+        // [foo on red] - both "foo" and "red" become CSS classes, red becomes background
         Text text = MarkupParser.parse("[foo on red]text[/]");
 
         Style style = text.lines().get(0).spans().get(0).style();
         assertThat(style.fg()).isEmpty();  // "foo" is not a color
         assertThat(style.bg()).contains(Color.RED);
-        // Primary tag is "foo" for CSS targeting
+        // All tokens (except "on") become CSS classes
         Tags tags = style.extension(Tags.class, Tags.empty());
         assertThat(tags.contains("foo")).isTrue();
+        assertThat(tags.contains("red")).isTrue();
+        assertThat(tags.contains("on")).isFalse();
     }
 
     @Test
