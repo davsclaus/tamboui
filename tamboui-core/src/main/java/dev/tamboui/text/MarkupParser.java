@@ -377,9 +377,11 @@ public final class MarkupParser {
                 // Re-push inner entries
                 while (!toPop.isEmpty()) {
                     StyleEntry entry = toPop.pop();
-                    Style newStyle = currentStyle.patch(getBaseStyle(entry.tagName));
-                    styleStack.push(new StyleEntry(entry.tagName, newStyle));
-                    currentStyle = newStyle;
+                    // Preserve the accumulated style the inner tag had before the outer close.
+                    // Recomputing from base style would lose inherited styling from the
+                    // (now closed) outer tag, which is undesirable for mismatched tags.
+                    styleStack.push(entry);
+                    currentStyle = entry.style;
                 }
             }
             // If no matching tag found, ignore the closing tag
@@ -455,27 +457,6 @@ public final class MarkupParser {
                 case "grey": return Color.GRAY;
                 default: return null;
             }
-        }
-
-        private Style getBaseStyle(String tagName) {
-            // Create a Tags extension for this tag name
-            Style tagStyle = Style.EMPTY.withExtension(Tags.class, Tags.of(tagName));
-
-            if ("link".equals(tagName)) {
-                return tagStyle; // Link style is handled specially but we still track the tag
-            }
-            Style builtIn = BUILT_IN_STYLES.get(tagName);
-            if (builtIn != null) {
-                return builtIn.patch(tagStyle);
-            }
-            if (resolver != null) {
-                Style custom = resolver.resolve(tagName);
-                if (custom != null) {
-                    return custom.patch(tagStyle);
-                }
-            }
-            // Unknown tag - just the tag tracking
-            return tagStyle;
         }
 
         private void flushCurrentText() {

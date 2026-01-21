@@ -5,6 +5,7 @@
 package dev.tamboui.text;
 
 import dev.tamboui.style.Color;
+import dev.tamboui.style.Modifier;
 import dev.tamboui.style.Style;
 import dev.tamboui.style.Tags;
 import org.junit.jupiter.api.Test;
@@ -396,6 +397,29 @@ class MarkupParserTest {
         assertThat(first.fg()).contains(Color.RED);
         assertThat(first.addModifiers()).contains(dev.tamboui.style.Modifier.BOLD);
         assertThat(text.lines().get(0).spans().get(1).content()).isEqualTo(" plain");
+    }
+
+    @Test
+    @DisplayName("closing outer tag preserves inner accumulated style, aka. dont close unless explicitly closed")
+    void closingOuterTagPreservesInnerAccumulatedStyle() {
+        Text text = MarkupParser.parse("[red]text[bold]bold-red[/red]more");
+
+        assertThat(text.lines()).hasSize(1);
+        assertThat(text.lines().get(0).spans()).hasSize(3);
+
+        Span red = text.lines().get(0).spans().get(0);
+        assertThat(red.content()).isEqualTo("text");
+        assertThat(red.style().fg()).contains(Color.RED);
+
+        Span boldRed = text.lines().get(0).spans().get(1);
+        assertThat(boldRed.content()).isEqualTo("bold-red");
+        assertThat(boldRed.style().fg()).contains(Color.RED);
+        assertThat(boldRed.style().addModifiers()).contains(Modifier.BOLD);
+
+        Span more = text.lines().get(0).spans().get(2);
+        assertThat(more.content()).isEqualTo("more");
+        assertThat(more.style().fg()).contains(Color.RED);
+        assertThat(more.style().addModifiers()).contains(Modifier.BOLD);
     }
 
     // ===== Edge cases for compound styles with custom tags =====

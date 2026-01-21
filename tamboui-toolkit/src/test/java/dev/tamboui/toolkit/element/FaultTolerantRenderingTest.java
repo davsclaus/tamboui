@@ -6,6 +6,9 @@ package dev.tamboui.toolkit.element;
 
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.layout.Rect;
+import dev.tamboui.style.StyledAreaInfo;
+import dev.tamboui.style.StyledAreaRegistry;
+import dev.tamboui.style.Tags;
 import dev.tamboui.terminal.Frame;
 import dev.tamboui.toolkit.event.EventRouter;
 import dev.tamboui.toolkit.focus.FocusManager;
@@ -100,6 +103,25 @@ class FaultTolerantRenderingTest {
             // Check for the "Error" title or border characters
             String topLeft = buffer.get(0, 0).symbol();
             assertThat(topLeft).isIn("┌", "╭", "+", "─");
+        }
+
+        @Test
+        @DisplayName("error placeholder styled output is not attributed to the failed child context key")
+        void errorPlaceholderStyledOutputNotAttributedToFailedChild() {
+            StyledAreaRegistry styledAreaRegistry = StyledAreaRegistry.create();
+            frame.setStyledAreaRegistry(styledAreaRegistry);
+
+            Element faultyElement = createFaultyElement();
+            context.renderChild(faultyElement, frame, area);
+
+            assertThat(styledAreaRegistry.size()).isGreaterThan(0);
+
+            for (StyledAreaInfo info : styledAreaRegistry.all()) {
+                Tags tags = info.tags();
+                if (tags.contains("error")) {
+                    assertThat(info.contextKey()).isNotEqualTo(faultyElement.id());
+                }
+            }
         }
 
         @Test

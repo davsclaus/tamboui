@@ -8,6 +8,7 @@ import dev.tamboui.buffer.Buffer;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.Style;
+import dev.tamboui.style.Tags;
 import dev.tamboui.terminal.Frame;
 import dev.tamboui.text.Line;
 import dev.tamboui.text.Span;
@@ -96,7 +97,8 @@ public final class ErrorPlaceholder implements Element {
 
         if (!inner.isEmpty()) {
             // Show error icon and message
-            Style errorStyle = Style.EMPTY.fg(Color.RED);
+            // Tag error output so StyledAreaRegistry can target it (e.g. for effects/CSS).
+            Style errorStyle = Style.EMPTY.fg(Color.RED).withExtension(Tags.class, Tags.of("error"));
             Line errorLine = Line.from(new Span("!", errorStyle.bold()), Span.raw(" " + message));
 
             // Truncate if needed

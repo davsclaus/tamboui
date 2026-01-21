@@ -235,32 +235,46 @@ public final class DefaultRenderContext implements RenderContext {
 
     @Override
     public void renderChild(Element child, Frame frame, Rect area) {
-        // Push context key for styled area tracking
         String childId = child.id();
-        if (childId != null) {
-            frame.pushContextKey(childId);
-        }
 
-        try {
-            if (faultTolerant) {
+        if (faultTolerant) {
+            try {
+                // Push the child's context key only for the child's render scope.
+                // If the child fails and we fall back to an ErrorPlaceholder, we must not
+                // keep the child's context key active, otherwise placeholder output would
+                // be incorrectly attributed to the child.
+                if (childId != null) {
+                    frame.pushContextKey(childId);
+                }
                 try {
                     child.render(frame, area, this);
                     registerElement(child, area);
-                } catch (Throwable t) {
-                    // Render error placeholder instead of the failed child
-                    ErrorPlaceholder placeholder = ErrorPlaceholder.from(t, child.id());
-                    try {
-                        placeholder.render(frame, area, this);
-                    } catch (Throwable ignored) {
-                        // Even the placeholder failed - nothing more we can do
+                    return;
+                } finally {
+                    if (childId != null) {
+                        frame.popContextKey();
                     }
                 }
-            } else {
+            } catch (Throwable t) {
+                // Render error placeholder instead of the failed child (no child context key active)
+                ErrorPlaceholder placeholder = ErrorPlaceholder.from(t, childId);
+                try {
+                    placeholder.render(frame, area, this);
+                } catch (Throwable ignored) {
+                    // Even the placeholder failed - nothing more we can do
+                }
+                return;
+            }
+        }
+
+        // Non-fault-tolerant rendering: always attribute output to the child.
+        if (childId != null) {
+            frame.pushContextKey(childId);
+        }
+        try {
                 child.render(frame, area, this);
                 registerElement(child, area);
-            }
         } finally {
-            // Pop context key
             if (childId != null) {
                 frame.popContextKey();
             }
