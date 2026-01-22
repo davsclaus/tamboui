@@ -2,7 +2,7 @@
  * Copyright (c) 2025 TamboUI Contributors
  * SPDX-License-Identifier: MIT
  */
-package dev.tamboui.widgets.text;
+package dev.tamboui.style;
 
 /**
  * State for managing scroll position and viewport information in scrollable text elements.

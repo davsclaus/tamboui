@@ -6,18 +6,22 @@ package dev.tamboui.widgets.block;
 
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.buffer.Cell;
+import dev.tamboui.layout.Padding;
 import dev.tamboui.layout.Rect;
+import dev.tamboui.style.BorderCharConverter;
 import dev.tamboui.style.Color;
-import dev.tamboui.style.PropertyKey;
-import dev.tamboui.style.StylePropertyResolver;
-import dev.tamboui.style.StandardPropertyKeys;
+import dev.tamboui.style.ColorConverter;
+import dev.tamboui.style.Overflow;
+import dev.tamboui.style.PropertyDefinition;
+import dev.tamboui.style.PropertyRegistry;
+import dev.tamboui.style.StandardProperties;
+import dev.tamboui.style.StringConverter;
 import dev.tamboui.style.Style;
-import dev.tamboui.style.StyledProperty;
+import dev.tamboui.style.StylePropertyResolver;
 import dev.tamboui.symbols.merge.MergeStrategy;
 import dev.tamboui.text.Line;
 import dev.tamboui.text.Span;
 import dev.tamboui.widget.Widget;
-import dev.tamboui.widgets.text.Overflow;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -29,12 +33,108 @@ import java.util.List;
  * {@code background}, and {@code color}.
  */
 public final class Block implements Widget {
+    /**
+     * The {@code border-type} property for border style.
+     * This property is inheritable - nested panels inherit border type.
+     * Default: {@link BorderType#PLAIN}
+     */
+    public static final PropertyDefinition<BorderType> BORDER_TYPE =
+            PropertyDefinition.builder("border-type", BorderTypeConverter.INSTANCE)
+                    .inheritable()
+                    .defaultValue(BorderType.PLAIN)
+                    .build();
 
     /**
-     * Property key for border-type property.
+     * The {@code border-color} property.
+     * This property is NOT inheritable.
      */
-    public static final PropertyKey<BorderType> BORDER_TYPE =
-            PropertyKey.of("border-type", BorderTypeConverter.INSTANCE);
+    public static final PropertyDefinition<Color> BORDER_COLOR =
+            PropertyDefinition.of("border-color", ColorConverter.INSTANCE);
+
+
+    // ═══════════════════════════════════════════════════════════════
+    // Border character properties (strings)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * The {@code border-chars} property for custom border character sets.
+     * Format: 8 quoted strings (top-h, bottom-h, left-v, right-v, tl, tr, bl, br).
+     * This property is NOT inheritable.
+     */
+    public static final PropertyDefinition<String> BORDER_CHARS =
+            PropertyDefinition.of("border-chars", StringConverter.INSTANCE);
+
+    /**
+     * The {@code border-top} property for the top horizontal border character.
+     * This property is NOT inheritable.
+     */
+    public static final PropertyDefinition<String> BORDER_TOP =
+            PropertyDefinition.of("border-top", BorderCharConverter.INSTANCE);
+
+    /**
+     * The {@code border-bottom} property for the bottom horizontal border character.
+     * This property is NOT inheritable.
+     */
+    public static final PropertyDefinition<String> BORDER_BOTTOM =
+            PropertyDefinition.of("border-bottom", BorderCharConverter.INSTANCE);
+
+    /**
+     * The {@code border-left} property for the left vertical border character.
+     * This property is NOT inheritable.
+     */
+    public static final PropertyDefinition<String> BORDER_LEFT =
+            PropertyDefinition.of("border-left", BorderCharConverter.INSTANCE);
+
+    /**
+     * The {@code border-right} property for the right vertical border character.
+     * This property is NOT inheritable.
+     */
+    public static final PropertyDefinition<String> BORDER_RIGHT =
+            PropertyDefinition.of("border-right", BorderCharConverter.INSTANCE);
+
+    /**
+     * The {@code border-top-left} property for the top-left corner character.
+     * This property is NOT inheritable.
+     */
+    public static final PropertyDefinition<String> BORDER_TOP_LEFT =
+            PropertyDefinition.of("border-top-left", BorderCharConverter.INSTANCE);
+
+    /**
+     * The {@code border-top-right} property for the top-right corner character.
+     * This property is NOT inheritable.
+     */
+    public static final PropertyDefinition<String> BORDER_TOP_RIGHT =
+            PropertyDefinition.of("border-top-right", BorderCharConverter.INSTANCE);
+
+    /**
+     * The {@code border-bottom-left} property for the bottom-left corner character.
+     * This property is NOT inheritable.
+     */
+    public static final PropertyDefinition<String> BORDER_BOTTOM_LEFT =
+            PropertyDefinition.of("border-bottom-left", BorderCharConverter.INSTANCE);
+
+    /**
+     * The {@code border-bottom-right} property for the bottom-right corner character.
+     * This property is NOT inheritable.
+     */
+    public static final PropertyDefinition<String> BORDER_BOTTOM_RIGHT =
+            PropertyDefinition.of("border-bottom-right", BorderCharConverter.INSTANCE);
+
+    static {
+        PropertyRegistry.registerAll(
+                BORDER_TYPE,
+                BORDER_COLOR,
+                BORDER_CHARS,
+                BORDER_TOP,
+                BORDER_BOTTOM,
+                BORDER_LEFT,
+                BORDER_RIGHT,
+                BORDER_TOP_LEFT,
+                BORDER_TOP_RIGHT,
+                BORDER_BOTTOM_LEFT,
+                BORDER_BOTTOM_RIGHT
+        );
+    }
 
     private final Title title;
     private final Title titleBottom;
@@ -50,20 +150,20 @@ public final class Block implements Widget {
         this.title = builder.title;
         this.titleBottom = builder.titleBottom;
         this.borders = builder.borders;
-        this.borderType = builder.borderType.resolve();
+        this.borderType = builder.resolveBorderType();
         this.customBorderSet = builder.customBorderSet;
         this.padding = builder.padding;
         this.mergeStrategy = builder.mergeStrategy;
 
-        Color resolvedBorderColor = builder.borderColor.resolve();
+        Style baseBorderStyle = builder.borderStyle;
+        Color resolvedBorderColor = builder.resolveBorderColor();
         if (resolvedBorderColor != null) {
-            this.borderStyle = builder.borderStyle.fg(resolvedBorderColor);
-        } else {
-            this.borderStyle = builder.borderStyle;
+            baseBorderStyle = baseBorderStyle.fg(resolvedBorderColor);
         }
+        this.borderStyle = baseBorderStyle;
 
-        Color resolvedBackground = builder.background.resolve();
-        Color resolvedForeground = builder.foreground.resolve();
+        Color resolvedBackground = builder.resolveBackground();
+        Color resolvedForeground = builder.resolveForeground();
         Style baseStyle = builder.style;
         if (resolvedBackground != null) {
             baseStyle = baseStyle.bg(resolvedBackground);
@@ -223,7 +323,7 @@ public final class Block implements Widget {
             setBorderCell(buffer, area.right() - 1, area.bottom() - 1, bottomRightChar, borderStyle);
         }
     }
-    
+
     private void setBorderCell(Buffer buffer, int x, int y, String symbol, Style borderStyle) {
         Cell existing = buffer.get(x, y);
         // For QUADRANT_OUTSIDE borders, the half-block characters need:
@@ -239,8 +339,8 @@ public final class Block implements Widget {
             // Preserve only the background color from existing style, not text modifiers like italic.
             // Text modifiers should only apply to text content, not border characters.
             Style baseStyle = existing.style().bg()
-                .map(bg -> Style.EMPTY.bg(bg))
-                .orElse(Style.EMPTY);
+                    .map(bg -> Style.EMPTY.bg(bg))
+                    .orElse(Style.EMPTY);
             mergedStyle = baseStyle.patch(borderStyle);
         }
 
@@ -399,7 +499,7 @@ public final class Block implements Widget {
         List<Span> spans = line.spans();
         return spans.isEmpty() ? Style.EMPTY : spans.get(0).style();
     }
-    
+
     private void renderTitleWithMerge(int x, int y, Line titleLine, Buffer buffer) {
         List<Span> spans = titleLine.spans();
         int col = x;
@@ -408,10 +508,10 @@ public final class Block implements Widget {
             for (int i = 0; i < content.length(); ) {
                 int codePoint = content.codePointAt(i);
                 String symbol = new String(Character.toChars(codePoint));
-                
+
                 Cell existing = buffer.get(col, y);
                 String existingSymbol = existing.symbol();
-                
+
                 // In Ratatui, titles are rendered using Line.render() which calls set_symbol()
                 // directly, overwriting cells. However, when merge strategy is active,
                 // we should preserve existing non-border text (like other titles).
@@ -419,7 +519,7 @@ public final class Block implements Widget {
                 // 1. Empty (space character) - can be overwritten
                 // 2. Border characters - can be overwritten (borders are merged separately)
                 // 3. NOT non-border text (like other titles) - should be preserved
-                
+
                 // In Ratatui, Line.render() uses set_symbol() which overwrites cells.
                 // However, when merge strategy is active (EXACT/FUZZY), we should preserve
                 // existing non-border text (like other titles) when they don't overlap.
@@ -427,12 +527,12 @@ public final class Block implements Widget {
                 // 1. Empty (space character) - can be overwritten
                 // 2. Border characters - can be overwritten (borders are merged separately)
                 // 3. NOT non-border text (like other titles) - should be preserved
-                
+
                 // Check if cell is empty (space) or contains a border character
                 // Empty cells are a space character (" ") when queried:
                 boolean isEmpty = " ".equals(existingSymbol);
                 boolean isBorder = MergeStrategy.isBorderSymbol(existingSymbol);
-                
+
                 // Only write to empty cells or cells with border characters
                 // This preserves existing title text from other blocks when they don't overlap
                 // If cell contains non-border text (like another title), preserve it
@@ -446,7 +546,7 @@ public final class Block implements Widget {
                 }
                 // This allows titles from different blocks to coexist when they don't overlap,
                 // while ensuring they all share the same style
-                
+
                 col++;
                 i += Character.charCount(codePoint);
             }
@@ -464,17 +564,14 @@ public final class Block implements Widget {
         private MergeStrategy mergeStrategy = MergeStrategy.REPLACE;
         private StylePropertyResolver styleResolver = StylePropertyResolver.empty();
 
-        // Style-aware properties bound to this builder's resolver
-        private final StyledProperty<BorderType> borderType =
-                StyledProperty.of(BORDER_TYPE, BorderType.PLAIN, () -> styleResolver);
-        private final StyledProperty<Color> borderColor =
-                StyledProperty.of(StandardPropertyKeys.BORDER_COLOR, null, () -> styleResolver);
-        private final StyledProperty<Color> background =
-                StyledProperty.of(StandardPropertyKeys.BACKGROUND, null, () -> styleResolver);
-        private final StyledProperty<Color> foreground =
-                StyledProperty.of(StandardPropertyKeys.COLOR, null, () -> styleResolver);
+        // Style-aware properties (resolved via styleResolver in build())
+        private BorderType borderType;
+        private Color borderColor;
+        private Color background;
+        private Color foreground;
 
-        private Builder() {}
+        private Builder() {
+        }
 
         public Builder title(String title) {
             this.title = Title.from(title);
@@ -502,7 +599,7 @@ public final class Block implements Widget {
         }
 
         public Builder borderType(BorderType borderType) {
-            this.borderType.set(borderType);
+            this.borderType = borderType;
             return this;
         }
 
@@ -532,7 +629,7 @@ public final class Block implements Widget {
          * @return this builder
          */
         public Builder borderColor(Color color) {
-            this.borderColor.set(color);
+            this.borderColor = color;
             return this;
         }
 
@@ -543,7 +640,7 @@ public final class Block implements Widget {
          * @return this builder
          */
         public Builder background(Color color) {
-            this.background.set(color);
+            this.background = color;
             return this;
         }
 
@@ -554,7 +651,7 @@ public final class Block implements Widget {
          * @return this builder
          */
         public Builder foreground(Color color) {
-            this.foreground.set(color);
+            this.foreground = color;
             return this;
         }
 
@@ -608,6 +705,23 @@ public final class Block implements Widget {
 
         public Block build() {
             return new Block(this);
+        }
+
+        // Resolution helpers
+        private BorderType resolveBorderType() {
+            return styleResolver.resolve(BORDER_TYPE, borderType);
+        }
+
+        private Color resolveBorderColor() {
+            return styleResolver.resolve(BORDER_COLOR, borderColor);
+        }
+
+        private Color resolveBackground() {
+            return styleResolver.resolve(StandardProperties.BACKGROUND, background);
+        }
+
+        private Color resolveForeground() {
+            return styleResolver.resolve(StandardProperties.COLOR, foreground);
         }
     }
 }

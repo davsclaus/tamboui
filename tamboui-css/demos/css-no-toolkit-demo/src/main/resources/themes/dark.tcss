@@ -7,9 +7,13 @@ $border-color: dark-gray;
 $focus-color: cyan;
 $highlight-bg: #333333;
 
-/* Base styles */
+/* Base styles - color is inheritable, background is not */
 * {
     color: $fg-primary;
+}
+
+/* Layout containers need background to fill gaps between panels */
+Row, Column {
     background: $bg-primary;
 }
 
@@ -65,7 +69,7 @@ ListElement-item:nth-child(odd) {
 
 /* Status bar */
 .status {
-    background: #333333;
+    background: $bg-primary;
     color: white;
     border-color: #666666;
 }

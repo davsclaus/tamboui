@@ -6,6 +6,7 @@ package dev.tamboui.widgets.block;
 
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.layout.Alignment;
+import dev.tamboui.layout.Padding;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.Style;
