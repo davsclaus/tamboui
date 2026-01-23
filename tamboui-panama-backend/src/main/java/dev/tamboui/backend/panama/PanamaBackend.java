@@ -214,6 +214,64 @@ public class PanamaBackend implements Backend {
     }
 
     @Override
+    public void insertLines(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        outputBuffer.csi().appendInt(n).append((byte) 'L');
+    }
+
+    @Override
+    public void deleteLines(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        outputBuffer.csi().appendInt(n).append((byte) 'M');
+    }
+
+    @Override
+    public void moveCursorUp(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        outputBuffer.csi().appendInt(n).append((byte) 'A');
+    }
+
+    @Override
+    public void moveCursorDown(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        outputBuffer.csi().appendInt(n).append((byte) 'B');
+    }
+
+    @Override
+    public void moveCursorRight(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        outputBuffer.csi().appendInt(n).append((byte) 'C');
+    }
+
+    @Override
+    public void moveCursorLeft(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        outputBuffer.csi().appendInt(n).append((byte) 'D');
+    }
+
+    @Override
+    public void eraseToEndOfLine() throws IOException {
+        outputBuffer.csi().append((byte) 'K');
+    }
+
+    @Override
+    public void carriageReturn() throws IOException {
+        outputBuffer.append((byte) '\r');
+    }
+
+    @Override
     public void onResize(Runnable handler) {
         terminal.onResize(handler);
     }
@@ -230,12 +288,12 @@ public class PanamaBackend implements Backend {
 
     @Override
     public void writeRaw(byte[] data) throws IOException {
-        terminal.write(data);
+        outputBuffer.append(data);
     }
 
     @Override
     public void writeRaw(String data) throws IOException {
-        terminal.write(data);
+        outputBuffer.appendUtf8(data);
     }
 
     @Override

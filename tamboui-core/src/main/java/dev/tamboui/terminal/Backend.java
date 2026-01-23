@@ -195,6 +195,109 @@ public interface Backend extends AutoCloseable {
     int peek(int timeoutMs) throws IOException;
 
     /**
+     * Inserts N lines at the current cursor position, pushing existing lines down.
+     * The cursor position does not change.
+     *
+     * @param n the number of lines to insert
+     * @throws IOException if the operation fails
+     */
+    default void insertLines(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writeRaw("\u001b[" + n + "L");
+    }
+
+    /**
+     * Deletes N lines at the current cursor position, pulling lines below up.
+     * The cursor position does not change.
+     *
+     * @param n the number of lines to delete
+     * @throws IOException if the operation fails
+     */
+    default void deleteLines(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writeRaw("\u001b[" + n + "M");
+    }
+
+    /**
+     * Moves the cursor up by N lines. If the cursor is already at the top,
+     * this has no effect.
+     *
+     * @param n the number of lines to move up
+     * @throws IOException if the operation fails
+     */
+    default void moveCursorUp(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writeRaw("\u001b[" + n + "A");
+    }
+
+    /**
+     * Moves the cursor down by N lines. If the cursor is already at the bottom,
+     * this has no effect.
+     *
+     * @param n the number of lines to move down
+     * @throws IOException if the operation fails
+     */
+    default void moveCursorDown(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writeRaw("\u001b[" + n + "B");
+    }
+
+    /**
+     * Moves the cursor right by N columns. If the cursor is already at the
+     * rightmost position, this has no effect.
+     *
+     * @param n the number of columns to move right
+     * @throws IOException if the operation fails
+     */
+    default void moveCursorRight(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writeRaw("\u001b[" + n + "C");
+    }
+
+    /**
+     * Moves the cursor left by N columns. If the cursor is already at the
+     * leftmost position, this has no effect.
+     *
+     * @param n the number of columns to move left
+     * @throws IOException if the operation fails
+     */
+    default void moveCursorLeft(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writeRaw("\u001b[" + n + "D");
+    }
+
+    /**
+     * Erases from the cursor to the end of the line.
+     * The cursor position does not change.
+     *
+     * @throws IOException if the operation fails
+     */
+    default void eraseToEndOfLine() throws IOException {
+        writeRaw("\u001b[K");
+    }
+
+    /**
+     * Moves the cursor to the beginning of the current line (carriage return).
+     *
+     * @throws IOException if the operation fails
+     */
+    default void carriageReturn() throws IOException {
+        writeRaw("\r");
+    }
+
+    /**
      * Closes this backend and releases any resources.
      *
      * @throws IOException if closing fails

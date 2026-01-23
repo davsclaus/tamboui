@@ -1105,10 +1105,12 @@ try (var runner = InlineToolkitRunner.create(3)) {
 
 === Scopes for Dynamic Regions
 
-Use `scope()` to create collapsible regions:
+Use `scope()` from `InlineToolkit` to create collapsible regions:
 
 [source,java]
 ----
+import static dev.tamboui.toolkit.InlineToolkit.*;
+
 private boolean downloading = true;
 
 @Override

@@ -261,6 +261,18 @@ public final class InlineTuiRunner implements AutoCloseable {
     }
 
     /**
+     * Sets the content height for the next draw.
+     * <p>
+     * This controls how many terminal lines are allocated for the inline display.
+     * Calling this before rendering allows the display to grow or shrink dynamically.
+     *
+     * @param height the desired content height in lines
+     */
+    public void setContentHeight(int height) {
+        viewport.setContentHeight(height);
+    }
+
+    /**
      * Executes an action on the render thread.
      * <p>
      * If called from the render thread, the action is executed immediately.

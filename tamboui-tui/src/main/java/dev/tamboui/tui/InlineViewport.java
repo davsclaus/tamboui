@@ -26,6 +26,7 @@ final class InlineViewport {
     private final Buffer buffer;
     private final Rect area;
     private final Frame frame;
+    private int contentHeight;  // Current content height to allocate
 
     /**
      * Creates a new viewport wrapping the given display.
@@ -37,6 +38,7 @@ final class InlineViewport {
         this.area = Rect.of(display.width(), display.height());
         this.buffer = Buffer.empty(area);
         this.frame = Frame.forTesting(buffer);
+        this.contentHeight = display.height();  // Default to full height
     }
 
     /**
@@ -67,6 +69,19 @@ final class InlineViewport {
     }
 
     /**
+     * Sets the content height for the next draw.
+     * <p>
+     * This determines how many terminal lines will be allocated
+     * for the inline display. The display will grow or shrink
+     * accordingly on the next draw() call.
+     *
+     * @param height the desired content height in lines
+     */
+    void setContentHeight(int height) {
+        this.contentHeight = Math.max(0, Math.min(height, area.height()));
+    }
+
+    /**
      * Draws the UI using the given renderer.
      * <p>
      * The buffer is cleared, the renderer is called, and then
@@ -85,12 +100,13 @@ final class InlineViewport {
 
         display.render((a, b) -> {
             // Copy our buffer to the display's buffer
-            for (int y = 0; y < area.height(); y++) {
+            // Note: Only copy up to currentHeight, but the display handles resizing
+            for (int y = 0; y < Math.min(contentHeight, area.height()); y++) {
                 for (int x = 0; x < area.width(); x++) {
                     b.set(x, y, buffer.get(x, y));
                 }
             }
-        }, cursorX, cursorY);
+        }, contentHeight, cursorX, cursorY);
     }
 
     /**

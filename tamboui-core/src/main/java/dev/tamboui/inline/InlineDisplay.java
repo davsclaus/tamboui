@@ -51,18 +51,16 @@ import java.util.function.BiConsumer;
  */
 public final class InlineDisplay implements AutoCloseable {
 
-    private static final String ESC = "\u001b";
-    private static final String CSI = ESC + "[";
-
-    private final int height;
+    private final int height;  // Maximum height
     private final int width;
-    private final Buffer buffer;
+    private Buffer buffer;  // Resizable buffer
     private final PrintWriter out;
     private final Backend backend;
     private boolean initialized;
     private boolean released;
     private boolean shouldClearOnClose;
     private int lastCursorY;  // Track where cursor was left for next render
+    private int currentHeight;  // Current terminal lines allocated
 
     InlineDisplay(int height, int width, Backend backend, PrintWriter out) {
         this.height = height;
@@ -73,6 +71,7 @@ public final class InlineDisplay implements AutoCloseable {
         this.initialized = false;
         this.released = false;
         this.shouldClearOnClose = false;
+        this.currentHeight = 0;  // Not allocated yet
     }
 
     /**
@@ -162,7 +161,7 @@ public final class InlineDisplay implements AutoCloseable {
      * @param renderer the rendering function that populates the buffer
      */
     public void render(BiConsumer<Rect, Buffer> renderer) {
-        render(renderer, -1, -1);
+        render(renderer, height, -1, -1);
     }
 
     /**
@@ -170,14 +169,22 @@ public final class InlineDisplay implements AutoCloseable {
      * The provided consumer receives the area and buffer to render into.
      *
      * @param renderer the rendering function that populates the buffer
+     * @param contentHeight the desired height of the content in lines
      * @param cursorX the x position for the cursor, or -1 to use default positioning
      * @param cursorY the y position for the cursor, or -1 to use default positioning
      */
-    public void render(BiConsumer<Rect, Buffer> renderer, int cursorX, int cursorY) {
+    public void render(BiConsumer<Rect, Buffer> renderer, int contentHeight, int cursorX, int cursorY) {
         ensureInitialized();
-        buffer.clear();
-        renderer.accept(buffer.area(), buffer);
-        redrawDisplayArea(cursorX, cursorY);
+
+        // Resize display if content height changed
+        resizeDisplay(contentHeight);
+
+        // Only render if we have space
+        if (currentHeight > 0) {
+            buffer.clear();
+            renderer.accept(buffer.area(), buffer);
+            redrawDisplayArea(cursorX, cursorY);
+        }
     }
 
     /**
@@ -192,6 +199,11 @@ public final class InlineDisplay implements AutoCloseable {
             return;
         }
         ensureInitialized();
+
+        // Ensure display is allocated to full height
+        if (currentHeight != height) {
+            resizeDisplay(height);
+        }
 
         // Clear the line in buffer and set new content
         for (int x = 0; x < width; x++) {
@@ -213,6 +225,11 @@ public final class InlineDisplay implements AutoCloseable {
             return;
         }
         ensureInitialized();
+
+        // Ensure display is allocated to full height
+        if (currentHeight != height) {
+            resizeDisplay(height);
+        }
 
         // Clear the line in buffer
         for (int x = 0; x < width; x++) {
@@ -237,24 +254,37 @@ public final class InlineDisplay implements AutoCloseable {
     public void println(String message) {
         ensureInitialized();
 
-        // Move cursor to top of display area
-        out.print(CSI + height + "A");  // Move up
-        out.print("\r");                 // Move to start of line
+        if (currentHeight == 0) {
+            // No display allocated yet, just print normally
+            out.println(message);
+            return;
+        }
 
-        // Insert a new line (pushes display area down)
-        out.print(CSI + "L");
+        try {
+            // Move cursor to display line 0
+            backend.carriageReturn();
+            if (lastCursorY > 0) {
+                backend.moveCursorUp(lastCursorY);
+            }
 
-        // Print the message
-        out.print(message);
-        out.print(CSI + "K");  // Clear to end of line
+            // Insert a blank line at display line 0 (pushes display content down by 1)
+            backend.insertLines(1);
 
-        // Move back down to bottom of display area
-        out.print("\n");
-        out.print(CSI + (height - 1) + "B");
+            // Print the message on the inserted line
+            out.print(message);
+            backend.eraseToEndOfLine();
 
-        out.flush();
+            // Move to the next line (new display line 0 after the shift)
+            out.print("\n");
+            backend.carriageReturn();
 
-        // Redraw the display area since it was pushed down
+            lastCursorY = 0;
+            out.flush();
+        } catch (IOException e) {
+            // PrintWriter swallows exceptions, match that behavior
+        }
+
+        // Redraw the display area from its new position
         redrawDisplayArea(-1, -1);
     }
 
@@ -288,13 +318,17 @@ public final class InlineDisplay implements AutoCloseable {
             clearDisplayArea();
         }
 
-        // Move cursor to after the display area and restore cursor visibility
-        out.print("\r");
-        out.print(CSI + "0m");  // Reset style
-        out.print(CSI + "?25h");  // Show cursor again
-        out.print(CSI + "0 q");  // Reset cursor to default style
-        out.println();
-        out.flush();
+        try {
+            // Move cursor to after the display area and restore cursor visibility
+            backend.carriageReturn();
+            out.print(AnsiStringBuilder.RESET);  // Reset style
+            backend.showCursor();
+            out.print("\u001b[0 q");  // Reset cursor to default style
+            out.println();
+            out.flush();
+        } catch (IOException e) {
+            // PrintWriter swallows exceptions, match that behavior
+        }
 
         released = true;
     }
@@ -330,88 +364,100 @@ public final class InlineDisplay implements AutoCloseable {
             return;
         }
 
-        // Hide cursor - we render cursor as a styled cell in the buffer instead.
-        // This avoids flicker from hide/show cycling during redraws.
-        out.print(CSI + "?25l");
+        try {
+            // Hide cursor - we render cursor as a styled cell in the buffer instead.
+            // This avoids flicker from hide/show cycling during redraws.
+            backend.hideCursor();
 
-        // Print blank lines to reserve space for the display area
-        for (int i = 0; i < height; i++) {
-            out.println();
+            out.flush();
+        } catch (IOException e) {
+            // PrintWriter swallows exceptions, match that behavior
         }
 
-        // Move cursor back up to the start of the display area
-        out.print(CSI + height + "A");
-        out.flush();
-
         initialized = true;
+        // Note: Initial height allocation happens in first render() call via resizeDisplay()
     }
 
     private void redrawDisplayArea(int cursorX, int cursorY) {
         // Cursor is hidden since initialization - no need to hide/show here.
         // TextInput renders cursor as a styled cell (reversed) in the buffer.
 
-        // Move to start of display area (line 0)
-        // First, go to start of current line
-        out.print("\r");
-        // Then move up to line 0 if cursor was left on a different line
-        if (lastCursorY > 0) {
-            out.print(CSI + lastCursorY + "A");
+        if (currentHeight == 0) {
+            return;  // Nothing to draw
         }
 
-        // Render each line
-        for (int y = 0; y < height; y++) {
-            if (y > 0) {
-                out.print("\n\r");
+        try {
+            // Move to start of display area (line 0)
+            // First, go to start of current line
+            backend.carriageReturn();
+            // Then move up to line 0 if cursor was left on a different line
+            if (lastCursorY > 0) {
+                backend.moveCursorUp(lastCursorY);
             }
 
-            // Render the line from buffer
-            Style lastStyle = null;
-            for (int x = 0; x < width; x++) {
-                Cell cell = buffer.get(x, y);
-
-                if (!cell.style().equals(lastStyle)) {
-                    out.print(AnsiStringBuilder.styleToAnsi(cell.style()));
-                    lastStyle = cell.style();
+            // Render each line
+            for (int y = 0; y < currentHeight; y++) {
+                if (y > 0) {
+                    out.print("\n");
+                    backend.carriageReturn();
                 }
-                out.print(cell.symbol());
+
+                // Find last non-empty cell to avoid printing at the terminal's
+                // right margin, which would trigger auto-wrap and break cursor tracking.
+                // Cap at width-1 to never print in the last column.
+                int lineEnd = Math.min(findLastContentPosition(y), width - 1);
+
+                // Render the line from buffer up to last content position
+                Style lastStyle = null;
+                for (int x = 0; x < lineEnd; x++) {
+                    Cell cell = buffer.get(x, y);
+
+                    if (!cell.style().equals(lastStyle)) {
+                        out.print(AnsiStringBuilder.styleToAnsi(cell.style()));
+                        lastStyle = cell.style();
+                    }
+                    out.print(cell.symbol());
+                }
+
+                // Clear to end of line (handles trailing spaces and previous content)
+                backend.eraseToEndOfLine();
             }
 
-            // Clear to end of line (in case content is shorter than before)
-            out.print(CSI + "K");
+            // Reset style
+            out.print(AnsiStringBuilder.RESET);
+
+            // Position cursor
+            // First go back to start of display area
+            if (currentHeight > 1) {
+                backend.moveCursorUp(currentHeight - 1);
+            }
+            backend.carriageReturn();
+
+            if (cursorX >= 0 && cursorY >= 0) {
+                // Use explicit cursor position
+                if (cursorY > 0) {
+                    backend.moveCursorDown(cursorY);
+                }
+                if (cursorX > 0) {
+                    backend.moveCursorRight(cursorX);
+                }
+                lastCursorY = cursorY;
+            } else {
+                // Default: move cursor to end of first line content (for prompt-style UX)
+                int endX = findLastContentPosition(0);
+                if (endX > 0) {
+                    backend.moveCursorRight(endX);
+                }
+                lastCursorY = 0;
+            }
+
+            // Keep terminal cursor hidden - TextInput renders cursor as a styled cell
+            // in the buffer (reversed style), so we don't need the terminal cursor.
+            // This eliminates flicker from hide/show cycling.
+            out.flush();
+        } catch (IOException e) {
+            // PrintWriter swallows exceptions, match that behavior
         }
-
-        // Reset style
-        out.print(AnsiStringBuilder.RESET);
-
-        // Position cursor
-        // First go back to start of display area
-        if (height > 1) {
-            out.print(CSI + (height - 1) + "A");  // Move up to first line
-        }
-        out.print("\r");
-
-        if (cursorX >= 0 && cursorY >= 0) {
-            // Use explicit cursor position
-            if (cursorY > 0) {
-                out.print(CSI + cursorY + "B");  // Move down to cursor line
-            }
-            if (cursorX > 0) {
-                out.print(CSI + cursorX + "C");  // Move right to cursor column
-            }
-            lastCursorY = cursorY;
-        } else {
-            // Default: move cursor to end of first line content (for prompt-style UX)
-            int endX = findLastContentPosition(0);
-            if (endX > 0) {
-                out.print(CSI + endX + "C");  // Move right to end of content
-            }
-            lastCursorY = 0;
-        }
-
-        // Keep terminal cursor hidden - TextInput renders cursor as a styled cell
-        // in the buffer (reversed style), so we don't need the terminal cursor.
-        // This eliminates flicker from hide/show cycling.
-        out.flush();
     }
 
     /**
@@ -429,21 +475,104 @@ public final class InlineDisplay implements AutoCloseable {
     }
 
     private void clearDisplayArea() {
-        // Move to start of display area
-        out.print("\r");
+        try {
+            // Move to start of display area
+            backend.carriageReturn();
 
-        // Clear each line
-        for (int y = 0; y < height; y++) {
-            if (y > 0) {
-                out.print("\n\r");
+            // Clear each line
+            for (int y = 0; y < currentHeight; y++) {
+                if (y > 0) {
+                    out.print("\n");
+                    backend.carriageReturn();
+                }
+                backend.eraseToEndOfLine();
             }
-            out.print(CSI + "K");  // Clear line
+
+            // Move back up
+            if (currentHeight > 1) {
+                backend.moveCursorUp(currentHeight - 1);
+            }
+            out.flush();
+        } catch (IOException e) {
+            // PrintWriter swallows exceptions, match that behavior
+        }
+    }
+
+    /**
+     * Resizes the display area to the specified height.
+     * <p>
+     * When growing, inserts new lines at the bottom and moves cursor up.
+     * When shrinking, deletes lines from the bottom and moves cursor up.
+     * This ensures content above the display is pushed down/up accordingly.
+     *
+     * @param newHeight the new height in lines
+     */
+    private void resizeDisplay(int newHeight) {
+        if (newHeight < 0 || newHeight > height) {
+            // Clamp to valid range
+            newHeight = Math.max(0, Math.min(newHeight, height));
         }
 
-        // Move back up
-        if (height > 1) {
-            out.print(CSI + (height - 1) + "A");
+        if (newHeight == currentHeight) {
+            return;  // No change needed
         }
-        out.flush();
+
+        try {
+            int delta = newHeight - currentHeight;
+
+            if (delta > 0) {
+                // Growing: add lines at bottom
+                // Move to bottom of current display, accounting for lastCursorY
+                if (currentHeight > 0) {
+                    int toBottom = currentHeight - 1 - lastCursorY;
+                    if (toBottom > 0) {
+                        backend.moveCursorDown(toBottom);
+                    }
+                    backend.carriageReturn();
+                }
+
+                // Add new lines
+                for (int i = 0; i < delta; i++) {
+                    out.print("\n");
+                }
+
+                // Move cursor back to top of display.
+                // After newlines, cursor is at newHeight - 1 (when coming from non-zero)
+                // or delta lines below start (when from zero).
+                int cursorLineFromTop = currentHeight > 0 ? newHeight - 1 : delta;
+                if (cursorLineFromTop > 0) {
+                    backend.moveCursorUp(cursorLineFromTop);
+                }
+                backend.carriageReturn();
+
+            } else {
+                // Shrinking: delete lines from bottom
+                // Move to first line to delete, accounting for lastCursorY
+                int toTarget = newHeight - lastCursorY;
+                if (toTarget > 0) {
+                    backend.moveCursorDown(toTarget);
+                } else if (toTarget < 0) {
+                    backend.moveCursorUp(-toTarget);
+                }
+                backend.carriageReturn();
+
+                // Delete lines
+                backend.deleteLines(-delta);
+
+                // Move cursor back to top of display
+                if (newHeight > 0) {
+                    backend.moveCursorUp(newHeight);
+                }
+                backend.carriageReturn();
+            }
+
+            lastCursorY = 0;
+            out.flush();
+        } catch (IOException e) {
+            // PrintWriter swallows exceptions, match that behavior
+        }
+
+        currentHeight = newHeight;
+        buffer = Buffer.empty(Rect.of(width, newHeight));
     }
 }

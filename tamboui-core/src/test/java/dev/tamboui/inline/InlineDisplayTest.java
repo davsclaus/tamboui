@@ -245,6 +245,11 @@ class InlineDisplayTest {
         }
 
         @Override
+        public void writeRaw(byte[] data) throws IOException {
+            // Write to nowhere - just accept the output for testing
+        }
+
+        @Override
         public void onResize(Runnable handler) {
         }
 
