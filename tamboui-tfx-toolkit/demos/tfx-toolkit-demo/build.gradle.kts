@@ -15,4 +15,6 @@ application {
 demo {
     displayName = "TFX Toolkit Integration Demo"
     tags = setOf("tfx", "effects", "animation", "toolkit")
+    // in docs, display the demo in the TFX section
+    module = "TFX"
 }

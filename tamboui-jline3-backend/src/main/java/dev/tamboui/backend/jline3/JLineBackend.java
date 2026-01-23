@@ -204,6 +204,64 @@ public class JLineBackend implements Backend {
     }
 
     @Override
+    public void insertLines(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writer.print(CSI + n + "L");
+    }
+
+    @Override
+    public void deleteLines(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writer.print(CSI + n + "M");
+    }
+
+    @Override
+    public void moveCursorUp(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writer.print(CSI + n + "A");
+    }
+
+    @Override
+    public void moveCursorDown(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writer.print(CSI + n + "B");
+    }
+
+    @Override
+    public void moveCursorRight(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writer.print(CSI + n + "C");
+    }
+
+    @Override
+    public void moveCursorLeft(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writer.print(CSI + n + "D");
+    }
+
+    @Override
+    public void eraseToEndOfLine() throws IOException {
+        writer.print(CSI + "K");
+    }
+
+    @Override
+    public void carriageReturn() throws IOException {
+        writer.print("\r");
+    }
+
+    @Override
     public void writeRaw(byte[] data) throws IOException {
         terminal.output().write(data);
     }

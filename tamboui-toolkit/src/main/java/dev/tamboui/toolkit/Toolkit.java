@@ -30,7 +30,6 @@ import dev.tamboui.toolkit.elements.RichTextElement;
 import dev.tamboui.toolkit.elements.RichTextAreaElement;
 import dev.tamboui.toolkit.elements.MarkupTextElement;
 import dev.tamboui.toolkit.elements.MarkupTextAreaElement;
-import dev.tamboui.toolkit.elements.InlineScopeElement;
 import dev.tamboui.text.Text;
 import dev.tamboui.layout.Constraint;
 import dev.tamboui.style.Color;
@@ -923,45 +922,4 @@ public final class Toolkit {
         }
     }
 
-    // ==================== Inline Scope ====================
-
-    /**
-     * Creates an inline scope element with the given children.
-     * <p>
-     * A scope is a container that can be shown or hidden dynamically.
-     * When hidden, it collapses to zero height.
-     *
-     * <pre>{@code
-     * scope(
-     *     row(text("file1.zip: "), gauge(progress[0])),
-     *     row(text("file2.zip: "), gauge(progress[1]))
-     * ).visible(downloading)
-     * }</pre>
-     *
-     * @param children the child elements
-     * @return a new scope element
-     */
-    public static InlineScopeElement scope(Element... children) {
-        return new InlineScopeElement(children);
-    }
-
-    /**
-     * Creates an inline scope element with the given visibility and children.
-     * <p>
-     * Convenience method to set visibility at creation time.
-     *
-     * <pre>{@code
-     * scope(downloading,
-     *     row(text("file1.zip: "), gauge(progress[0])),
-     *     row(text("file2.zip: "), gauge(progress[1]))
-     * )
-     * }</pre>
-     *
-     * @param visible whether the scope is visible
-     * @param children the child elements
-     * @return a new scope element
-     */
-    public static InlineScopeElement scope(boolean visible, Element... children) {
-        return new InlineScopeElement(children).visible(visible);
-    }
 }

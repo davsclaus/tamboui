@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
+import static dev.tamboui.toolkit.InlineToolkit.*;
 import static dev.tamboui.toolkit.Toolkit.*;
 
 /**
@@ -47,7 +48,9 @@ public class InlineToolkitDemo extends InlineApp {
     private static final int TOTAL_SIZE;
     static {
         int total = 0;
-        for (Package pkg : PACKAGES) total += pkg.sizeKb;
+        for (Package pkg : PACKAGES) {
+            total += pkg.sizeKb;
+        }
         TOTAL_SIZE = total;
     }
 
@@ -58,6 +61,7 @@ public class InlineToolkitDemo extends InlineApp {
     private int downloadedSize = 0;
     private int spinnerIndex = 0;
     private int pauseCounter = 0;
+    private boolean showDetails = true;
 
     // Form state
     private final TextInputState projectNameState = new TextInputState();
@@ -66,13 +70,14 @@ public class InlineToolkitDemo extends InlineApp {
     public static void main(String[] args) throws Exception {
         System.out.println("=== Inline Toolkit Demo ===\n");
         System.out.println("--- NPM-style Install (Toolkit Version) ---\n");
-        System.out.println("npm install\n");
+        System.out.println("npm install");
+        System.out.println("Press 'd' to show/hide verbose details during install\n");
         new InlineToolkitDemo().run();
     }
 
     @Override
     protected int height() {
-        return 4;
+        return 6;
     }
 
     @Override
@@ -145,14 +150,18 @@ public class InlineToolkitDemo extends InlineApp {
                         text(pkg.name).bold()
                 ).flex(Flex.START),
                 gauge((double) currentDownloaded / TOTAL_SIZE).green(),
+                scope(showDetails,
+                        text("  resolving: " + pkg.name + "@^" + pkg.version).dim().fit(),
+                        text("  registry: https://registry.npmjs.org/" + pkg.name).dim().fit()
+                ),
                 row(
                         text(currentIndex + "/" + PACKAGES.size()).yellow(),
                         text(" packages  "),
                         text(formatSize(currentDownloaded)).cyan(),
-                        text(" / " + formatSize(TOTAL_SIZE))
-                ).flex(Flex.START),
-                text("timing: reify:install " + pkgProgress + "%").dim()
-        );
+                        text(" / " + formatSize(TOTAL_SIZE) + "  "),
+                        text("[d] " + (showDetails ? "hide" : "show") + " details").dim()
+                ).flex(Flex.START)
+        ).focusable().onKeyEvent(this::handleDetailsKey);
     }
 
     private Element renderNpmComplete() {
@@ -202,6 +211,14 @@ public class InlineToolkitDemo extends InlineApp {
         return EventResult.UNHANDLED;
     }
 
+    private EventResult handleDetailsKey(KeyEvent keyEvent) {
+        if (keyEvent.character() == 'd' || keyEvent.character() == 'D') {
+            showDetails = !showDetails;
+            return EventResult.HANDLED;
+        }
+        return EventResult.UNHANDLED;
+    }
+
     private Element renderNativeBuild() {
         String module = NATIVE_MODULES[currentIndex];
 
@@ -213,12 +230,16 @@ public class InlineToolkitDemo extends InlineApp {
                         text("...")
                 ).flex(Flex.START),
                 gauge(pkgProgress / 100.0).green(),
+                scope(showDetails,
+                        text("  cc: " + module + "/src/binding.cc -o build/" + module + ".o").dim().fit(),
+                        text("  link: build/" + module + ".node").dim().fit()
+                ),
                 row(
                         text((currentIndex + 1) + "/" + NATIVE_MODULES.length).yellow(),
-                        text(" modules")
-                ).flex(Flex.START),
-                spacer()
-        );
+                        text(" modules  "),
+                        text("[d] " + (showDetails ? "hide" : "show") + " details").dim()
+                ).flex(Flex.START)
+        ).focusable().onKeyEvent(this::handleDetailsKey);
     }
 
     private Element renderBuildComplete() {
@@ -241,7 +262,7 @@ public class InlineToolkitDemo extends InlineApp {
     protected void onStart() {
         runner().scheduleRepeating(() -> {
             runner().runOnRenderThread(this::simulateWork);
-        }, Duration.ofMillis(30));
+        }, Duration.ofMillis(50));
     }
 
     private void simulateWork() {

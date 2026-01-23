@@ -35,6 +35,7 @@ import java.util.List;
  *
  * <h2>Example Usage</h2>
  * <pre>{@code
+ * import static dev.tamboui.toolkit.InlineToolkit.*;
  * import static dev.tamboui.toolkit.Toolkit.*;
  *
  * // State
@@ -65,7 +66,7 @@ import java.util.List;
  * }
  * }</pre>
  *
- * @see dev.tamboui.toolkit.Toolkit#scope(Element...)
+ * @see dev.tamboui.toolkit.InlineToolkit#scope(Element...)
  */
 public final class InlineScopeElement extends ContainerElement<InlineScopeElement> {
 

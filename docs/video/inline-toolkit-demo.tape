@@ -18,12 +18,22 @@ Sleep 500ms
 Enter
 Sleep 1s
 
-# Watch the animated installation progress
-Sleep 12s
+# Watch npm install - details visible by default, press 'd' to collapse then expand
+Sleep 3s
+Type "d"
+Sleep 3s
+Type "d"
+Sleep 6s
 
 # Answer the "Continue with native module build?" prompt
 Type "y"
-Sleep 8s
+
+# Watch native build - collapse then expand details
+Sleep 2s
+Type "d"
+Sleep 2s
+Type "d"
+Sleep 4s
 
 # Exit when done
 Sleep 2s
