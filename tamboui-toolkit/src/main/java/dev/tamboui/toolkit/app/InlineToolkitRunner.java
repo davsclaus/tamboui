@@ -139,10 +139,14 @@ public final class InlineToolkitRunner implements AutoCloseable {
                 // Get the current element tree
                 Element root = elementSupplier.get();
 
-                // Calculate and set content height for dynamic resizing
+                // Calculate and set content height for dynamic resizing.
+                // A preferredHeight of 0 means the element doesn't report a known
+                // height (e.g. TableElement), so keep the configured viewport height.
                 if (root != null) {
                     int preferredHeight = root.preferredHeight(frame.area().width(), renderContext);
-                    tuiRunner.setContentHeight(preferredHeight);
+                    if (preferredHeight > 0) {
+                        tuiRunner.setContentHeight(preferredHeight);
+                    }
                 }
 
                 // Render the element tree and register root for events

@@ -180,6 +180,18 @@ class TableElementTest {
     }
 
     @Test
+    @DisplayName("preferredHeight returns 0 (unknown) for table elements")
+    void preferredHeightReturnsZero() {
+        TableElement element = table()
+            .header("Name", "Age")
+            .row("Alice", "30")
+            .row("Bob", "25");
+
+        assertThat(element.preferredHeight()).isZero();
+        assertThat(element.preferredHeight(80, RenderContext.empty())).isZero();
+    }
+
+    @Test
     @DisplayName("Attribute selector [title] affects Table border color")
     void attributeSelector_title_affectsBorderColor() {
         StyleEngine styleEngine = StyleEngine.create();
