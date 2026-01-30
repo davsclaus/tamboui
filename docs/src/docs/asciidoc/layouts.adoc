@@ -97,6 +97,15 @@ NOTE: The widget-level `Columns` requires an explicit column count. For auto-det
 A CSS Grid-inspired layout widget that arranges children into a grid with explicit control over grid dimensions, per-column/per-row sizing constraints, and gutter spacing.
 Unlike `Columns` (which uses ordering modes and spacing), `Grid` provides independent horizontal and vertical gutter, per-column width constraints, per-row height constraints, and constraint cycling when fewer constraints than grid dimensions (matching Textual behavior).
 
+Grid supports two mutually exclusive modes:
+
+* **Children mode**: Sequential placement using `children()` and `columnCount()`
+* **Area mode**: Template-based placement using `gridAreas()` and `area()` (CSS grid-template-areas style)
+
+The staged builder pattern ensures compile-time safety — you cannot mix modes.
+
+=== Children Mode
+
 [source,java]
 ----
 Grid grid = Grid.builder()
@@ -109,10 +118,11 @@ Grid grid = Grid.builder()
 grid.render(area, buffer);
 ----
 
-Builder options:
+ChildrenBuilder options:
 
 * `children(Widget...)` / `children(List<Widget>)` - The child widgets to arrange
 * `columnCount(int)` - Number of columns (defaults to 1)
+* `rowCount(int)` - Optional maximum rows (validates children fit within columns × rows)
 * `horizontalGutter(int)` - Gap between columns in cells (default: 0)
 * `verticalGutter(int)` - Gap between rows in cells (default: 0)
 * `flex(Flex)` - How remaining space is distributed (default: `Flex.START`)
@@ -151,7 +161,76 @@ Grid uniform = Grid.builder()
     .build();
 ----
 
-NOTE: The widget-level `Grid` requires an explicit column count. For auto-sizing based on child count (`ceil(sqrt(n))` columns) and CSS property support, use `GridElement` in the Toolkit DSL (via the `grid()` factory method).
+=== Area Mode (Grid Template Areas)
+
+Area mode uses CSS `grid-template-areas` style templates for defining layouts where cells can span multiple rows and columns.
+Named areas must form contiguous rectangles — L-shapes and disconnected regions are rejected with a `LayoutException`.
+
+[source,java]
+----
+// "Holy grail" layout with spanning regions
+Grid layout = Grid.builder()
+    .gridAreas("header header header",
+               "nav    main   main",
+               "nav    main   main",
+               "footer footer footer")
+    .area("header", headerWidget)
+    .area("nav", navWidget)
+    .area("main", mainWidget)
+    .area("footer", footerWidget)
+    .horizontalGutter(1)
+    .verticalGutter(1)
+    .build();
+
+layout.render(area, buffer);
+----
+
+AreaBuilder options:
+
+* `gridAreas(String...)` - Row templates defining named areas (use `.` for empty cells)
+* `area(String, Widget)` - Assign a widget to a named area
+* `horizontalGutter(int)` - Gap between columns (default: 0)
+* `verticalGutter(int)` - Gap between rows (default: 0)
+* `flex(Flex)` - How remaining space is distributed (default: `Flex.START`)
+* `columnConstraints(Constraint...)` - Per-column width constraints
+* `rowConstraints(Constraint...)` - Per-row height constraints
+
+Template rules:
+
+* Each row is a space-separated list of area names
+* All rows must have the same number of columns
+* Area names must start with a letter (alphanumeric and underscores allowed)
+* Use `.` (dot) for empty cells
+* Named areas must form contiguous rectangles
+
+[source,java]
+----
+// Dashboard with 2x2 spanning main area
+Grid dashboard = Grid.builder()
+    .gridAreas("A A B",
+               "A A C",
+               "D D D")
+    .area("A", mainPanel)    // 2x2 span
+    .area("B", sidePanel1)
+    .area("C", sidePanel2)
+    .area("D", statusBar)    // full-width span
+    .horizontalGutter(1)
+    .verticalGutter(1)
+    .build();
+
+// Empty cells with dot notation
+Grid sparse = Grid.builder()
+    .gridAreas("A . B",
+               ". C .")
+    .area("A", widget1)
+    .area("B", widget2)
+    .area("C", widget3)
+    .build();
+----
+
+NOTE: Areas without assigned widgets render as empty space. Assigning a widget to an undefined area throws `LayoutException`.
+
+NOTE: The widget-level `Grid` requires an explicit column count or grid areas template. For auto-sizing based on child count (`ceil(sqrt(n))` columns) and CSS property support, use `GridElement` in the Toolkit DSL (via the `grid()` factory method).
 
 [[dock]]
 == Dock
@@ -261,6 +340,18 @@ grid(header, content, sidebar, footer)
     .gridSize(2, 2)
     .gridColumns(Constraint.length(20), Constraint.fill())
     .gutter(1, 0)
+
+// Grid with template areas (CSS grid-template-areas style)
+grid()
+    .gridAreas("header header header",
+               "nav    main   main",
+               "nav    main   main",
+               "footer footer footer")
+    .area("header", text("Header").bold())
+    .area("nav", list("Nav 1", "Nav 2"))
+    .area("main", text("Main Content"))
+    .area("footer", text("Footer").dim())
+    .gutter(1)
 
 // 5-region dock layout
 dock()

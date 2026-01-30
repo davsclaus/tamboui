@@ -629,6 +629,10 @@ These properties control how elements are sized and positioned within their cont
 |Gutter spacing for GridElement — uniform or horizontal/vertical
 |`grid-gutter: 2;` `grid-gutter: 1 2;`
 
+|`grid-template-areas`
+|CSS grid-template-areas style layout with named regions that can span multiple cells
+|`grid-template-areas: "H H H; S M M; F F F";`
+
 |`dock-top-height`
 |Height constraint for DockElement top region
 |`dock-top-height: 3;`
@@ -653,6 +657,40 @@ These properties control how elements are sized and positioned within their cont
 |Vertical spacing between rows in FlowElement
 |`flow-row-spacing: 1;`
 |===
+
+===== Grid Template Areas
+
+The `grid-template-areas` property enables CSS grid-template-areas style layouts where named regions can span multiple rows and columns. This is useful for complex dashboard layouts.
+
+Template format:
+
+* Use semicolon-separated rows: `"header header; nav main; footer footer"`
+* Or quoted strings (CSS format): `"header header" "nav main" "footer footer"`
+* Use `.` for empty cells
+* Area names must start with a letter (alphanumeric and underscores allowed)
+* Named areas must form contiguous rectangles
+
+[source,css]
+----
+/* Dashboard layout with spanning regions */
+.dashboard {
+    grid-template-areas: "header header header; nav main main; nav main main; footer footer footer";
+    grid-gutter: 1;
+}
+----
+
+[source,java]
+----
+// Combine CSS template with programmatic area assignment
+grid()
+    .cssClass("dashboard")
+    .area("header", text("Dashboard").bold())
+    .area("nav", list("Menu 1", "Menu 2"))
+    .area("main", content)
+    .area("footer", text("Status").dim())
+----
+
+NOTE: The template can be defined in CSS, but widgets must be assigned to areas programmatically using `.area(name, element)`. CSS alone cannot bind elements to named areas.
 
 ===== Constraint Values
 
