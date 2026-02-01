@@ -4,6 +4,10 @@
  */
 package dev.tamboui.toolkit.elements;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.css.engine.StyleEngine;
 import dev.tamboui.layout.Rect;
@@ -11,9 +15,6 @@ import dev.tamboui.terminal.Frame;
 import dev.tamboui.toolkit.element.DefaultRenderContext;
 import dev.tamboui.widgets.spinner.SpinnerFrameSet;
 import dev.tamboui.widgets.spinner.SpinnerStyle;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 
 import static dev.tamboui.toolkit.Toolkit.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -105,9 +106,7 @@ class SpinnerElementCssTest {
         Frame frame = Frame.forTesting(buffer);
 
         // Set explicit ARC style which has frames: "◜", "◝", "◞", "◟"
-        SpinnerElement spinner = spinner()
-                .addClass("spinner")
-                .spinnerStyle(SpinnerStyle.ARC);
+        SpinnerElement spinner = spinner().addClass("spinner").spinnerStyle(SpinnerStyle.ARC);
         spinner.render(frame, area, context);
 
         // State advances during render, so first render shows frame 1 which is "◝"
@@ -127,8 +126,7 @@ class SpinnerElementCssTest {
         Frame frame = Frame.forTesting(buffer);
 
         // Set explicit frame set: "A", "B", "C"
-        SpinnerElement spinner = spinner()
-                .addClass("spinner")
+        SpinnerElement spinner = spinner().addClass("spinner")
                 .frameSet(SpinnerFrameSet.of("A", "B", "C"));
         spinner.render(frame, area, context);
 
@@ -149,9 +147,7 @@ class SpinnerElementCssTest {
         Frame frame = Frame.forTesting(buffer);
 
         // Set explicit frames via varargs: "!", "?", "&"
-        SpinnerElement spinner = spinner()
-                .addClass("spinner")
-                .frames("!", "?", "&");
+        SpinnerElement spinner = spinner().addClass("spinner").frames("!", "?", "&");
         spinner.render(frame, area, context);
 
         // State advances during render, so first render shows frame 1 which is "?"
@@ -210,9 +206,10 @@ class SpinnerElementCssTest {
         SpinnerElement spinner = spinner().addClass("bar-spinner");
         spinner.render(frame, area, context);
 
-        // BOUNCING_BAR frames start with "[    ]", "[=   ]", ...
-        // State advances during render, so first render shows frame 1 which starts with "["
-        // Second frame is "[=   ]"
+        // BOUNCING_BAR frames start with "[ ]", "[= ]", ...
+        // State advances during render, so first render shows frame 1 which starts with
+        // "["
+        // Second frame is "[= ]"
         String cell0 = buffer.get(0, 0).symbol();
         assertThat(cell0).isEqualTo("[");
     }
