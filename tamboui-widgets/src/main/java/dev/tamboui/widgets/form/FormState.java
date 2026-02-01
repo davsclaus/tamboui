@@ -7,10 +7,12 @@ package dev.tamboui.widgets.form;
 import dev.tamboui.widgets.input.TextInputState;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Centralized state container for all fields in a form.
@@ -49,12 +51,14 @@ public final class FormState {
     private final Map<String, TextInputState> textFields;
     private final Map<String, BooleanFieldState> booleanFields;
     private final Map<String, SelectFieldState> selectFields;
+    private final Set<String> maskedFields;
     private final Map<String, ValidationResult> validationResults = new LinkedHashMap<>();
 
     private FormState(Builder builder) {
         this.textFields = new LinkedHashMap<>(builder.textFields);
         this.booleanFields = new LinkedHashMap<>(builder.booleanFields);
         this.selectFields = new LinkedHashMap<>(builder.selectFields);
+        this.maskedFields = new HashSet<>(builder.maskedFields);
     }
 
     /**
@@ -116,6 +120,16 @@ public final class FormState {
             values.put(entry.getKey(), entry.getValue().text());
         }
         return Collections.unmodifiableMap(values);
+    }
+
+    /**
+     * Returns whether the given field should be masked (e.g., password field).
+     *
+     * @param name the field name
+     * @return true if the field should display masked characters
+     */
+    public boolean isMaskedField(String name) {
+        return maskedFields.contains(name);
     }
 
     // ==================== Boolean Field Access ====================
@@ -288,6 +302,7 @@ public final class FormState {
         private final Map<String, TextInputState> textFields = new LinkedHashMap<>();
         private final Map<String, BooleanFieldState> booleanFields = new LinkedHashMap<>();
         private final Map<String, SelectFieldState> selectFields = new LinkedHashMap<>();
+        private final Set<String> maskedFields = new HashSet<>();
 
         private Builder() {
         }
@@ -313,6 +328,32 @@ public final class FormState {
          */
         public Builder textField(String name) {
             return textField(name, "");
+        }
+
+        /**
+         * Adds a masked text field (e.g., for passwords) with the given initial value.
+         * <p>
+         * Masked fields display '*' characters instead of actual text.
+         * Use {@link FormState#isMaskedField(String)} to check if a field is masked.
+         *
+         * @param name the field name
+         * @param initialValue the initial value
+         * @return this builder for chaining
+         */
+        public Builder maskedField(String name, String initialValue) {
+            textField(name, initialValue);
+            maskedFields.add(name);
+            return this;
+        }
+
+        /**
+         * Adds a masked text field (e.g., for passwords) with an empty initial value.
+         *
+         * @param name the field name
+         * @return this builder for chaining
+         */
+        public Builder maskedField(String name) {
+            return maskedField(name, "");
         }
 
         /**

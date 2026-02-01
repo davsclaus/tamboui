@@ -56,7 +56,7 @@ public final class FormTableDemo {
     private static final FormState VALIDATION_FORM = FormState.builder()
             .textField("username", "")
             .textField("email", "")
-            .textField("password", "")
+            .maskedField("password", "")  // masked field for password
             .textField("age", "")
             .textField("phone", "")
             .textField("website", "")

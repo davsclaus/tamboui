@@ -329,4 +329,50 @@ class FormStateTest {
 
         assertThat(form.validationResult("email").isValid()).isTrue();
     }
+
+    // ==================== Masked Fields ====================
+
+    @Test
+    @DisplayName("maskedField() creates text field marked as masked")
+    void maskedFieldCreatesMarkedTextField() {
+        FormState form = FormState.builder()
+                .maskedField("password", "secret")
+                .build();
+
+        // Should be accessible as text field
+        assertThat(form.textValue("password")).isEqualTo("secret");
+        // Should be marked as masked
+        assertThat(form.isMaskedField("password")).isTrue();
+    }
+
+    @Test
+    @DisplayName("maskedField() without initial value creates empty field")
+    void maskedFieldWithoutValueCreatesEmpty() {
+        FormState form = FormState.builder()
+                .maskedField("password")
+                .build();
+
+        assertThat(form.textValue("password")).isEmpty();
+        assertThat(form.isMaskedField("password")).isTrue();
+    }
+
+    @Test
+    @DisplayName("textField() is not marked as masked")
+    void textFieldIsNotMasked() {
+        FormState form = FormState.builder()
+                .textField("username", "john")
+                .build();
+
+        assertThat(form.isMaskedField("username")).isFalse();
+    }
+
+    @Test
+    @DisplayName("isMaskedField() returns false for unknown fields")
+    void isMaskedFieldReturnsFalseForUnknown() {
+        FormState form = FormState.builder()
+                .textField("name", "")
+                .build();
+
+        assertThat(form.isMaskedField("unknown")).isFalse();
+    }
 }

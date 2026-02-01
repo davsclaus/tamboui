@@ -10,6 +10,7 @@ import dev.tamboui.terminal.Frame;
 import dev.tamboui.toolkit.element.RenderContext;
 import dev.tamboui.widgets.form.BooleanFieldState;
 import dev.tamboui.widgets.form.FieldType;
+import dev.tamboui.widgets.form.FormState;
 import dev.tamboui.widgets.form.SelectFieldState;
 import dev.tamboui.widgets.form.ValidationResult;
 import dev.tamboui.widgets.form.Validators;
@@ -180,5 +181,114 @@ class FormFieldElementTest {
         // After validation fails, error row is added
         field.validateField();
         assertThat(field.preferredHeight()).isEqualTo(4); // 3 for bordered + 1 for error
+    }
+
+    @Test
+    @DisplayName("formField masked() hides input text")
+    void formFieldMaskedHidesText() {
+        TextInputState state = new TextInputState("secret123");
+        FormFieldElement field = formField("Password", state)
+                .masked();
+
+        Rect area = new Rect(0, 0, 40, 1);
+        Buffer buffer = Buffer.empty(area);
+        Frame frame = Frame.forTesting(buffer);
+
+        field.render(frame, area, RenderContext.empty());
+
+        // The actual text should be masked - look for asterisks after label
+        // Label "Password" is 8 chars, default label width is 12, so input starts around x=13
+        // We should see '*' characters, not 's', 'e', 'c', etc.
+        boolean foundAsterisk = false;
+        for (int x = 13; x < 30; x++) {
+            if ("*".equals(buffer.get(x, 0).symbol())) {
+                foundAsterisk = true;
+                break;
+            }
+        }
+        assertThat(foundAsterisk).isTrue();
+    }
+
+    @Test
+    @DisplayName("formField masked(char) uses custom mask character")
+    void formFieldMaskedWithCustomChar() {
+        TextInputState state = new TextInputState("secret");
+        FormFieldElement field = formField("PIN", state)
+                .masked('●');
+
+        Rect area = new Rect(0, 0, 40, 1);
+        Buffer buffer = Buffer.empty(area);
+        Frame frame = Frame.forTesting(buffer);
+
+        field.render(frame, area, RenderContext.empty());
+
+        // Look for bullet character
+        boolean foundBullet = false;
+        for (int x = 13; x < 30; x++) {
+            if ("●".equals(buffer.get(x, 0).symbol())) {
+                foundBullet = true;
+                break;
+            }
+        }
+        assertThat(foundBullet).isTrue();
+    }
+
+    @Test
+    @DisplayName("formState() auto-applies masking for maskedField")
+    void formStateAutoAppliesMaskingForMaskedField() {
+        FormState form = FormState.builder()
+                .maskedField("password", "secret123")
+                .build();
+
+        FormFieldElement field = formField("Password", form.textField("password"))
+                .formState(form, "password");  // should auto-apply masking
+
+        Rect area = new Rect(0, 0, 40, 1);
+        Buffer buffer = Buffer.empty(area);
+        Frame frame = Frame.forTesting(buffer);
+
+        field.render(frame, area, RenderContext.empty());
+
+        // Should see asterisks, not the actual password
+        boolean foundAsterisk = false;
+        boolean foundSecretChar = false;
+        for (int x = 13; x < 30; x++) {
+            String symbol = buffer.get(x, 0).symbol();
+            if ("*".equals(symbol)) {
+                foundAsterisk = true;
+            }
+            if ("s".equals(symbol) || "e".equals(symbol) || "c".equals(symbol)) {
+                foundSecretChar = true;
+            }
+        }
+        assertThat(foundAsterisk).as("Should display asterisks").isTrue();
+        assertThat(foundSecretChar).as("Should not display secret characters").isFalse();
+    }
+
+    @Test
+    @DisplayName("formState() does not mask regular textField")
+    void formStateDoesNotMaskRegularTextField() {
+        FormState form = FormState.builder()
+                .textField("username", "john")
+                .build();
+
+        FormFieldElement field = formField("Username", form.textField("username"))
+                .formState(form, "username");
+
+        Rect area = new Rect(0, 0, 40, 1);
+        Buffer buffer = Buffer.empty(area);
+        Frame frame = Frame.forTesting(buffer);
+
+        field.render(frame, area, RenderContext.empty());
+
+        // Should see actual text, not asterisks
+        boolean foundJ = false;
+        for (int x = 13; x < 30; x++) {
+            if ("j".equals(buffer.get(x, 0).symbol())) {
+                foundJ = true;
+                break;
+            }
+        }
+        assertThat(foundJ).as("Should display actual text").isTrue();
     }
 }

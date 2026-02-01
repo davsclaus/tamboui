@@ -597,6 +597,10 @@ public final class FormElement extends StyledElement<FormElement> {
                 if (config.placeholder != null) {
                     field.placeholder(config.placeholder);
                 }
+                // Auto-apply masking for password fields
+                if (formState.isMaskedField(config.fieldName)) {
+                    field.masked();
+                }
                 break;
         }
 

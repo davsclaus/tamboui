@@ -92,6 +92,35 @@ formField("Email", emailState)
     .rounded()
 ----
 
+==== Password Fields
+
+Use `maskedField()` in the FormState builder for password fields:
+
+[source,java]
+----
+FormState form = FormState.builder()
+    .textField("username", "")
+    .maskedField("password", "")  // automatically masked with '*'
+    .build();
+----
+
+When used with `FormElement`, masking is applied automatically.
+For `formField()`, you can use `.masked()` explicitly:
+
+[source,java]
+----
+formField("Password", passwordState)
+    .placeholder("Enter password")
+    .masked()          // displays '*' for each character
+    .rounded()
+
+// Or with a custom mask character
+formField("PIN", pinState)
+    .masked('●')       // displays '●' for each character
+----
+
+The actual text is stored in the state; only the display is masked.
+
 ==== Boolean Fields (Checkbox/Toggle)
 
 [source,java]

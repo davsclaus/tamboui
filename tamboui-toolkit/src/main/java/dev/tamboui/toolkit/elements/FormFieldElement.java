@@ -103,6 +103,9 @@ public final class FormFieldElement extends StyledElement<FormFieldElement> {
     private Color checkedColor;
     private Color uncheckedColor;
 
+    // Password/masked input
+    private Character maskChar;
+
     // Validation
     private final List<Validator> validators = new ArrayList<>();
     private boolean showInlineErrors = false;
@@ -397,6 +400,34 @@ public final class FormFieldElement extends StyledElement<FormFieldElement> {
         return this;
     }
 
+    // ==================== Password/Masked Input ====================
+
+    /**
+     * Masks the input text with the default mask character ('*').
+     * <p>
+     * When enabled, the actual text is stored but displayed as mask characters.
+     * Useful for password fields.
+     *
+     * @return this element for chaining
+     */
+    public FormFieldElement masked() {
+        return masked('*');
+    }
+
+    /**
+     * Masks the input text with the specified character.
+     * <p>
+     * When enabled, the actual text is stored but displayed as the mask character.
+     * Useful for password fields.
+     *
+     * @param maskChar the character to display instead of actual text
+     * @return this element for chaining
+     */
+    public FormFieldElement masked(char maskChar) {
+        this.maskChar = maskChar;
+        return this;
+    }
+
     /**
      * Sets the error message style.
      *
@@ -443,6 +474,10 @@ public final class FormFieldElement extends StyledElement<FormFieldElement> {
     public FormFieldElement formState(FormState formState, String fieldName) {
         this.formState = formState;
         this.fieldName = fieldName;
+        // Auto-apply masking for password fields
+        if (formState != null && formState.isMaskedField(fieldName)) {
+            masked();
+        }
         return this;
     }
 
@@ -726,6 +761,11 @@ public final class FormFieldElement extends StyledElement<FormFieldElement> {
         TextInput.Builder builder = TextInput.builder()
                 .style(context.currentStyle())
                 .placeholder(placeholder);
+
+        // Apply masking for password fields
+        if (maskChar != null) {
+            builder.masked(maskChar);
+        }
 
         if (borderType != null || effectiveBorderColor != null) {
             Block.Builder blockBuilder = Block.builder()
