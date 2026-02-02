@@ -21,9 +21,9 @@ import static dev.tamboui.toolkit.Toolkit.*;
 
 /**
  * Demo showcasing dynamic layout switching between Flow, Dock, Grid,
- * and Columns using the Toolkit DSL.
+ * Columns, and Grid Areas using the Toolkit DSL.
  * <p>
- * Press 1-4 to switch layouts, +/- to adjust spacing.
+ * Press 1-5 to switch layouts, +/- to adjust spacing.
  */
 public class LayoutDemo {
 
@@ -44,7 +44,8 @@ public class LayoutDemo {
         COLUMNS("Columns"),
         GRID("Grid"),
         FLOW("Flow"),
-        DOCK("Dock");
+        DOCK("Dock"),
+        GRID_AREAS("Grid Areas");
 
         final String label;
 
@@ -88,6 +89,7 @@ public class LayoutDemo {
                     text(" [2] Grid ").fg(mode == LayoutMode.GRID ? Color.YELLOW : Color.DARK_GRAY),
                     text(" [3] Flow ").fg(mode == LayoutMode.FLOW ? Color.YELLOW : Color.DARK_GRAY),
                     text(" [4] Dock ").fg(mode == LayoutMode.DOCK ? Color.YELLOW : Color.DARK_GRAY),
+                    text(" [5] Grid Areas ").fg(mode == LayoutMode.GRID_AREAS ? Color.YELLOW : Color.DARK_GRAY),
                     spacer(),
                     text(" [+/-] Spacing:" + spacing + " ").dim(),
                     text(" [q] Quit ").dim()
@@ -116,6 +118,10 @@ public class LayoutDemo {
                     mode = LayoutMode.DOCK;
                     return EventResult.HANDLED;
                 }
+                if (event.isChar('5')) {
+                    mode = LayoutMode.GRID_AREAS;
+                    return EventResult.HANDLED;
+                }
                 if (event.isChar('+') || event.isChar('=')) {
                     spacing = Math.min(spacing + 1, 5);
                     return EventResult.HANDLED;
@@ -135,6 +141,7 @@ public class LayoutDemo {
             case GRID -> renderGrid();
             case FLOW -> renderFlow();
             case DOCK -> renderDock();
+            case GRID_AREAS -> renderGridAreas();
         };
     }
 
@@ -210,6 +217,54 @@ public class LayoutDemo {
             .bottomHeight(Constraint.length(4))
             .leftWidth(Constraint.length(22))
             .rightWidth(Constraint.length(22));
+    }
+
+    private Element renderGridAreas() {
+        // Holy grail layout: header spans full width, nav spans left side,
+        // main content takes center, footer spans full width
+        return grid()
+            .gridAreas("header header header",
+                       "nav    main   main",
+                       "nav    main   main",
+                       "footer footer footer")
+            .area("header", panel("Header",
+                row(
+                    text("  Dashboard").bold().yellow(),
+                    spacer(),
+                    text("User: demo  ").dim()
+                )
+            ).rounded().borderColor(Color.BLUE))
+            .area("nav", panel("Navigation",
+                column(
+                    text("  Overview").cyan(),
+                    text("  Reports").dim(),
+                    text("  Settings").dim(),
+                    text("  Help").dim()
+                )
+            ).rounded().borderColor(Color.GREEN))
+            .area("main", panel("Main Content",
+                column(
+                    text("  Welcome to the Grid Areas demo!").bold(),
+                    text(""),
+                    text("  This layout uses CSS grid-template-areas").dim(),
+                    text("  to define spanning regions:").dim(),
+                    text(""),
+                    text("    header header header").cyan(),
+                    text("    nav    main   main").cyan(),
+                    text("    nav    main   main").cyan(),
+                    text("    footer footer footer").cyan(),
+                    text(""),
+                    text("  Spacing: " + spacing).dim()
+                )
+            ).rounded().borderColor(Color.CYAN))
+            .area("footer", panel("Footer",
+                row(
+                    text("  Ready").green(),
+                    spacer(),
+                    text("Grid Areas Layout  ").dim()
+                )
+            ).rounded().borderColor(Color.DARK_GRAY))
+            .gutter(spacing);
     }
 
     private static Element card(String label, Color color) {

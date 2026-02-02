@@ -27,11 +27,14 @@ jobs:
       - name: Set up JBang
         uses: jbangdev/setup-jbang@main
 
+      - name: Formatting check
+        run: ./gradlew --no-daemon spotlessCheck
       - name: Execute Gradle build
-        run: ./gradlew build
-
+        run: ./gradlew build -x spotlessCheck
       - name: Update jbang-catalog.json to include new demos
-        run: ./gradlew updateJBangCatalog --verify-builds
+        run: |
+         ./gradlew publishToMavenLocal
+         ./gradlew updateJBangCatalog --verify-builds
 
       - name: Check jbang-catalog.json is up to date
         run: |

@@ -19,11 +19,14 @@ import dev.tamboui.style.Style;
 import dev.tamboui.terminal.Frame;
 import dev.tamboui.widget.Widget;
 import dev.tamboui.layout.grid.Grid;
+import dev.tamboui.layout.grid.GridArea;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A CSS Grid-inspired layout container that arranges children into a grid
@@ -85,8 +88,20 @@ public final class GridElement extends ContainerElement<GridElement> {
     public static final PropertyDefinition<Gutter> GRID_GUTTER =
         PropertyDefinition.of("grid-gutter", GutterConverter.INSTANCE);
 
+    /**
+     * CSS property definition for grid-template-areas.
+     * <p>
+     * Value format: semicolon-separated rows or quoted strings.
+     * <ul>
+     *   <li>Semicolon format: {@code "A A B; A A C; D D D"}</li>
+     *   <li>Quoted format: {@code "A A B" "A A C" "D D D"}</li>
+     * </ul>
+     */
+    public static final PropertyDefinition<GridArea> GRID_TEMPLATE_AREAS =
+        PropertyDefinition.of("grid-template-areas", GridAreaConverter.INSTANCE);
+
     static {
-        PropertyRegistry.registerAll(GRID_SIZE, GRID_COLUMNS, GRID_ROWS, GRID_GUTTER);
+        PropertyRegistry.registerAll(GRID_SIZE, GRID_COLUMNS, GRID_ROWS, GRID_GUTTER, GRID_TEMPLATE_AREAS);
     }
 
     private GridSize gridSize;
@@ -95,6 +110,10 @@ public final class GridElement extends ContainerElement<GridElement> {
     private Gutter gutter;
     private Margin margin;
     private Flex flex;
+
+    // Area-based layout fields
+    private GridArea gridArea;
+    private Map<String, Element> areaElements;
 
     /**
      * Creates an empty grid layout.
@@ -227,6 +246,62 @@ public final class GridElement extends ContainerElement<GridElement> {
         return this;
     }
 
+    /**
+     * Defines the grid layout using CSS grid-template-areas style strings.
+     * <p>
+     * Each string represents a row. Area names are space-separated tokens.
+     * Use "." for empty cells. Area names must form contiguous rectangles.
+     * <p>
+     * When using area-based layout, use {@link #area(String, Element)} to assign
+     * elements to named areas instead of adding children directly.
+     * <pre>{@code
+     * grid()
+     *     .gridAreas("header header header",
+     *                "nav    main   main",
+     *                "nav    main   main",
+     *                "footer footer footer")
+     *     .area("header", text("Header"))
+     *     .area("nav", menu)
+     *     .area("main", content)
+     *     .area("footer", statusBar)
+     * }</pre>
+     *
+     * @param rowTemplates the row templates
+     * @return this grid for method chaining
+     * @throws dev.tamboui.layout.LayoutException if the template is invalid
+     */
+    public GridElement gridAreas(String... rowTemplates) {
+        this.gridArea = GridArea.parse(rowTemplates);
+        this.areaElements = new LinkedHashMap<>();
+        // Clear children since we're switching to area mode
+        this.children.clear();
+        return this;
+    }
+
+    /**
+     * Assigns an element to a named area.
+     * <p>
+     * Must be called after {@link #gridAreas(String...)}.
+     * Areas without assigned elements render as empty space.
+     *
+     * @param areaName the area name from the template
+     * @param element the element to place in that area
+     * @return this grid for method chaining
+     * @throws IllegalStateException if gridAreas() was not called first
+     * @throws dev.tamboui.layout.LayoutException if the area name is not defined in the template
+     */
+    public GridElement area(String areaName, Element element) {
+        if (gridArea == null) {
+            throw new IllegalStateException("Call gridAreas() before area()");
+        }
+        if (gridArea.boundsFor(areaName) == null) {
+            throw new dev.tamboui.layout.LayoutException(
+                "Widget assigned to undefined area '" + areaName + "'");
+        }
+        areaElements.put(areaName, element);
+        return this;
+    }
+
     @Override
     public int preferredWidth() {
         if (children.isEmpty()) {
@@ -347,12 +422,25 @@ public final class GridElement extends ContainerElement<GridElement> {
 
     @Override
     protected void renderContent(Frame frame, Rect area, RenderContext context) {
-        if (children.isEmpty()) {
-            return;
-        }
-
         // Get CSS resolver for property resolution
         CssStyleResolver cssResolver = context.resolveStyle(this).orElse(null);
+
+        // Resolve grid-template-areas: programmatic > CSS
+        GridArea effectiveGridArea = this.gridArea;
+        Map<String, Element> effectiveAreaElements = this.areaElements;
+        if (effectiveGridArea == null && cssResolver != null) {
+            effectiveGridArea = cssResolver.get(GRID_TEMPLATE_AREAS).orElse(null);
+            // Note: CSS-based areas can't have element mappings, so they render as empty
+            // This is mainly useful when combined with programmatic area() calls
+        }
+
+        // Check if we have content to render
+        boolean hasAreaContent = effectiveGridArea != null && effectiveAreaElements != null && !effectiveAreaElements.isEmpty();
+        boolean hasChildrenContent = !children.isEmpty();
+
+        if (!hasAreaContent && !hasChildrenContent) {
+            return;
+        }
 
         // Resolve margin: programmatic > CSS > none
         Margin effectiveMargin = this.margin;
@@ -383,12 +471,6 @@ public final class GridElement extends ContainerElement<GridElement> {
             effectiveFlex = Flex.START;
         }
 
-        // Resolve gridSize: programmatic > CSS > auto
-        GridSize effectiveGridSize = this.gridSize;
-        if (effectiveGridSize == null && cssResolver != null) {
-            effectiveGridSize = cssResolver.get(GRID_SIZE).orElse(null);
-        }
-
         // Resolve gridColumns: programmatic > CSS > null
         List<Constraint> effectiveGridColumns = this.gridColumns;
         if (effectiveGridColumns == null && cssResolver != null) {
@@ -408,6 +490,61 @@ public final class GridElement extends ContainerElement<GridElement> {
         }
         int hGutter = effectiveGutter != null ? effectiveGutter.horizontal() : 0;
         int vGutter = effectiveGutter != null ? effectiveGutter.vertical() : 0;
+
+        // Render based on mode
+        if (hasAreaContent) {
+            renderWithAreas(frame, effectiveArea, context, effectiveFlex,
+                effectiveGridColumns, effectiveGridRows, hGutter, vGutter,
+                effectiveGridArea, effectiveAreaElements);
+        } else {
+            renderWithChildren(frame, effectiveArea, context, cssResolver, effectiveFlex,
+                effectiveGridColumns, effectiveGridRows, hGutter, vGutter);
+        }
+    }
+
+    private void renderWithAreas(Frame frame, Rect effectiveArea, RenderContext context,
+            Flex effectiveFlex, List<Constraint> effectiveGridColumns,
+            List<Constraint> effectiveGridRows, int hGutter, int vGutter,
+            GridArea effectiveGridArea, Map<String, Element> effectiveAreaElements) {
+
+        // Build area-based Grid widget
+        Grid.AreaBuilder areaBuilder = Grid.builder()
+            .gridAreas(effectiveGridArea.toTemplates());
+
+        // Add widgets for each area
+        for (Map.Entry<String, Element> entry : effectiveAreaElements.entrySet()) {
+            String areaName = entry.getKey();
+            Element element = entry.getValue();
+            areaBuilder.area(areaName, (cellArea, buf) ->
+                context.renderChild(element, frame, cellArea));
+        }
+
+        // Apply common settings
+        areaBuilder.horizontalGutter(hGutter)
+            .verticalGutter(vGutter)
+            .flex(effectiveFlex);
+
+        if (effectiveGridColumns != null && !effectiveGridColumns.isEmpty()) {
+            areaBuilder.columnConstraints(effectiveGridColumns);
+        }
+
+        if (effectiveGridRows != null && !effectiveGridRows.isEmpty()) {
+            areaBuilder.rowConstraints(effectiveGridRows);
+        }
+
+        frame.renderWidget(areaBuilder.build(), effectiveArea);
+    }
+
+    private void renderWithChildren(Frame frame, Rect effectiveArea, RenderContext context,
+            CssStyleResolver cssResolver, Flex effectiveFlex,
+            List<Constraint> effectiveGridColumns, List<Constraint> effectiveGridRows,
+            int hGutter, int vGutter) {
+
+        // Resolve gridSize: programmatic > CSS > auto
+        GridSize effectiveGridSize = this.gridSize;
+        if (effectiveGridSize == null && cssResolver != null) {
+            effectiveGridSize = cssResolver.get(GRID_SIZE).orElse(null);
+        }
 
         // Compute grid dimensions
         int childCount = children.size();
@@ -484,8 +621,8 @@ public final class GridElement extends ContainerElement<GridElement> {
             childWidgets.add((cellArea, buf) -> context.renderChild(child, frame, cellArea));
         }
 
-        // Build and render the Grid widget
-        Grid.Builder builder = Grid.builder()
+        // Build and render the Grid widget using ChildrenBuilder
+        Grid.ChildrenBuilder childrenBuilder = Grid.builder()
             .children(childWidgets)
             .columnCount(cols)
             .horizontalGutter(hGutter)
@@ -493,17 +630,17 @@ public final class GridElement extends ContainerElement<GridElement> {
             .flex(effectiveFlex);
 
         if (effectiveGridColumns != null && !effectiveGridColumns.isEmpty()) {
-            builder.columnConstraints(effectiveGridColumns);
+            childrenBuilder.columnConstraints(effectiveGridColumns);
         }
 
         if (effectiveGridRows != null && !effectiveGridRows.isEmpty()) {
-            builder.rowConstraints(effectiveGridRows);
+            childrenBuilder.rowConstraints(effectiveGridRows);
         }
 
         if (rowHeights != null) {
-            builder.rowHeights(rowHeights);
+            childrenBuilder.rowHeights(rowHeights);
         }
 
-        frame.renderWidget(builder.build(), effectiveArea);
+        frame.renderWidget(childrenBuilder.build(), effectiveArea);
     }
 }
