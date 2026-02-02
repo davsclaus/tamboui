@@ -7,7 +7,7 @@ package dev.tamboui.toolkit.elements;
 import dev.tamboui.css.cascade.CssStyleResolver;
 import dev.tamboui.css.cascade.PseudoClassState;
 import dev.tamboui.layout.Constraint;
-import dev.tamboui.layout.tree.TreeNode;
+import dev.tamboui.widgets.tree.TreeNode;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.IntegerConverter;

@@ -5,7 +5,7 @@
 package dev.tamboui.toolkit.elements;
 
 import dev.tamboui.buffer.Buffer;
-import dev.tamboui.layout.tree.TreeNode;
+import dev.tamboui.widgets.tree.TreeNode;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.widgets.tree.GuideStyle;
 import dev.tamboui.style.Color;

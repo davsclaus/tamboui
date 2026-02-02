@@ -15,7 +15,7 @@ import dev.tamboui.toolkit.app.ToolkitRunner;
 import dev.tamboui.toolkit.element.Element;
 import dev.tamboui.toolkit.element.StyledElement;
 import dev.tamboui.toolkit.elements.TreeElement;
-import dev.tamboui.layout.tree.TreeNode;
+import dev.tamboui.widgets.tree.TreeNode;
 import dev.tamboui.widgets.tree.GuideStyle;
 import dev.tamboui.tui.TuiConfig;
 

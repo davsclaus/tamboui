@@ -2,7 +2,7 @@
  * Copyright TamboUI Contributors
  * SPDX-License-Identifier: MIT
  */
-package dev.tamboui.layout.tree;
+package dev.tamboui.widgets.tree;
 
 import java.util.ArrayList;
 import java.util.Arrays;

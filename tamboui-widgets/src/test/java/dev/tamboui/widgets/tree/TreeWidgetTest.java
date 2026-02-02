@@ -6,7 +6,6 @@ package dev.tamboui.widgets.tree;
 
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.layout.Rect;
-import dev.tamboui.layout.tree.TreeNode;
 import dev.tamboui.style.Modifier;
 import dev.tamboui.style.Style;
 import dev.tamboui.widgets.paragraph.Paragraph;

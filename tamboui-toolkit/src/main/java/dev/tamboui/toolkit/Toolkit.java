@@ -34,7 +34,7 @@ import dev.tamboui.toolkit.elements.TextAreaElement;
 import dev.tamboui.toolkit.elements.TextInputElement;
 import dev.tamboui.toolkit.elements.TreeElement;
 import dev.tamboui.toolkit.elements.WaveTextElement;
-import dev.tamboui.layout.tree.TreeNode;
+import dev.tamboui.widgets.tree.TreeNode;
 import dev.tamboui.toolkit.elements.RichTextElement;
 import dev.tamboui.toolkit.elements.RichTextAreaElement;
 import dev.tamboui.toolkit.elements.MarkupTextElement;

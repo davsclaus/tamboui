@@ -6,8 +6,6 @@ package dev.tamboui.widgets.tree;
 
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.layout.Rect;
-import dev.tamboui.layout.tree.TreeModel;
-import dev.tamboui.layout.tree.TreeNode;
 import dev.tamboui.style.Style;
 import dev.tamboui.style.StylePropertyResolver;
 import dev.tamboui.text.CharWidth;
@@ -85,7 +83,6 @@ public final class TreeWidget<T> implements StatefulWidget<TreeState> {
     private final Style scrollbarThumbStyle;
     private final Style scrollbarTrackStyle;
     private final int indentWidth;
-    private final StylePropertyResolver styleResolver;
 
     // Cached flat entries from last render (for state access)
     private List<FlatEntry<T>> lastFlatEntries = Collections.emptyList();
@@ -104,7 +101,6 @@ public final class TreeWidget<T> implements StatefulWidget<TreeState> {
         this.scrollbarThumbStyle = builder.scrollbarThumbStyle;
         this.scrollbarTrackStyle = builder.scrollbarTrackStyle;
         this.indentWidth = builder.indentWidth;
-        this.styleResolver = builder.styleResolver;
     }
 
     /**

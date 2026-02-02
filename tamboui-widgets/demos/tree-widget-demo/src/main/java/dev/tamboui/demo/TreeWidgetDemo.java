@@ -11,7 +11,7 @@ package dev.tamboui.demo;
 import dev.tamboui.layout.Constraint;
 import dev.tamboui.layout.Layout;
 import dev.tamboui.layout.Rect;
-import dev.tamboui.layout.tree.TreeNode;
+import dev.tamboui.widgets.tree.TreeNode;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.Style;
 import dev.tamboui.terminal.Backend;
