@@ -16,6 +16,7 @@ import dev.tamboui.style.StylePropertyResolver;
 import dev.tamboui.style.StandardProperties;
 import dev.tamboui.style.Style;
 import dev.tamboui.text.CharWidth;
+import dev.tamboui.text.Masked;
 import dev.tamboui.terminal.Frame;
 import dev.tamboui.widget.StatefulWidget;
 import dev.tamboui.widgets.block.Block;
@@ -50,8 +51,10 @@ public final class TextInput implements StatefulWidget<TextInputState> {
     private final Style cursorStyle;
     private final String placeholder;
     private final Style placeholderStyle;
+    private final Character maskChar;
 
     private TextInput(Builder builder) {
+        this.maskChar = builder.maskChar;
         this.block = builder.block;
         this.placeholder = builder.placeholder;
 
@@ -115,6 +118,9 @@ public final class TextInput implements StatefulWidget<TextInputState> {
         String text = state.text();
         int cursorPos = state.cursorPosition();
 
+        // Apply masking if enabled
+        String displayText = maskChar != null ? new Masked(text, maskChar).value() : text;
+
         // Show placeholder if empty
         if (text.isEmpty() && !placeholder.isEmpty()) {
             String visiblePlaceholder = CharWidth.substringByWidth(placeholder, inputArea.width());
@@ -126,8 +132,8 @@ public final class TextInput implements StatefulWidget<TextInputState> {
         int visibleWidth = inputArea.width();
 
         // Calculate display width of text up to cursor
-        String textBeforeCursor = text.substring(0, cursorPos);
-        int widthBeforeCursor = CharWidth.of(textBeforeCursor);
+        String displayBeforeCursor = displayText.substring(0, cursorPos);
+        int widthBeforeCursor = CharWidth.of(displayBeforeCursor);
 
         // If cursor is beyond visible area, scroll
         // scrollDisplayOffset tracks how many display columns to skip
@@ -139,14 +145,14 @@ public final class TextInput implements StatefulWidget<TextInputState> {
         // Find the character index corresponding to scrollDisplayOffset
         int scrollCharOffset = 0;
         int widthCount = 0;
-        while (scrollCharOffset < text.length() && widthCount < scrollDisplayOffset) {
-            int cp = text.codePointAt(scrollCharOffset);
+        while (scrollCharOffset < displayText.length() && widthCount < scrollDisplayOffset) {
+            int cp = displayText.codePointAt(scrollCharOffset);
             widthCount += CharWidth.of(cp);
             scrollCharOffset += Character.charCount(cp);
         }
 
         // Render visible text starting from scrollCharOffset
-        String textFromScroll = text.substring(scrollCharOffset);
+        String textFromScroll = displayText.substring(scrollCharOffset);
         String visibleText = CharWidth.substringByWidth(textFromScroll, visibleWidth);
 
         buffer.setString(inputArea.left(), inputArea.top(), visibleText, style);
@@ -182,9 +188,12 @@ public final class TextInput implements StatefulWidget<TextInputState> {
         int cursorPos = state.cursorPosition();
         int visibleWidth = inputArea.width();
 
+        // Apply masking if enabled (for cursor width calculation)
+        String displayText = maskChar != null ? new Masked(text, maskChar).value() : text;
+
         // Calculate display width of text before cursor
-        String textBeforeCursor = text.substring(0, cursorPos);
-        int widthBeforeCursor = CharWidth.of(textBeforeCursor);
+        String displayBeforeCursor = displayText.substring(0, cursorPos);
+        int widthBeforeCursor = CharWidth.of(displayBeforeCursor);
 
         // Calculate scroll offset in display columns
         int scrollDisplayOffset = widthBeforeCursor >= visibleWidth ? widthBeforeCursor - visibleWidth + 1 : 0;
@@ -215,6 +224,7 @@ public final class TextInput implements StatefulWidget<TextInputState> {
         private String placeholder = "";
         private Style placeholderStyle = Style.EMPTY.dim();
         private StylePropertyResolver styleResolver = StylePropertyResolver.empty();
+        private Character maskChar;
 
         // Style-aware properties (resolved via styleResolver in build())
         private Color background;
@@ -343,6 +353,32 @@ public final class TextInput implements StatefulWidget<TextInputState> {
          */
         public Builder placeholderColor(Color color) {
             this.placeholderColor = color;
+            return this;
+        }
+
+        /**
+         * Masks the input text with the default mask character ('*').
+         * <p>
+         * When enabled, the actual text is stored but displayed as mask characters.
+         * Useful for password fields.
+         *
+         * @return this builder
+         */
+        public Builder masked() {
+            return masked('*');
+        }
+
+        /**
+         * Masks the input text with the specified character.
+         * <p>
+         * When enabled, the actual text is stored but displayed as the mask character.
+         * Useful for password fields.
+         *
+         * @param maskChar the character to display instead of actual text
+         * @return this builder
+         */
+        public Builder masked(char maskChar) {
+            this.maskChar = maskChar;
             return this;
         }
 
