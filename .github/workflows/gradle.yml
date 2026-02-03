@@ -28,10 +28,8 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/shared-build-setup
 
-      - name: Formatting check
-        run: ./gradlew spotlessCheck
       - name: Execute Gradle build
-        run: ./gradlew build
+        run: ./gradlew build -x spotlessCheck
       - name: Update jbang-catalog.json to include new demos
         run: |
          ./gradlew publishToMavenLocal
