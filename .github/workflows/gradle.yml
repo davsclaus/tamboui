@@ -22,18 +22,15 @@ jobs:
       - name: check formatting and comment on PR if failed
         id: check-formatting
         run: ./gradlew spotlessCheck
-  build:
+  jbang-catalog-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/shared-build-setup
-
-      - name: Execute Gradle build
-        run: ./gradlew build -x spotlessCheck
       - name: Update jbang-catalog.json to include new demos
         run: |
-         ./gradlew publishToMavenLocal
-         ./gradlew updateJBangCatalog --verify-builds
+          ./gradlew publishToMavenLocal
+          ./gradlew updateJBangCatalog --verify-builds
 
       - name: Check jbang-catalog.json is up to date
         run: |
@@ -41,3 +38,11 @@ jobs:
             echo "::error file=jbang-catalog.json::jbang-catalog.json is out of sync. Please run './gradlew updateJBangCatalog --verify-builds' and commit the changes."
             exit 1
           fi
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/shared-build-setup
+
+      - name: Execute Gradle build (excluding distributions)
+        run: ./gradlew build -x spotlessCheck -x distTar -x distZip
