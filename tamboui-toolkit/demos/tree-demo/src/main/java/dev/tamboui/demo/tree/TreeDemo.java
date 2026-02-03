@@ -1,7 +1,7 @@
 //DEPS dev.tamboui:tamboui-widgets:LATEST
 //DEPS dev.tamboui:tamboui-toolkit:LATEST
 //DEPS dev.tamboui:tamboui-jline3-backend:LATEST
-//FILES styles/tree-demo.tcss=../../resources/styles/tree-demo.tcss
+//FILES styles/tree-demo.tcss=../../../../../resources/styles/tree-demo.tcss
 /*
  * Copyright TamboUI Contributors
  * SPDX-License-Identifier: MIT
