@@ -50,6 +50,16 @@ public abstract class Component<T extends Component<T>> extends StyledElement<T>
     protected Component() {
     }
 
+    @Override
+    public int preferredWidth() {
+        return 0;
+    }
+
+    @Override
+    public int preferredHeight() {
+        return 0;
+    }
+
     private ActionHandler actionHandler;
     private RenderContext currentRenderContext;
 

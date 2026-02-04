@@ -134,6 +134,18 @@ public final class StackElement extends ContainerElement<StackElement> {
     }
 
     @Override
+    public int preferredHeight() {
+        int maxHeight = 0;
+        for (Element child : children) {
+            maxHeight = Math.max(maxHeight, child.preferredHeight());
+        }
+        if (margin != null) {
+            maxHeight += margin.verticalTotal();
+        }
+        return maxHeight;
+    }
+
+    @Override
     public int preferredHeight(int availableWidth, RenderContext context) {
         int maxHeight = 0;
         for (Element child : children) {

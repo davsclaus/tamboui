@@ -358,6 +358,11 @@ public final class DialogElement extends ContainerElement<DialogElement> {
     }
 
     @Override
+    public int preferredHeight() {
+        return calculateHeight();
+    }
+
+    @Override
     public Map<String, String> styleAttributes() {
         Map<String, String> attrs = new LinkedHashMap<>(super.styleAttributes());
         if (title != null) {

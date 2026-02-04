@@ -287,6 +287,25 @@ class GenericWidgetElementTest {
     }
 
     @Nested
+    @DisplayName("Preferred size")
+    class PreferredSizeTests {
+
+        @Test
+        @DisplayName("preferredWidth returns 0 (widget size unknown)")
+        void preferredWidth() {
+            Widget testWidget = (area, buffer) -> {};
+            assertThat(widget(testWidget).preferredWidth()).isEqualTo(0);
+        }
+
+        @Test
+        @DisplayName("preferredHeight returns 0 (widget size unknown)")
+        void preferredHeight() {
+            Widget testWidget = (area, buffer) -> {};
+            assertThat(widget(testWidget).preferredHeight()).isEqualTo(0);
+        }
+    }
+
+    @Nested
     @DisplayName("CSS support")
     class CssSupportTests {
 

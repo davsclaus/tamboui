@@ -64,6 +64,28 @@ public final class ErrorPlaceholder implements Element {
     }
 
     @Override
+    public int preferredWidth() {
+        // Title + error message + borders
+        String titleText = elementId != null ? " Error: " + elementId + " " : " Error ";
+        String message = cause.getClass().getSimpleName();
+        if (cause.getMessage() != null) {
+            String shortMessage = cause.getMessage();
+            if (shortMessage.length() > 30) {
+                shortMessage = shortMessage.substring(0, 27) + "...";
+            }
+            message = message + ": " + shortMessage;
+        }
+        // "! " prefix + message inside borders
+        return Math.max(titleText.length(), message.length() + 2) + 2;
+    }
+
+    @Override
+    public int preferredHeight() {
+        // Border top + content line + border bottom
+        return 3;
+    }
+
+    @Override
     public void render(Frame frame, Rect area, RenderContext context) {
         if (area.isEmpty()) {
             return;

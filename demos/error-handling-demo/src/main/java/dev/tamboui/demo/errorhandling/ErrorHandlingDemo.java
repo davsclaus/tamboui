@@ -126,6 +126,16 @@ public class ErrorHandlingDemo {
             }
 
             @Override
+            public int preferredWidth() {
+                return 0;
+            }
+
+            @Override
+            public int preferredHeight() {
+                return 0;
+            }
+
+            @Override
             public String id() {
                 return "faulty-panel";
             }

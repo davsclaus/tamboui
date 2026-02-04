@@ -337,6 +337,44 @@ public final class GridElement extends ContainerElement<GridElement> {
     }
 
     @Override
+    public int preferredHeight() {
+        if (children.isEmpty()) {
+            return 0;
+        }
+
+        int cols = resolveColumns(children.size());
+        int rows = resolveRows(children.size(), cols);
+        int vGutter = this.gutter != null ? this.gutter.vertical() : 0;
+
+        int totalHeight = 0;
+        if (gridRows != null && !gridRows.isEmpty()) {
+            for (int r = 0; r < rows; r++) {
+                Constraint constraint = gridRows.get(r % gridRows.size());
+                totalHeight += constraintHint(constraint);
+            }
+        } else {
+            for (int row = 0; row < rows; row++) {
+                int rowHeight = 1;
+                for (int col = 0; col < cols; col++) {
+                    int childIndex = row * cols + col;
+                    if (childIndex < children.size()) {
+                        rowHeight = Math.max(rowHeight, children.get(childIndex).preferredHeight());
+                    }
+                }
+                totalHeight += rowHeight;
+            }
+        }
+
+        totalHeight += vGutter * (rows - 1);
+
+        if (margin != null) {
+            totalHeight += margin.verticalTotal();
+        }
+
+        return totalHeight;
+    }
+
+    @Override
     public int preferredHeight(int availableWidth, RenderContext context) {
         if (children.isEmpty() || availableWidth <= 0) {
             return 0;

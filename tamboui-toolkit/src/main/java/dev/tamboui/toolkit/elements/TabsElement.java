@@ -250,6 +250,12 @@ public final class TabsElement extends StyledElement<TabsElement> {
     }
 
     @Override
+    public int preferredHeight() {
+        // Tabs are 1 row, or 3 with borders (top + content + bottom)
+        return (borderType != null || title != null) ? 3 : 1;
+    }
+
+    @Override
     protected void renderContent(Frame frame, Rect area, RenderContext context) {
         if (area.isEmpty()) {
             return;

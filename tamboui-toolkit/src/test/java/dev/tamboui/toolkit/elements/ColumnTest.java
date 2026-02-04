@@ -16,6 +16,7 @@ import dev.tamboui.terminal.Frame;
 import dev.tamboui.toolkit.element.DefaultRenderContext;
 import dev.tamboui.toolkit.element.RenderContext;
 
+import static dev.tamboui.assertj.BufferAssertions.assertThat;
 import static dev.tamboui.toolkit.Toolkit.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -206,5 +207,72 @@ class ColumnTest {
             .margin(2);
 
         assertThat(column).isInstanceOf(Column.class);
+    }
+
+    @Test
+    @DisplayName("Column renders children vertically")
+    void rendersChildrenVertically() {
+        Rect area = new Rect(0, 0, 10, 3);
+        Buffer buffer = Buffer.empty(area);
+        Frame frame = Frame.forTesting(buffer);
+
+        column(text("AAA"), text("BBB"), text("CCC"))
+            .render(frame, area, RenderContext.empty());
+
+        assertThat(buffer).hasContent(
+            "AAA       ",
+            "BBB       ",
+            "CCC       "
+        );
+    }
+
+    @Test
+    @DisplayName("Column renders with spacing between children")
+    void rendersWithSpacing() {
+        Rect area = new Rect(0, 0, 5, 5);
+        Buffer buffer = Buffer.empty(area);
+        Frame frame = Frame.forTesting(buffer);
+
+        column(text("A"), text("B"), text("C"))
+            .spacing(1)
+            .render(frame, area, RenderContext.empty());
+
+        assertThat(buffer).hasContent(
+            "A    ",
+            "     ",
+            "B    ",
+            "     ",
+            "C    "
+        );
+    }
+
+    @Test
+    @DisplayName("preferredHeight() returns sum of children heights")
+    void preferredHeight_sumsChildren() {
+        Column column = column(text("A"), text("B"), text("C"));
+        // 3 text elements, each height 1
+        assertThat(column.preferredHeight()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("preferredHeight() includes spacing")
+    void preferredHeight_withSpacing() {
+        Column column = column(text("A"), text("B"), text("C")).spacing(2);
+        // 3 texts (height 1 each) + 2 gaps of 2 = 3 + 4 = 7
+        assertThat(column.preferredHeight()).isEqualTo(7);
+    }
+
+    @Test
+    @DisplayName("preferredHeight() returns 0 for empty column")
+    void preferredHeight_emptyColumn() {
+        Column column = column();
+        assertThat(column.preferredHeight()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("preferredHeight() with single child")
+    void preferredHeight_singleChild() {
+        Column column = column(text("A"));
+        assertThat(column.preferredHeight()).isEqualTo(1);
     }
 }

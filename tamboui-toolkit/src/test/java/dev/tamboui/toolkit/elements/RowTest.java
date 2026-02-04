@@ -16,6 +16,7 @@ import dev.tamboui.terminal.Frame;
 import dev.tamboui.toolkit.element.DefaultRenderContext;
 import dev.tamboui.toolkit.element.RenderContext;
 
+import static dev.tamboui.assertj.BufferAssertions.assertThat;
 import static dev.tamboui.toolkit.Toolkit.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -195,5 +196,52 @@ class RowTest {
             .margin(2);
 
         assertThat(row).isInstanceOf(Row.class);
+    }
+
+    @Test
+    @DisplayName("Row renders children horizontally")
+    void rendersChildrenHorizontally() {
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
+        Frame frame = Frame.forTesting(buffer);
+
+        row(text("AB"), text("CD"), text("EF"))
+            .render(frame, area, RenderContext.empty());
+
+        assertThat(buffer).hasContent(
+            "ABCDEF    "
+        );
+    }
+
+    @Test
+    @DisplayName("Row renders with spacing between children")
+    void rendersWithSpacing() {
+        Rect area = new Rect(0, 0, 10, 1);
+        Buffer buffer = Buffer.empty(area);
+        Frame frame = Frame.forTesting(buffer);
+
+        row(text("A"), text("B"), text("C"))
+            .spacing(2)
+            .render(frame, area, RenderContext.empty());
+
+        assertThat(buffer).hasContent(
+            "A  B  C   "
+        );
+    }
+
+    @Test
+    @DisplayName("preferredHeight() returns max of children heights")
+    void preferredHeight_maxOfChildren() {
+        Row row = row(text("A"), text("B"), text("C"));
+        // All height 1
+        assertThat(row.preferredHeight()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("preferredHeight() returns 1 for empty row")
+    void preferredHeight_emptyRow() {
+        Row row = row();
+        // Minimum height for a row is 1
+        assertThat(row.preferredHeight()).isEqualTo(1);
     }
 }

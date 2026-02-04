@@ -462,6 +462,16 @@ final class SystemMonitor implements Element {
     }
 
     @Override
+    public int preferredWidth() {
+        return 0;
+    }
+
+    @Override
+    public int preferredHeight() {
+        return 0;
+    }
+
+    @Override
     public Constraint constraint() {
         return Constraint.fill();
     }

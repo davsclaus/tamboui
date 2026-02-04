@@ -208,4 +208,37 @@ class FlowTest {
                 .hasSymbolAt(2, 0, "C");
         }
     }
+
+    @Test
+    @DisplayName("preferredHeight returns max child height")
+    void preferredHeight() {
+        FlowElement f = flow(text("A"), text("B"), text("C"));
+        // All height 1
+        assertThat(f.preferredHeight()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("preferredHeight returns 0 for empty flow")
+    void preferredHeightEmpty() {
+        FlowElement f = flow();
+        assertThat(f.preferredHeight()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("preferredHeight includes margin")
+    void preferredHeightWithMargin() {
+        FlowElement f = flow(text("A")).margin(new Margin(2, 0, 3, 0));
+        // 1 + 2 + 3 = 6
+        assertThat(f.preferredHeight()).isEqualTo(6);
+    }
+
+    @Test
+    @DisplayName("preferredHeight with available width wraps items")
+    void preferredHeightWithWidth() {
+        // "AB"(2) + "CD"(2) = 4, fits in 5
+        // "EF"(2) wraps to row 2
+        FlowElement f = flow(text("AB"), text("CD"), text("EF"));
+        int height = f.preferredHeight(5, RenderContext.empty());
+        assertThat(height).isEqualTo(2);
+    }
 }

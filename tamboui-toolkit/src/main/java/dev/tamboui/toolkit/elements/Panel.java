@@ -443,6 +443,40 @@ public final class Panel extends ContainerElement<Panel> {
     }
 
     @Override
+    public int preferredHeight() {
+        // Border overhead: 2 rows for top and bottom
+        int height = 2;
+
+        // Padding overhead
+        if (padding != null) {
+            height += padding.verticalTotal();
+        }
+
+        if (children.isEmpty()) {
+            return height;
+        }
+
+        Direction effectiveDirection = this.direction != null ? this.direction : Direction.VERTICAL;
+        int effectiveSpacing = this.spacing != null ? this.spacing : 0;
+
+        if (effectiveDirection == Direction.VERTICAL) {
+            int totalSpacing = effectiveSpacing * Math.max(0, children.size() - 1);
+            for (Element child : children) {
+                height += child.preferredHeight();
+            }
+            height += totalSpacing;
+        } else {
+            int maxChildHeight = 1;
+            for (Element child : children) {
+                maxChildHeight = Math.max(maxChildHeight, child.preferredHeight());
+            }
+            height += maxChildHeight;
+        }
+
+        return height;
+    }
+
+    @Override
     public int preferredHeight(int availableWidth, RenderContext context) {
         if (availableWidth <= 0) {
             return 2; // Just borders

@@ -98,6 +98,16 @@ public final class GenericWidgetElement<T extends Widget> extends StyledElement<
     }
 
     @Override
+    public int preferredWidth() {
+        return 0;
+    }
+
+    @Override
+    public int preferredHeight() {
+        return 0;
+    }
+
+    @Override
     protected void renderContent(Frame frame, Rect area, RenderContext context) {
         frame.renderWidget(widget, area);
     }

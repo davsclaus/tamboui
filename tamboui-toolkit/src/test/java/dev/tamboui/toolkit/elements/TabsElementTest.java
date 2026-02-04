@@ -384,4 +384,51 @@ class TabsElementTest {
 
         assertThat(tabsElement.preferredWidth()).isEqualTo(12); // "Home" + " | " + "About" = 4 + 3 + 5 = 12
     }
+
+    @Test
+    @DisplayName("preferredHeight() returns 1 without borders")
+    void preferredHeight_noBorder() {
+        TabsElement element = tabs("A", "B", "C");
+        assertThat(element.preferredHeight()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("preferredHeight() returns 3 with borders")
+    void preferredHeight_withBorder() {
+        TabsElement element = tabs("A", "B", "C").rounded();
+        assertThat(element.preferredHeight()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("preferredHeight() returns 3 with title")
+    void preferredHeight_withTitle() {
+        TabsElement element = tabs("A", "B", "C").title("Nav");
+        assertThat(element.preferredHeight()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("preferredHeight() returns 1 for tabs without border")
+    void preferredHeight_noBorderNoTitle() {
+        TabsElement element = tabs("A");
+        assertThat(element.preferredHeight()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("tabs render at preferred size with correct content")
+    void rendersAtPreferredSize() {
+        TabsElement element = tabs("A", "B").divider("|").selected(0);
+
+        int w = element.preferredWidth();
+        int h = element.preferredHeight();
+        Rect area = new Rect(0, 0, w, h);
+        Buffer buffer = Buffer.empty(area);
+        Frame frame = Frame.forTesting(buffer);
+
+        element.render(frame, area, RenderContext.empty());
+
+        // "A|B" = 3 chars wide, 1 row
+        assertThat(buffer.get(0, 0).symbol()).isEqualTo("A");
+        assertThat(buffer.get(1, 0).symbol()).isEqualTo("|");
+        assertThat(buffer.get(2, 0).symbol()).isEqualTo("B");
+    }
 }

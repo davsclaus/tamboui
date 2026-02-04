@@ -153,6 +153,89 @@ class DockTest {
         assertThat(d).isInstanceOf(DockElement.class);
     }
 
+    @Test
+    @DisplayName("left and right panels without explicit width split 50/50")
+    void leftRightPanelsSplit5050() {
+        Rect area = new Rect(0, 0, 40, 5);
+        Buffer buffer = Buffer.empty(area);
+        Frame frame = Frame.forTesting(buffer);
+
+        dock()
+            .left(panel("Left", tree()))
+            .right(panel("Right", list()))
+            .render(frame, area, RenderContext.empty());
+
+        // Left panel occupies x=0..19 (20 cols), right panel occupies x=20..39 (20 cols)
+        // Left panel borders
+        BufferAssertions.assertThat(buffer).hasSymbolAt(0, 0, "┌");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(19, 0, "┐");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(0, 4, "└");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(19, 4, "┘");
+
+        // Right panel borders
+        BufferAssertions.assertThat(buffer).hasSymbolAt(20, 0, "┌");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(39, 0, "┐");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(20, 4, "└");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(39, 4, "┘");
+    }
+
+    @Test
+    @DisplayName("left and right panels split 30/70 with percentage constraints")
+    void leftRightPanelsSplit3070() {
+        Rect area = new Rect(0, 0, 40, 5);
+        Buffer buffer = Buffer.empty(area);
+        Frame frame = Frame.forTesting(buffer);
+
+        dock()
+            .left(panel("Left", tree()))
+            .right(panel("Right", list()))
+            .leftWidth(Constraint.percentage(30))
+            .rightWidth(Constraint.percentage(70))
+            .render(frame, area, RenderContext.empty());
+
+        // 30% of 40 = 12 cols (x=0..11), 70% of 40 = 28 cols (x=12..39)
+        // Left panel borders
+        BufferAssertions.assertThat(buffer).hasSymbolAt(0, 0, "┌");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(11, 0, "┐");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(0, 4, "└");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(11, 4, "┘");
+
+        // Right panel borders
+        BufferAssertions.assertThat(buffer).hasSymbolAt(12, 0, "┌");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(39, 0, "┐");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(12, 4, "└");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(39, 4, "┘");
+    }
+
+    @Test
+    @DisplayName("left and right panels split 30/70 with fill weights")
+    void leftRightPanelsSplit3070WithWeights() {
+        Rect area = new Rect(0, 0, 40, 5);
+        Buffer buffer = Buffer.empty(area);
+        Frame frame = Frame.forTesting(buffer);
+
+        dock()
+            .left(panel("Left", tree()))
+            .right(panel("Right", list()))
+            .leftWidth(Constraint.fill(3))
+            .rightWidth(Constraint.fill(7))
+            .render(frame, area, RenderContext.empty());
+
+        // fill(3) + fill(7) = weight 10 total, 40 cols
+        // Left: 3/10 * 40 = 12 cols (x=0..11), Right: 7/10 * 40 = 28 cols (x=12..39)
+        // Left panel borders
+        BufferAssertions.assertThat(buffer).hasSymbolAt(0, 0, "┌");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(11, 0, "┐");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(0, 4, "└");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(11, 4, "┘");
+
+        // Right panel borders
+        BufferAssertions.assertThat(buffer).hasSymbolAt(12, 0, "┌");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(39, 0, "┐");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(12, 4, "└");
+        BufferAssertions.assertThat(buffer).hasSymbolAt(39, 4, "┘");
+    }
+
     // ==================== CSS property tests ====================
 
     @Nested

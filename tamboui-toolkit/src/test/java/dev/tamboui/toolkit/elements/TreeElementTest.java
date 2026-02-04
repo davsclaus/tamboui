@@ -693,6 +693,88 @@ class TreeElementTest {
         );
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // preferredWidth / preferredHeight tests
+    // ═══════════════════════════════════════════════════════════════
+
+    @Test
+    @DisplayName("preferredWidth returns 0 for empty tree")
+    void preferredWidth_emptyTree() {
+        TreeElement<Void> element = tree();
+        assertThat(element.preferredWidth()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("preferredHeight returns 0 for empty tree")
+    void preferredHeight_emptyTree() {
+        TreeElement<Void> element = tree();
+        assertThat(element.preferredHeight()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("preferredHeight counts visible nodes")
+    void preferredHeight_visibleNodes() {
+        TreeNode<Void> root = TreeNode.<Void>of("Root")
+                .add(TreeNode.of("Child 1"))
+                .add(TreeNode.of("Child 2"))
+                .expanded();
+
+        TreeElement<Void> element = tree(root);
+        // Root + 2 children = 3
+        assertThat(element.preferredHeight()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("preferredHeight excludes collapsed children")
+    void preferredHeight_collapsedChildren() {
+        TreeNode<Void> root = TreeNode.<Void>of("Root")
+                .add(TreeNode.of("Child 1"))
+                .add(TreeNode.of("Child 2"));
+        // Root is collapsed by default
+
+        TreeElement<Void> element = tree(root);
+        // Only root visible
+        assertThat(element.preferredHeight()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("preferredHeight includes border overhead")
+    void preferredHeight_withBorder() {
+        TreeNode<Void> root = TreeNode.<Void>of("Root").leaf();
+
+        TreeElement<Void> element = tree(root).title("Tree").rounded();
+        // 1 (root) + 2 (borders) = 3
+        assertThat(element.preferredHeight()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("preferredWidth includes highlight symbol and borders")
+    void preferredWidth_withBorder() {
+        TreeNode<Void> root = TreeNode.<Void>of("Root").leaf();
+
+        TreeElement<Void> element = tree(root).highlightSymbol(">> ").rounded();
+        // "Root" = 4, highlight ">> " = 3, borders = 2 → 4 + 3 + 2 = 9
+        assertThat(element.preferredWidth()).isEqualTo(9);
+    }
+
+    @Test
+    @DisplayName("preferredWidth accounts for deepest indented node")
+    void preferredWidth_deepNesting() {
+        TreeNode<Void> root = TreeNode.<Void>of("A")
+                .add(TreeNode.<Void>of("BB")
+                        .add(TreeNode.<Void>of("CCC").leaf())
+                        .expanded())
+                .expanded();
+
+        TreeElement<Void> element = tree(root).highlightSymbol("");
+        // Default indent width = 4 (from GuideStyle.UNICODE "└── ")
+        // Depth 0: "A" = 1
+        // Depth 1: 4 + "BB" = 6
+        // Depth 2: 8 + "CCC" = 11
+        // Max = 11 (no borders, no highlight)
+        assertThat(element.preferredWidth()).isEqualTo(11);
+    }
+
     @Test
     @DisplayName("Custom nodeRenderer with explicit width constraint")
     void nodeRendererWithWidth() {

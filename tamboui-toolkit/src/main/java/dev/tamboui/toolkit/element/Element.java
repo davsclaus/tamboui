@@ -48,9 +48,7 @@ public interface Element {
      *
      * @return the preferred width, or 0 if not applicable
      */
-    default int preferredWidth() {
-        return 0;
-    }
+    int preferredWidth();
 
     /**
      * Returns the preferred height of this element in cells.
@@ -58,9 +56,7 @@ public interface Element {
      *
      * @return the preferred height, or 0 if not applicable
      */
-    default int preferredHeight() {
-        return 0;
-    }
+    int preferredHeight();
 
     /**
      * Returns the preferred height of this element given an available width and render context.

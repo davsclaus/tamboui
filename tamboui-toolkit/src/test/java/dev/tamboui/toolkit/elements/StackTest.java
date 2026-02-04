@@ -173,4 +173,27 @@ class StackTest {
             BufferAssertions.assertThat(buffer).hasSymbolAt(0, 0, "X");
         }
     }
+
+    @Test
+    @DisplayName("preferredHeight returns max of all children")
+    void preferredHeight() {
+        StackElement s = stack(text("A"), text("B"), text("C"));
+        // All height 1
+        assertThat(s.preferredHeight()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("preferredHeight returns 0 for empty stack")
+    void preferredHeightEmpty() {
+        StackElement s = stack();
+        assertThat(s.preferredHeight()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("preferredHeight includes margin")
+    void preferredHeightWithMargin() {
+        StackElement s = stack(text("A")).margin(new Margin(2, 0, 3, 0));
+        // 1 + 2 + 3 = 6
+        assertThat(s.preferredHeight()).isEqualTo(6);
+    }
 }

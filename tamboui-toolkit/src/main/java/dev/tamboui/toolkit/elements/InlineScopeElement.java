@@ -167,6 +167,32 @@ public final class InlineScopeElement extends ContainerElement<InlineScopeElemen
     }
 
     @Override
+    public int preferredWidth() {
+        if (!visible || children.isEmpty()) {
+            return 0;
+        }
+        // Vertical layout: max width of children
+        int maxWidth = 0;
+        for (Element child : children) {
+            maxWidth = Math.max(maxWidth, child.preferredWidth());
+        }
+        return maxWidth;
+    }
+
+    @Override
+    public int preferredHeight() {
+        if (!visible || children.isEmpty()) {
+            return 0;
+        }
+        // Sum heights of all children
+        int totalHeight = 0;
+        for (Element child : children) {
+            totalHeight += child.preferredHeight();
+        }
+        return totalHeight;
+    }
+
+    @Override
     public int preferredHeight(int availableWidth, RenderContext context) {
         if (!visible || children.isEmpty() || availableWidth <= 0) {
             return 0;

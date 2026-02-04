@@ -165,7 +165,7 @@ public class LayoutDemo {
         // Row-first with per-column width constraints (narrow, wide, medium)
         return grid(makeCards())
             .gridSize(3)
-            .gridColumns(Constraint.length(14), Constraint.fill(), Constraint.length(20))
+            .gridColumns(Constraint.length(14), Constraint.fill(), Constraint.length(22))
             .gutter(spacing);
     }
 
@@ -177,7 +177,7 @@ public class LayoutDemo {
     }
 
     private Element renderDock() {
-        return dock()
+        return dock().fill()
             .top(panel("Header",
                 text("  Menu Bar — File  Edit  View  Help").fg(Color.WHITE)
             ).rounded().borderColor(Color.BLUE))

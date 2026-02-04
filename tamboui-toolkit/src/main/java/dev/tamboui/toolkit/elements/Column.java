@@ -131,6 +131,21 @@ public final class Column extends ContainerElement<Column> {
     }
 
     @Override
+    public int preferredHeight() {
+        if (children.isEmpty()) {
+            return 0;
+        }
+        // Vertical layout: sum of children heights + spacing
+        int effectiveSpacing = this.spacing != null ? this.spacing : 0;
+        int totalSpacing = effectiveSpacing * Math.max(0, children.size() - 1);
+        int totalHeight = 0;
+        for (Element child : children) {
+            totalHeight += child.preferredHeight();
+        }
+        return totalHeight + totalSpacing;
+    }
+
+    @Override
     public int preferredHeight(int availableWidth, RenderContext context) {
         if (children.isEmpty() || availableWidth <= 0) {
             return 0;

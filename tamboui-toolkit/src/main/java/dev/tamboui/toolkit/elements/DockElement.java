@@ -277,14 +277,40 @@ public final class DockElement extends StyledElement<DockElement> {
     @Override
     public int preferredWidth() {
         StylePropertyResolver resolver = StylePropertyResolver.empty();
-        int leftW = leftElement != null ? constraintHint(resolveLeftWidth(resolver, leftElement)) : 0;
+        int leftW = leftElement != null ? constraintHint(resolveLeftWidth(resolver)) : 0;
         int centerW = centerElement != null ? centerElement.preferredWidth() : 0;
-        int rightW = rightElement != null ? constraintHint(resolveRightWidth(resolver, rightElement)) : 0;
+        int rightW = rightElement != null ? constraintHint(resolveRightWidth(resolver)) : 0;
         int width = leftW + centerW + rightW;
         if (margin != null) {
             width += margin.left() + margin.right();
         }
         return width;
+    }
+
+    @Override
+    public int preferredHeight() {
+        StylePropertyResolver resolver = StylePropertyResolver.empty();
+        int topH = topElement != null ? constraintHint(resolver.resolve(DOCK_TOP_HEIGHT, this.topHeight)) : 0;
+        int bottomH = bottomElement != null ? constraintHint(resolver.resolve(DOCK_BOTTOM_HEIGHT, this.bottomHeight)) : 0;
+
+        int leftH = leftElement != null ? leftElement.preferredHeight() : 0;
+        int centerH = centerElement != null ? centerElement.preferredHeight() : 0;
+        int rightH = rightElement != null ? rightElement.preferredHeight() : 0;
+        int middleH = Math.max(leftH, Math.max(centerH, rightH));
+
+        // Fall back to element preferred height if constraints resolve to null
+        if (topElement != null && topH == 0) {
+            topH = topElement.preferredHeight();
+        }
+        if (bottomElement != null && bottomH == 0) {
+            bottomH = bottomElement.preferredHeight();
+        }
+
+        int height = topH + middleH + bottomH;
+        if (margin != null) {
+            height += margin.verticalTotal();
+        }
+        return height;
     }
 
     @Override
@@ -356,8 +382,8 @@ public final class DockElement extends StyledElement<DockElement> {
         // Resolve constraints: programmatic > CSS > element preferred size > defaults
         Constraint effectiveTopHeight = resolveTopHeight(resolver, topElement, effectiveArea.width(), context);
         Constraint effectiveBottomHeight = resolveBottomHeight(resolver, bottomElement, effectiveArea.width(), context);
-        Constraint effectiveLeftWidth = resolveLeftWidth(resolver, leftElement);
-        Constraint effectiveRightWidth = resolveRightWidth(resolver, rightElement);
+        Constraint effectiveLeftWidth = resolveLeftWidth(resolver);
+        Constraint effectiveRightWidth = resolveRightWidth(resolver);
 
         // Wrap Elements as lambda Widgets
         Widget topWidget = topElement != null
@@ -419,36 +445,16 @@ public final class DockElement extends StyledElement<DockElement> {
         return Constraint.length(1);
     }
 
-    private Constraint resolveLeftWidth(StylePropertyResolver resolver, Element element) {
-        // Use standard resolution: programmatic → CSS → null
+    private Constraint resolveLeftWidth(StylePropertyResolver resolver) {
+        // Use standard resolution: programmatic → CSS → fill
         Constraint resolved = resolver.resolve(DOCK_LEFT_WIDTH, this.leftWidth);
-        if (resolved != null) {
-            return resolved;
-        }
-        // Fall back to element's preferred width
-        if (element != null) {
-            int preferredWidth = element.preferredWidth();
-            if (preferredWidth > 0) {
-                return Constraint.length(preferredWidth);
-            }
-        }
-        return Constraint.length(10);
+        return resolved != null ? resolved : Constraint.fill();
     }
 
-    private Constraint resolveRightWidth(StylePropertyResolver resolver, Element element) {
-        // Use standard resolution: programmatic → CSS → null
+    private Constraint resolveRightWidth(StylePropertyResolver resolver) {
+        // Use standard resolution: programmatic → CSS → fill
         Constraint resolved = resolver.resolve(DOCK_RIGHT_WIDTH, this.rightWidth);
-        if (resolved != null) {
-            return resolved;
-        }
-        // Fall back to element's preferred width
-        if (element != null) {
-            int preferredWidth = element.preferredWidth();
-            if (preferredWidth > 0) {
-                return Constraint.length(preferredWidth);
-            }
-        }
-        return Constraint.length(10);
+        return resolved != null ? resolved : Constraint.fill();
     }
 
     /**

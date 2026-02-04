@@ -219,6 +219,32 @@ public final class ColumnsElement extends ContainerElement<ColumnsElement> {
     }
 
     @Override
+    public int preferredHeight() {
+        if (children.isEmpty()) {
+            return 0;
+        }
+
+        int cols = columnCount != null ? columnCount : children.size();
+        cols = Math.min(cols, children.size());
+        int rows = (children.size() + cols - 1) / cols;
+
+        // For each row, compute max child height
+        int totalHeight = 0;
+        for (int row = 0; row < rows; row++) {
+            int rowHeight = 1;
+            for (int col = 0; col < cols; col++) {
+                int childIndex = row * cols + col;
+                if (childIndex < children.size()) {
+                    rowHeight = Math.max(rowHeight, children.get(childIndex).preferredHeight());
+                }
+            }
+            totalHeight += rowHeight;
+        }
+
+        return totalHeight;
+    }
+
+    @Override
     public int preferredHeight(int availableWidth, RenderContext context) {
         if (children.isEmpty() || availableWidth <= 0) {
             return 0;

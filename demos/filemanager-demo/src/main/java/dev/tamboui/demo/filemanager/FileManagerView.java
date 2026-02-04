@@ -158,6 +158,16 @@ public class FileManagerView implements Element {
                 .onCancel(manager::dismissDialog);
     }
 
+    @Override
+    public int preferredWidth() {
+        return 0;
+    }
+
+    @Override
+    public int preferredHeight() {
+        return 0;
+    }
+
     /**
      * Returns the layout constraint for this element.
      * @return the constraint
@@ -229,6 +239,16 @@ public class FileManagerView implements Element {
                 browser.setVisibleRows(area.height());
                 // Now render the file list with correct visible count
                 fileList(browser, active).render(frame, area, ctx);
+            }
+
+            @Override
+            public int preferredWidth() {
+                return 0;
+            }
+
+            @Override
+            public int preferredHeight() {
+                return 0;
             }
 
             @Override
@@ -362,6 +382,16 @@ public class FileManagerView implements Element {
                 } else {
                     renderTextFile(frame, renderArea, file);
                 }
+            }
+
+            @Override
+            public int preferredWidth() {
+                return 0;
+            }
+
+            @Override
+            public int preferredHeight() {
+                return 0;
             }
 
             @Override

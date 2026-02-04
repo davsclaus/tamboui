@@ -158,6 +158,22 @@ public final class FlowElement extends ContainerElement<FlowElement> {
     }
 
     @Override
+    public int preferredHeight() {
+        if (children.isEmpty()) {
+            return 0;
+        }
+        // Without available width, assume single row (max height of children)
+        int maxHeight = 1;
+        for (Element child : children) {
+            maxHeight = Math.max(maxHeight, child.preferredHeight());
+        }
+        if (margin != null) {
+            maxHeight += margin.verticalTotal();
+        }
+        return maxHeight;
+    }
+
+    @Override
     public int preferredHeight(int availableWidth, RenderContext context) {
         if (children.isEmpty() || availableWidth <= 0) {
             return 0;

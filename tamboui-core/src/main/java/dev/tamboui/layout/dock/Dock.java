@@ -123,8 +123,8 @@ public final class Dock implements Widget {
             if (center != null || (left == null && right == null)) {
                 hConstraints.add(Constraint.fill());
             } else if (left != null && right != null) {
-                // No center, but both sides present — add fill for the gap
-                hConstraints.add(Constraint.fill());
+                // No center, both sides present — zero-width gap so sides share space
+                hConstraints.add(Constraint.length(0));
             } else {
                 hConstraints.add(Constraint.fill());
             }

@@ -166,6 +166,16 @@ class FaultTolerantRenderingTest {
             }
 
             @Override
+            public int preferredWidth() {
+                return 0;
+            }
+
+            @Override
+            public int preferredHeight() {
+                return 0;
+            }
+
+            @Override
             public String id() {
                 return "faulty-element";
             }
@@ -177,6 +187,16 @@ class FaultTolerantRenderingTest {
             @Override
             public void render(Frame frame, Rect area, RenderContext context) {
                 rendered.set(true);
+            }
+
+            @Override
+            public int preferredWidth() {
+                return 0;
+            }
+
+            @Override
+            public int preferredHeight() {
+                return 0;
             }
 
             @Override

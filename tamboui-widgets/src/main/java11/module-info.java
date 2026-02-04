@@ -28,4 +28,5 @@ module dev.tamboui.widgets {
     exports dev.tamboui.widgets.tree;
     exports dev.tamboui.widgets.spinner;
     exports dev.tamboui.widgets.toggle;
+    exports dev.tamboui.widgets.wavetext;
 }

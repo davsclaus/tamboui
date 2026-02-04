@@ -529,6 +529,73 @@ public final class TreeElement<T> extends StyledElement<TreeElement<T>> {
     }
 
     @Override
+    public int preferredWidth() {
+        if (roots.isEmpty()) {
+            return 0;
+        }
+
+        // Calculate max label width across all visible nodes
+        int maxWidth = 0;
+        for (TreeNode<T> root : roots) {
+            maxWidth = Math.max(maxWidth, computeMaxLabelWidth(root, 0));
+        }
+
+        // Add highlight symbol width
+        String effectiveSymbol = highlightSymbol != null ? highlightSymbol : DEFAULT_HIGHLIGHT_SYMBOL;
+        maxWidth += effectiveSymbol.length();
+
+        // Add border width if present
+        if (title != null || borderType != null) {
+            maxWidth += 2;
+        }
+
+        return maxWidth;
+    }
+
+    @Override
+    public int preferredHeight() {
+        if (roots.isEmpty()) {
+            return 0;
+        }
+
+        // Count visible nodes
+        int count = 0;
+        for (TreeNode<T> root : roots) {
+            count += countVisibleNodes(root);
+        }
+
+        // Add border height if present
+        if (title != null || borderType != null) {
+            count += 2;
+        }
+
+        return count;
+    }
+
+    private int computeMaxLabelWidth(TreeNode<T> node, int depth) {
+        int indentW = indentWidth >= 0 ? indentWidth : guideStyle.space().length();
+        int labelWidth = node.label() != null ? node.label().length() : 0;
+        int width = depth * indentW + labelWidth;
+
+        if (node.isExpanded() && !node.isLeaf()) {
+            for (TreeNode<T> child : node.children()) {
+                width = Math.max(width, computeMaxLabelWidth(child, depth + 1));
+            }
+        }
+        return width;
+    }
+
+    private int countVisibleNodes(TreeNode<T> node) {
+        int count = 1;
+        if (node.isExpanded() && !node.isLeaf()) {
+            for (TreeNode<T> child : node.children()) {
+                count += countVisibleNodes(child);
+            }
+        }
+        return count;
+    }
+
+    @Override
     public Map<String, String> styleAttributes() {
         Map<String, String> attrs = new LinkedHashMap<>(super.styleAttributes());
         if (title != null) {

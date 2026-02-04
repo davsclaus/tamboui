@@ -136,6 +136,19 @@ public final class Row extends ContainerElement<Row> {
     }
 
     @Override
+    public int preferredHeight() {
+        if (children.isEmpty()) {
+            return 1;
+        }
+        // Horizontal layout: max height of children
+        int maxHeight = 1;
+        for (Element child : children) {
+            maxHeight = Math.max(maxHeight, child.preferredHeight());
+        }
+        return maxHeight;
+    }
+
+    @Override
     public int preferredHeight(int availableWidth, RenderContext context) {
         if (children.isEmpty() || availableWidth <= 0) {
             return 1;
