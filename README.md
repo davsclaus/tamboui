@@ -6,6 +6,10 @@
 [![Chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://tamboui.zulipchat.com)
 [![All Contributors](https://img.shields.io/github/all-contributors/tamboui/tamboui?color=ee8449&style=flat-square)](#contributors)
 
+<p align="center">
+  <img src="images/tamboui_logo_horizontal_gradient.svg" alt="TamboUI Gradient Logo"/>
+</p>
+
 A Java library for building modern terminal user interfaces.
 
 TamboUI brings the TUI paradigms seen in things like Rust's [ratatui](https://github.com/ratatui/ratatui) or Go's [bubbletea](https://github.com/charmbracelet/bubbletea/) to the Java ecosystem.
@@ -20,6 +24,9 @@ It provides a comprehensive set of widgets and a layout system for building rich
 
 Currently TamboUI is only available as snapshot builds. You can use the following Maven repository to access snapshot versions:
 
+<details>
+<summary>🚀 <strong>Maven</strong></summary>
+
 ```xml
 <repository>
     <id>ossrh-snapshots</id>
@@ -33,7 +40,10 @@ Currently TamboUI is only available as snapshot builds. You can use the followin
 </repository>
 ```
 
-Gradle:
+</details>
+
+<details>
+<summary>🛠️ <strong>Gradle</strong></summary>
 
 ```kotlin
 repositories {
@@ -46,13 +56,26 @@ repositories {
 }
 ```
 
+</details>
+
+<details>
+<summary>📦 <strong>JBang</strong></summary>
+
+```java
+//REPOS https://central.sonatype.com/repository/maven-snapshots/
+```
+
+NOTE: If you are using JBang 0.136 or higher you can use the shortcut `// REPOS central-portal-snapshots`
+</details>
+
+
 ### Key Features
 
 - **Immediate-mode rendering** - Redraw the entire UI each frame for simple state management
 - **Intermediate buffer system** - Widgets render to a buffer, enabling diff-based terminal updates
 - **Constraint-based layout** - Flexible layout system with percentage, fixed, ratio, and proportional sizing
-- **JLine 3 backend** - Cross-platform terminal support including Windows via Jansi
-- **High-level TUI framework** - TuiRunner eliminates boilerplate with built-in event handling
+- **Multiple backends** - Cross-platform terminal support using JLine 3, Panama, Aesh, and more
+- **High-level TUI framework** - TuiRunner eliminates boilerplate with built-in event handling and Cascading Style Sheets (CSS) support
 - **PicoCLI integration** - Optional module for CLI argument parsing
 - **GraalVM native image support** - Compile to native executables for instant startup
 - **Works everywhere** - Core is Java 8+ compatible, but following patterns that works really well with modern Java idioms
@@ -301,7 +324,7 @@ try (var backend = BackendFactory.create()) {
 }
 ```
 
-## Building and Running Demos
+## Building 
 
 ### Building the Project
 
@@ -316,6 +339,8 @@ try (var backend = BackendFactory.create()) {
 ```
 
 ### Publishing to Local Maven Repository
+
+Useful when using when you want to use the library in your own Maven or JBang project.
 
 ```bash
 ./gradlew publishToMavenLocal
@@ -335,6 +360,7 @@ Then look into `build/repo` for the generated artifacts.
 
 To run the demos, you can either run them on the JVM or compile them to a native executable.
 
+Using `jbang` 
 #### JBang
 
 If you have JBang installed you can list the local catalog:
