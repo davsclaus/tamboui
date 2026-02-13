@@ -10,6 +10,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import dev.tamboui.tui.event.ActionEvent;
 import dev.tamboui.tui.event.Event;
 import dev.tamboui.tui.event.KeyCode;
 import dev.tamboui.tui.event.KeyEvent;
@@ -179,5 +180,74 @@ class ActionHandlerTest {
         handler.dispatch(KeyEvent.ofKey(KeyCode.DOWN, bindings));
 
         assertThat(receivedActions).containsExactly(Actions.MOVE_UP, Actions.MOVE_DOWN);
+    }
+
+    @Test
+    void fireInvokesHandlersByActionName() {
+        List<Event> received = new ArrayList<>();
+        handler.on("save", e -> received.add(e));
+
+        // Use any event — fire bypasses bindings, so the event content doesn't matter
+        KeyEvent event = KeyEvent.ofChar('x', bindings);
+        boolean handled = handler.fire("save", event);
+
+        assertThat(handled).isTrue();
+        assertThat(received).hasSize(1);
+        assertThat(received.get(0)).isEqualTo(event);
+    }
+
+    @Test
+    void fireReturnsFalseWhenNoHandlers() {
+        KeyEvent event = KeyEvent.ofChar('x', bindings);
+        boolean handled = handler.fire("refresh", event);
+
+        assertThat(handled).isFalse();
+    }
+
+    @Test
+    void firePassesActionNameToBiConsumerHandler() {
+        List<String> receivedActions = new ArrayList<>();
+        handler.on("save", (event, action) -> receivedActions.add(action));
+
+        handler.fire("save", KeyEvent.ofChar('x', bindings));
+
+        assertThat(receivedActions).containsExactly("save");
+    }
+
+    @Test
+    void fireInvokesMultipleHandlersInOrder() {
+        List<String> callOrder = new ArrayList<>();
+        handler.on("save", e -> callOrder.add("first"));
+        handler.on("save", e -> callOrder.add("second"));
+
+        handler.fire("save", KeyEvent.ofChar('x', bindings));
+
+        assertThat(callOrder).containsExactly("first", "second");
+    }
+
+    @Test
+    void fireWithoutEventCreatesActionEvent() {
+        List<Event> received = new ArrayList<>();
+        handler.on("save", e -> received.add(e));
+
+        boolean handled = handler.fire("save");
+
+        assertThat(handled).isTrue();
+        assertThat(received).hasSize(1);
+        assertThat(received.get(0)).isInstanceOf(ActionEvent.class);
+        assertThat(((ActionEvent) received.get(0)).action()).isEqualTo("save");
+    }
+
+    @Test
+    void fireDoesNotGoThroughBindings() {
+        // "refresh" is not in bindings, but fire should still work
+        handler.on("refresh", e -> {});
+
+        // dispatch would fail (no binding for 'r' → "refresh")
+        KeyEvent rEvent = KeyEvent.ofChar('r', bindings);
+        assertThat(handler.dispatch(rEvent)).isFalse();
+
+        // fire works because it bypasses bindings
+        assertThat(handler.fire("refresh", rEvent)).isTrue();
     }
 }

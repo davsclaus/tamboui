@@ -5,16 +5,12 @@
 package dev.tamboui.tui.bindings;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.ServiceLoader;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import dev.tamboui.annotations.bindings.OnAction;
+import dev.tamboui.tui.event.ActionEvent;
 import dev.tamboui.tui.event.Event;
 
 /**
@@ -118,6 +114,52 @@ public final class ActionHandler {
     }
 
     /**
+     * Fires a named action directly, bypassing bindings resolution.
+     * <p>
+     * Unlike {@link #dispatch(Event)}, this method does not resolve the action
+     * from the event via bindings. Instead, the action name is provided explicitly,
+     * allowing programmatic triggering of actions.
+     * <p>
+     * This is useful when an element interaction (e.g., a click) should trigger
+     * a named action that is also bound to a keyboard shortcut:
+     * <pre>{@code
+     * // Key binding: Ctrl+S triggers "save" (via bindings)
+     * // Element click also fires "save" (via fire):
+     * text("Save").focusable().on(MouseTrigger.click(), e -> handler.fire("save", e));
+     * }</pre>
+     *
+     * @param action the action name to fire
+     * @param event  the event that triggered this action
+     * @return true if the action was handled (handlers registered and invoked),
+     *         false otherwise
+     */
+    public boolean fire(String action, Event event) {
+        List<BiConsumer<Event, String>> list = handlers.get(action);
+        if (list != null && !list.isEmpty()) {
+            for (BiConsumer<Event, String> h : list) {
+                h.accept(event, action);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Fires a named action without an originating event.
+     * <p>
+     * An {@link dev.tamboui.tui.event.ActionEvent} is created to represent the
+     * programmatic trigger. This is useful when no input event is involved
+     * (e.g., firing an action from a timer or application logic).
+     *
+     * @param action the action name to fire
+     * @return true if the action was handled (handlers registered and invoked),
+     *         false otherwise
+     */
+    public boolean fire(String action) {
+        return fire(action, ActionEvent.of(action));
+    }
+
+    /**
      * Dispatches an event to registered handlers.
      * <p>
      * The event is matched against the bindings. If a matching action is found
@@ -130,17 +172,7 @@ public final class ActionHandler {
      */
     public boolean dispatch(Event event) {
         Optional<String> action = bindings.actionFor(event);
-        if (action.isPresent()) {
-            String actionName = action.get();
-            List<BiConsumer<Event, String>> list = handlers.get(actionName);
-            if (list != null && !list.isEmpty()) {
-                for (BiConsumer<Event, String> h : list) {
-                    h.accept(event, actionName);
-                }
-                return true;
-            }
-        }
-        return false;
+        return action.isPresent() && fire(action.get(), event);
     }
 
     /**

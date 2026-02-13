@@ -8,9 +8,11 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import dev.tamboui.css.Styleable;
 import dev.tamboui.css.cascade.CssStyleResolver;
@@ -27,7 +29,11 @@ import dev.tamboui.toolkit.event.KeyEventHandler;
 import dev.tamboui.toolkit.event.MouseEventHandler;
 import dev.tamboui.toolkit.id.IdGenerator;
 import dev.tamboui.tui.bindings.ActionHandler;
+import dev.tamboui.tui.bindings.InputTrigger;
+import dev.tamboui.tui.bindings.KeyTrigger;
+import dev.tamboui.tui.bindings.MouseTrigger;
 import dev.tamboui.tui.error.TuiException;
+import dev.tamboui.tui.event.Event;
 import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.tui.event.MouseEvent;
 
@@ -822,6 +828,57 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
         onMouseEvent(event -> handler.dispatch(event)
                 ? EventResult.HANDLED
                 : EventResult.UNHANDLED);
+        return self();
+    }
+
+    /**
+     * Binds an input trigger directly to a handler on this element.
+     * <p>
+     * When the trigger matches an incoming event, the handler is invoked and
+     * the event is marked as handled. This bypasses the bindings/action-name
+     * system entirely, providing a direct trigger-to-handler wiring.
+     * <p>
+     * Multiple {@code on()} calls compose: each call chains with the previous
+     * handler, so all registered triggers are checked in reverse registration order.
+     * <p>
+     * Example:
+     * <pre>{@code
+     * text("Red").focusable()
+     *     .on(MouseTrigger.click(), e -> color("RED"))
+     *     .on(KeyTrigger.ch('r'), e -> color("RED"));
+     * }</pre>
+     * <p>
+     * <strong>Note:</strong> Calling {@link #onKeyEvent(KeyEventHandler)} or
+     * {@link #onMouseEvent(MouseEventHandler)} after {@code on()} replaces the
+     * chained handler, same as calling those methods multiple times.
+     *
+     * @param trigger the input trigger to match (e.g., {@code MouseTrigger.click()}, {@code KeyTrigger.ch('r')})
+     * @param handler the handler to invoke when the trigger matches
+     * @return this element for chaining
+     */
+    public T on(InputTrigger trigger, Consumer<Event> handler) {
+        Objects.requireNonNull(trigger);
+        Objects.requireNonNull(handler);
+        if (trigger instanceof KeyTrigger) {
+            KeyEventHandler prev = this.keyHandler;
+            onKeyEvent(event -> {
+                if (trigger.matches(event)) {
+                    handler.accept(event);
+                    return EventResult.HANDLED;
+                }
+                return prev != null ? prev.handle(event) : EventResult.UNHANDLED;
+            });
+        }
+        if (trigger instanceof MouseTrigger) {
+            MouseEventHandler prev = this.mouseHandler;
+            onMouseEvent(event -> {
+                if (trigger.matches(event)) {
+                    handler.accept(event);
+                    return EventResult.HANDLED;
+                }
+                return prev != null ? prev.handle(event) : EventResult.UNHANDLED;
+            });
+        }
         return self();
     }
 
