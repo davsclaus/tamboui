@@ -8,8 +8,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -352,8 +356,40 @@ public class DemoLauncher {
         System.out.println();
 
         Class<?> clazz = Class.forName(demo.mainClass());
-        Method main = clazz.getMethod("main", String[].class);
-        main.invoke(null, (Object) args);
+        Method main;
+        // Try static main(String[] args) first (standard Java/jbang)
+        try {
+            main = clazz.getMethod("main", String[].class);
+        } catch (NoSuchMethodException e1) {
+            try {
+                main = clazz.getMethod("main");
+            } catch (NoSuchMethodException e2) {
+                try {
+                    main = clazz.getDeclaredMethod("main");
+                } catch (ReflectiveOperationException e3) {
+                    NoSuchMethodException ex = new NoSuchMethodException(
+                            "Could not find main(String[] args), main(), or compact main() in " + clazz.getName());
+                    ex.initCause(e3);
+                    throw ex;
+                }
+            }
+        }
+
+        main.setAccessible(true);
+
+        Object instance = null;
+        // Instance main (e.g. compact / unnamed class source): create instance if needed
+        if (!Modifier.isStatic(main.getModifiers()) && instance == null) {
+            Constructor<?> constructor = clazz.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            instance = constructor.newInstance();
+        }
+
+        if (main.getParameterCount() == 0) {
+            main.invoke(instance);
+        } else {
+            main.invoke(instance, (Object) args);
+        }
     }
 
     /**
@@ -545,8 +581,6 @@ public class DemoLauncher {
                         },
                         frame -> {
                             Rect area = frame.area();
-                            int width = area.width();
-                            int height = area.height();
 
                             // Layout: filter input at top, list below
                             List<Rect> layout = Layout.vertical()
@@ -579,7 +613,18 @@ public class DemoLauncher {
                 System.out.println();
                 System.out.println("Launching: " + selectedDemoRef[0].displayName() + " (" + selectedDemoRef[0].module() + ")");
                 System.out.println();
+                Instant start = Instant.now();
                 launchDemo(demos, selectedDemoRef[0].id(), new String[0]);
+                if (Duration.between(start, Instant.now()).getSeconds() < 1) {
+                    System.out.println();
+                    System.out.print("Press Enter to continue (demo ran in less than 1 second)...");
+                    try {
+                        // Wait for ENTER/keypress before returning to selector
+                        System.in.read();
+                    } catch (Exception ignore) {
+                    }
+                    System.out.println();
+                }
                 // After demo exits, loop will automatically return to selector (creating a new runner)
             }
         }
