@@ -28,15 +28,15 @@ runs:
         distribution: 'graalvm-community'
         java-version: '${{ inputs.java-version }}'
         github-token: ${{ secrets.GITHUB_TOKEN }}
-    - uses: gradle/actions/wrapper-validation@v4
+    - uses: gradle/actions/wrapper-validation@v5
     - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
+      uses: gradle/actions/setup-gradle@v5
 
     - name: Set up JBang
       uses: jbangdev/setup-jbang@main
     
     - name: setup-gradle
-      uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+      uses: gradle/actions/setup-gradle@f29f5a9d7b09a7c6b29859002d29d24e1674c884 # v5
       with:
           cache-overwrite-existing: true
           add-job-summary: ${{ inputs.add-job-summary }}
