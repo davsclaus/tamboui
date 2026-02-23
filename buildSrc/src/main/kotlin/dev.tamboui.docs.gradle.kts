@@ -86,6 +86,8 @@ tasks.asciidoctor {
     inputs.files(copyCasts)
     inputs.files(copyScreenshots)
     inputs.files(javadoc)
+    // Track snippet source files so changes trigger doc rebuild
+    inputs.dir(project.file("src/snippets/java"))
     // Ensure code snippets compile before building docs
     dependsOn(snippetsClasses)
 
