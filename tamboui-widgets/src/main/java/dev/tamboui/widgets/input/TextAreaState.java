@@ -324,16 +324,32 @@ public final class TextAreaState {
 
     /**
      * Moves the cursor to logical line {@code targetRow}, keeping it in the same screen column.
-     * The column is measured in display width rather than reused as a char offset: on a line with
-     * emoji or CJK characters the same offset is a different column, or falls inside a surrogate
-     * pair or a ZWJ sequence, where the next keystroke would split the character.
+     * The column is measured in display width from the visible viewport (or the line start when
+     * not horizontally scrolled) rather than reused as a char offset. On a line with emoji or CJK
+     * characters the same offset can land inside a grapheme, where the next keystroke would split it.
      */
     private void moveCursorToLine(int targetRow) {
         StringBuilder line = lines.get(cursorRow);
-        int column = CharWidth.of(line.substring(0, Math.min(cursorCol, line.length())));
         StringBuilder target = lines.get(targetRow);
+        int start = 0;
+        int column;
+        if (scrollCol > 0 && cursorCol >= scrollCol && scrollCol <= line.length()) {
+            // The caret is drawn relative to scrollCol, not the start of the logical line.
+            column = CharWidth.of(line.substring(scrollCol, cursorCol));
+            start = Math.min(scrollCol, target.length());
+            // The same char offset can fall inside a grapheme on another line.
+            if (start < target.length()) {
+                int boundary = 0;
+                while (boundary < start) {
+                    boundary = GraphemeClusters.clusterEnd(target, boundary);
+                }
+                start = boundary;
+            }
+        } else {
+            column = CharWidth.of(line.substring(0, Math.min(cursorCol, line.length())));
+        }
         cursorRow = targetRow;
-        cursorCol = offsetAtColumn(target, 0, target.length(), column);
+        cursorCol = offsetAtColumn(target, start, target.length(), column);
     }
 
     /**

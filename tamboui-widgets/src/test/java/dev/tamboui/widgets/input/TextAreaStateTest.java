@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import dev.tamboui.style.Overflow;
+import dev.tamboui.text.CharWidth;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -370,6 +371,31 @@ class TextAreaStateTest {
             state.moveCursorDown();
 
             assertThat(state.cursorCol()).isEqualTo(2); // back after "文"
+        }
+
+        @Test
+        @DisplayName("Move cursor up preserves the visible column when scrolled past a wide character")
+        void moveCursorUpKeepsViewportColumnWhenHorizontallyScrolled() {
+            TextAreaState state = new TextAreaState("世abcdefghij\nabcdefghij");
+            state.ensureCursorVisible(2, 4);
+            int initialScrollCol = state.scrollCol();
+            assertThat(initialScrollCol).isPositive();
+            int before = CharWidth.of(state.getLine(state.cursorRow())
+                .substring(initialScrollCol, state.cursorCol()));
+
+            state.moveCursorUp();
+            state.ensureCursorVisible(2, 4);
+
+            assertThat(state.scrollCol()).isEqualTo(initialScrollCol);
+            int after = CharWidth.of(state.getLine(state.cursorRow())
+                .substring(state.scrollCol(), state.cursorCol()));
+            assertThat(after).isEqualTo(before);
+
+            state.moveCursorDown();
+            state.ensureCursorVisible(2, 4);
+            int back = CharWidth.of(state.getLine(state.cursorRow())
+                .substring(state.scrollCol(), state.cursorCol()));
+            assertThat(back).isEqualTo(before);
         }
 
         @Test

@@ -12,6 +12,7 @@ import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.Style;
 import dev.tamboui.terminal.Frame;
+import dev.tamboui.text.CharWidth;
 import dev.tamboui.toolkit.app.ToolkitRunner;
 import dev.tamboui.toolkit.element.Element;
 import dev.tamboui.toolkit.element.RenderContext;
@@ -66,7 +67,11 @@ public class TextAreaDemo implements Element {
 
             This editor uses the default clip mode, so this long line simply runs off the right edge of the pane instead of wrapping.
 
-            Try editing this text!""");
+            Try editing this text!
+
+            Horizontal scroll test: press Up and Down on the two lines below.
+            世abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
+            abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789""");
 
         // Notes area demonstrates word wrapping while editing
         notesState = new TextAreaState(
@@ -177,10 +182,21 @@ public class TextAreaDemo implements Element {
                 text("Line " + (mainEditorState.cursorRow() + 1)).cyan(),
                 text(", ").dim(),
                 text("Col " + (mainEditorState.cursorCol() + 1)).cyan(),
+                text("  View col " + mainViewportColumn()).yellow(),
                 spacer(),
                 text("Scroll: Row " + mainEditorState.scrollRow()).dim()
             )).rounded().length(3)
         ).render(frame, area, context);
+    }
+
+    private int mainViewportColumn() {
+        int scrollCol = mainEditorState.scrollCol();
+        int cursorCol = mainEditorState.cursorCol();
+        if (cursorCol < scrollCol) {
+            return -1;
+        }
+        String line = mainEditorState.getLine(mainEditorState.cursorRow());
+        return CharWidth.of(line.substring(Math.min(scrollCol, line.length()), Math.min(cursorCol, line.length())));
     }
 
     private void updateCounts() {
