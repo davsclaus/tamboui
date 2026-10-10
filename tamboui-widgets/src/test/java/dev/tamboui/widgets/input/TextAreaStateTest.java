@@ -332,6 +332,57 @@ class TextAreaStateTest {
         }
 
         @Test
+        @DisplayName("Move cursor up onto an emoji line lands between two emoji, not inside one")
+        void moveCursorUpOntoEmojiLine() {
+            // Cursor at the end of "abc", screen column 3. Each "🔥" is 2 columns and 2 chars.
+            TextAreaState state = new TextAreaState("🔥🔥\nabc");
+            state.moveCursorUp();
+
+            // Column 3 falls inside the second "🔥" (columns 2-3), so the caret stops before it.
+            assertThat(state.cursorRow()).isEqualTo(0);
+            assertThat(state.cursorCol()).isEqualTo(2);
+
+            state.insert('x');
+            assertThat(state.getLine(0)).isEqualTo("🔥x🔥");
+        }
+
+        @Test
+        @DisplayName("Move cursor down onto an emoji line lands between two emoji, not inside one")
+        void moveCursorDownOntoEmojiLine() {
+            TextAreaState state = new TextAreaState("abc\n🔥🔥");
+            state.moveCursorToStart();
+            state.moveCursorToLineEnd(); // "abc|", screen column 3
+            state.moveCursorDown();
+
+            assertThat(state.cursorRow()).isEqualTo(1);
+            assertThat(state.cursorCol()).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("Move cursor up and down keeps the screen column across wide (CJK) characters")
+        void moveCursorUpDownKeepsScreenColumnAcrossWideChars() {
+            // Cursor at the end of "中文": char offset 2, screen column 4.
+            TextAreaState state = new TextAreaState("abcdef\n中文");
+            state.moveCursorUp();
+
+            assertThat(state.cursorCol()).isEqualTo(4); // "abcd|ef"
+
+            state.moveCursorDown();
+
+            assertThat(state.cursorCol()).isEqualTo(2); // back after "文"
+        }
+
+        @Test
+        @DisplayName("Move cursor up never lands inside a ZWJ sequence")
+        void moveCursorUpOntoZwjSequence() {
+            // "👨‍👩‍👧" is one 2-column glyph made of 8 chars; screen column 1 falls inside it.
+            TextAreaState state = new TextAreaState("👨‍👩‍👧 family\na");
+            state.moveCursorUp();
+
+            assertThat(state.cursorCol()).isEqualTo(0);
+        }
+
+        @Test
         @DisplayName("Move to line start")
         void moveCursorToLineStart() {
             TextAreaState state = new TextAreaState("Hello");
