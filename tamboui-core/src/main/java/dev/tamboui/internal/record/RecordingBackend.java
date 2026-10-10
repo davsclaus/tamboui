@@ -34,6 +34,9 @@ public final class RecordingBackend implements Backend {
     private final InteractionPlayer interactionPlayer;
     private final long startTimeNanos;
     private long lastCaptureTimeNanos;
+    // timestamp of the latest draw the fps throttle skipped, or -1 once a frame has been captured
+    // after it; the cast ends with that screen if no later frame captures it
+    private long pendingDrawMs = -1;
     // time spent in the Hide sections of the tape, left out of the frame timestamps
     private long hiddenNanos;
     private long hiddenSinceNanos;
@@ -84,12 +87,12 @@ public final class RecordingBackend implements Backend {
 
         // Capture frame if recording
         if (recording) {
-            captureFrame();
+            captureFrame(true);
         }
         // Don't delegate - headless recording
     }
 
-    private void captureFrame() {
+    private void captureFrame(boolean drawn) {
         long nowNanos = System.nanoTime();
         // The frames of a Hide section are left out, and so is the time it took, so playback does not pause there
         if (interactionPlayer.isHidden()) {
@@ -116,6 +119,9 @@ public final class RecordingBackend implements Backend {
         if (nowNanos - lastCaptureTimeNanos >= frameIntervalNanos) {
             frames.add(new TimedFrame(buffer.copy(), elapsedMs));
             lastCaptureTimeNanos = nowNanos;
+            pendingDrawMs = -1;
+        } else if (drawn) {
+            pendingDrawMs = elapsedMs;
         }
     }
 
@@ -237,7 +243,7 @@ public final class RecordingBackend implements Backend {
             // Only capture if draw() has been called (TUI demos), not for inline demos
             // which use System.out and AnsiTerminalCapture instead
             if (recording && hasDrawn) {
-                captureFrame();
+                captureFrame(false);
             }
             return b;
         }
@@ -305,6 +311,13 @@ public final class RecordingBackend implements Backend {
         // the shutdown hook write the System.out captured frames instead
         if (frames.isEmpty()) {
             return;  // Let shutdown hook handle AnsiTerminalCapture frames
+        }
+
+        // A draw since the last captured frame fell within the fps throttle: add the screen as it
+        // is now, or the recording ends on the frame before it
+        if (pendingDrawMs >= 0) {
+            frames.add(new TimedFrame(buffer.copy(), pendingDrawMs));
+            pendingDrawMs = -1;
         }
 
         // We have draw() frames - uninstall System.out capture and write draw frames
