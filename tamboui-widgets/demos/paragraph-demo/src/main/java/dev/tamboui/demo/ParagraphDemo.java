@@ -20,6 +20,7 @@ import dev.tamboui.terminal.Backend;
 import dev.tamboui.terminal.BackendFactory;
 import dev.tamboui.terminal.Frame;
 import dev.tamboui.terminal.Terminal;
+import dev.tamboui.text.CharWidth;
 import dev.tamboui.text.Line;
 import dev.tamboui.text.Masked;
 import dev.tamboui.text.Span;
@@ -47,9 +48,9 @@ public class ParagraphDemo {
 
     private boolean running = true;
     private int scrollOffset = 0;
+    private Overflow wrapMode = Overflow.WRAP_CHARACTER;
 
-    private ParagraphDemo() {
-
+    ParagraphDemo() {
     }
 
     /**
@@ -83,16 +84,25 @@ public class ParagraphDemo {
             while (running) {
                 terminal.draw(this::ui);
 
-                int c = backend.read(100);
-                if (c == 'q' || c == 'Q' || c == 3) {
-                    running = false;
-                } else if (c == 'j' || c == 'J') {
-                    scrollOffset = Math.min(scrollOffset + 1, 10);
-                } else if (c == 'k' || c == 'K') {
-                    scrollOffset = Math.max(scrollOffset - 1, 0);
-                }
+                handleInput(backend.read(100));
             }
         }
+    }
+
+    void handleInput(int c) {
+        if (c == 'q' || c == 'Q' || c == 3) {
+            running = false;
+        } else if (c == 'j' || c == 'J') {
+            scrollOffset = Math.min(scrollOffset + 1, 10);
+        } else if (c == 'k' || c == 'K') {
+            scrollOffset = Math.max(scrollOffset - 1, 0);
+        } else if (c == 'w' || c == 'W') {
+            wrapMode = wrapMode == Overflow.WRAP_CHARACTER ? Overflow.WRAP_WORD : Overflow.WRAP_CHARACTER;
+        }
+    }
+
+    Overflow wrapMode() {
+        return wrapMode;
     }
 
     private void ui(Frame frame) {
@@ -179,13 +189,14 @@ public class ParagraphDemo {
     private void renderWrappedParagraph(Frame frame, Rect area) {
         // Create a long line that will wrap
         String shortLine = "Slice, layer, and bake the vegetables. ";
-        int repeatCount = (area.width() / shortLine.length()) + 2;
+        int repeatCount = (area.width() / CharWidth.of(shortLine)) + 2;
         String longLine = shortLine.repeat(repeatCount);
 
         Masked secretIngredient = new Masked("herbs de Provence", '*');
 
         Text text = Text.from(
             Line.from("Recipe: Ratatouille").bold(),
+            Line.from("   👩‍💻 中文字 🔥🌶️ こんにちは").fg(Color.MAGENTA),
             Line.from("Ingredients:").bold(),
             Line.from(
                 Span.raw("Bell Peppers"),
@@ -212,13 +223,13 @@ public class ParagraphDemo {
         Paragraph paragraph = Paragraph.builder()
             .text(text)
             .style(Style.EMPTY.fg(Color.WHITE))
-            .overflow(Overflow.WRAP_CHARACTER)
+            .overflow(wrapMode)
             .scroll(scrollOffset)
             .block(Block.builder()
                 .borders(Borders.ALL)
                 .borderType(BorderType.ROUNDED)
                 .borderStyle(Style.EMPTY.fg(Color.GREEN))
-                .title(Title.from("Wrapped Text with Styles").centered())
+                .title(Title.from("Wrap: " + (wrapMode == Overflow.WRAP_WORD ? "Word" : "Character")).centered())
                 .build())
             .build();
 
@@ -229,6 +240,8 @@ public class ParagraphDemo {
         Line helpLine = Line.from(
             Span.raw(" j/k").bold().yellow(),
             Span.raw(" Scroll  ").dim(),
+            Span.raw("w").bold().yellow(),
+            Span.raw(" Toggle wrap  ").dim(),
             Span.raw("q").bold().yellow(),
             Span.raw(" Quit").dim()
         );

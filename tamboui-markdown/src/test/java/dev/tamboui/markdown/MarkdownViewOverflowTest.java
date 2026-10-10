@@ -6,17 +6,23 @@ package dev.tamboui.markdown;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.commonmark.parser.Parser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.layout.Rect;
+import dev.tamboui.markdown.internal.MarkdownInlineRenderer;
 import dev.tamboui.style.Overflow;
 import dev.tamboui.style.PropertyDefinition;
+import dev.tamboui.style.Style;
 import dev.tamboui.style.StylePropertyResolver;
+import dev.tamboui.text.Line;
+import dev.tamboui.text.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -57,6 +63,29 @@ class MarkdownViewOverflowTest {
         MarkdownView view = MarkdownView.builder().source("世界").build();
 
         assertThat(view.computeHeight(1)).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("WRAP_CHARACTER keeps a too-wide ZWJ emoji on one line")
+    void wrapCharacterKeepsZwjEmojiWhole() {
+        assertZwjEmojiStaysWhole(Overflow.WRAP_CHARACTER);
+    }
+
+    @Test
+    @DisplayName("WRAP_WORD keeps a too-wide ZWJ emoji on one line")
+    void wrapWordKeepsZwjEmojiWhole() {
+        assertZwjEmojiStaysWhole(Overflow.WRAP_WORD);
+    }
+
+    private static void assertZwjEmojiStaysWhole(Overflow overflow) {
+        String emoji = "👩‍💻";
+        List<Line> lines = MarkdownInlineRenderer.render(
+            Parser.builder().build().parse(emoji + "X").getFirstChild(),
+            Style.EMPTY, 1, MarkdownStyles.DEFAULTS, overflow);
+
+        assertThat(lines).hasSize(2);
+        assertThat(lines.get(0).spans()).extracting(Span::content).containsExactly(emoji);
+        assertThat(lines.get(1).spans()).extracting(Span::content).containsExactly("X");
     }
 
     @Test

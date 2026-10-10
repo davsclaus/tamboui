@@ -9,9 +9,11 @@ import java.time.Duration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import dev.tamboui.assertj.BufferAssertions;
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Overflow;
+import dev.tamboui.style.Style;
 import dev.tamboui.text.Line;
 import dev.tamboui.text.Span;
 import dev.tamboui.text.Text;
@@ -202,6 +204,32 @@ class ParagraphWideCharTest {
 
         Buffer buffer = Buffer.empty(new Rect(0, 0, 4, 6));
         assertTimeoutPreemptively(Duration.ofSeconds(5), () -> p.render(buffer.area(), buffer));
+    }
+
+    @Test
+    @DisplayName("WRAP_CHARACTER keeps a ZWJ emoji together at its display width")
+    void wrapCharacterKeepsZwjEmojiWhole() {
+        assertZwjEmojiStaysWhole(Overflow.WRAP_CHARACTER);
+    }
+
+    @Test
+    @DisplayName("WRAP_WORD keeps a ZWJ emoji together at its display width")
+    void wrapWordKeepsZwjEmojiWhole() {
+        assertZwjEmojiStaysWhole(Overflow.WRAP_WORD);
+    }
+
+    private void assertZwjEmojiStaysWhole(Overflow overflow) {
+        Paragraph paragraph = Paragraph.builder()
+                .text(Text.from("👩‍💻X"))
+                .overflow(overflow)
+                .build();
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 2, 3));
+        paragraph.render(buffer.area(), buffer);
+
+        Buffer expected = Buffer.empty(buffer.area());
+        expected.setString(0, 0, "👩‍💻", Style.EMPTY);
+        expected.setString(0, 1, "X", Style.EMPTY);
+        BufferAssertions.assertThat(buffer).isEqualTo(expected);
     }
 
     private String extractLineText(Buffer buffer, int y) {

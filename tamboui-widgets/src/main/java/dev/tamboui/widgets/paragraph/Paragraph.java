@@ -445,41 +445,24 @@ public final class Paragraph implements Widget {
                     remainingWidth = maxWidth;
                 }
 
-                // Build chunk by iterating code points and checking display width
-                StringBuilder chunk = new StringBuilder();
-                int chunkWidth = 0;
-                int j = i;
-                while (j < content.length()) {
-                    int codePoint = content.codePointAt(j);
-                    int cpWidth = CharWidth.of(codePoint);
-                    if (chunkWidth + cpWidth > remainingWidth) {
-                        break;
-                    }
-                    chunk.appendCodePoint(codePoint);
-                    chunkWidth += cpWidth;
-                    j += Character.charCount(codePoint);
-                }
-
-                if (chunk.length() > 0) {
-                    currentSpans.add(new Span(chunk.toString(), wrappedStyle));
-                    currentWidth += chunkWidth;
-                    i = j;
+                String remaining = content.substring(i);
+                String chunk = CharWidth.substringByWidth(remaining, remainingWidth);
+                if (!chunk.isEmpty()) {
+                    currentSpans.add(new Span(chunk, wrappedStyle));
+                    currentWidth += CharWidth.of(chunk);
+                    i += chunk.length();
+                } else if (currentWidth > 0) {
+                    wrapped.add(Line.from(currentSpans));
+                    currentSpans = new ArrayList<>();
+                    currentWidth = 0;
                 } else {
-                    // Wide character doesn't fit on remaining space, wrap to next line
-                    if (currentWidth > 0) {
-                        wrapped.add(Line.from(currentSpans));
-                        currentSpans = new ArrayList<>();
-                        currentWidth = 0;
-                    } else {
-                        // Single character wider than maxWidth (shouldn't happen with maxWidth >= 2)
-                        int codePoint = content.codePointAt(j);
-                        chunk.appendCodePoint(codePoint);
-                        currentSpans.add(new Span(chunk.toString(), wrappedStyle));
-                        wrapped.add(Line.from(currentSpans));
-                        currentSpans = new ArrayList<>();
-                        currentWidth = 0;
-                        i = j + Character.charCount(codePoint);
-                    }
+                    // A grapheme wider than the line still takes a line of its own.
+                    chunk = firstTooWideCluster(remaining);
+                    currentSpans.add(new Span(chunk, wrappedStyle));
+                    wrapped.add(Line.from(currentSpans));
+                    currentSpans = new ArrayList<>();
+                    currentWidth = 0;
+                    i += chunk.length();
                 }
             }
         }
@@ -501,7 +484,6 @@ public final class Paragraph implements Widget {
         // Build full text and track which code point index maps to which style
         StringBuilder fullText = new StringBuilder();
         List<Style> cpStyles = new ArrayList<>();
-        List<Integer> cpWidths = new ArrayList<>();
         Map<String, String> hyperlinkIds = new HashMap<>();
 
         for (Span span : spans) {
@@ -516,7 +498,6 @@ public final class Paragraph implements Widget {
                 int codePoint = content.codePointAt(i);
                 fullText.appendCodePoint(codePoint);
                 cpStyles.add(wrappedStyle);
-                cpWidths.add(CharWidth.of(codePoint));
                 i += Character.charCount(codePoint);
             }
         }
@@ -537,7 +518,7 @@ public final class Paragraph implements Widget {
 
         while (pos < cpCount) {
             // Find the next word break point
-            int lineEnd = findNextWordBreakByWidth(text, cpOffsets, cpWidths, pos, cpCount, maxWidth);
+            int lineEnd = findNextWordBreakByWidth(text, cpOffsets, pos, cpCount, maxWidth);
 
             // Extract the line and reconstruct spans with correct styles
             List<Span> lineSpans = new ArrayList<>();
@@ -582,21 +563,14 @@ public final class Paragraph implements Widget {
      */
     private int findNextWordBreakByWidth(String text,
                                          int[] cpOffsets,
-                                         List<Integer> cpWidths,
                                          int startPos,
                                          int cpCount,
                                          int maxWidth) {
-        // Find max end position that fits within maxWidth display columns
-        int width = 0;
-        int maxEnd = startPos;
-        while (maxEnd < cpCount) {
-            int cpWidth = cpWidths.get(maxEnd);
-            if (width + cpWidth > maxWidth) {
-                break;
-            }
-            width += cpWidth;
-            maxEnd++;
-        }
+        // Truncate at grapheme boundaries, then convert the char offset back to a code-point index
+        // so the style reconstruction below can still walk the code points.
+        String remaining = text.substring(cpOffsets[startPos]);
+        String head = CharWidth.substringByWidth(remaining, maxWidth);
+        int maxEnd = startPos + head.codePointCount(0, head.length());
 
         // If we can fit everything, return the end
         if (maxEnd >= cpCount) {
@@ -619,10 +593,18 @@ public final class Paragraph implements Widget {
             }
         }
 
-        // No good break point - break at character boundary. A character wider than the line (a wide
-        // character in a 1-column line) still takes a line of its own, as with WRAP_CHARACTER; returning
-        // startPos would never advance the wrap loop
-        return maxEnd == startPos ? startPos + 1 : maxEnd;
+        // No good break point. A grapheme wider than the line still takes a line of its own;
+        // returning startPos would never advance the wrap loop.
+        if (maxEnd == startPos) {
+            String cluster = firstTooWideCluster(remaining);
+            return startPos + cluster.codePointCount(0, cluster.length());
+        }
+        return maxEnd;
+    }
+
+    private static String firstTooWideCluster(String text) {
+        String cluster = CharWidth.substringByWidth(text, 2);
+        return cluster.isEmpty() ? text.substring(0, Character.charCount(text.codePointAt(0))) : cluster;
     }
 
     /**
