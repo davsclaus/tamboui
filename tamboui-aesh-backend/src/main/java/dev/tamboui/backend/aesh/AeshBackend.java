@@ -321,10 +321,38 @@ public class AeshBackend extends AbstractBackend {
         this.resizeHandler = handler;
     }
 
+    // Code point taken from the queue by peek() and not read yet; -2 means none.
+    // Only the input-reading thread calls read() and peek().
+    private int peekedCodePoint = -2;
+
     @Override
     public int read(int timeoutMs) throws IOException {
+        if (peekedCodePoint != -2) {
+            int v = peekedCodePoint;
+            peekedCodePoint = -2;
+            return v;
+        }
+        return poll(timeoutMs);
+    }
+
+    /**
+     * Returns the next code point without consuming it, waiting up to {@code timeoutMs} for it.
+     * <p>
+     * Input arrives in chunks from the connection, and an escape sequence can be split between
+     * two of them (over SSH or HTTP), so the parser's peek after {@code ESC} has to wait for the
+     * rest instead of reporting a lone Escape.
+     */
+    @Override
+    public int peek(int timeoutMs) throws IOException {
+        if (peekedCodePoint == -2) {
+            peekedCodePoint = poll(timeoutMs);
+        }
+        return peekedCodePoint;
+    }
+
+    private int poll(int timeoutMs) {
         try {
-            Integer ch = null;
+            Integer ch;
             if (timeoutMs < 0) {
                 // Blocking read
                 ch = inputQueue.take();
@@ -335,21 +363,11 @@ public class AeshBackend extends AbstractBackend {
                 // Timeout read
                 ch = inputQueue.poll(timeoutMs, TimeUnit.MILLISECONDS);
             }
-
-            if (ch == null) {
-                return -2;  // Timeout
-            }
-            return ch;
+            return ch == null ? -2 : ch;  // -2: timeout
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return -2;
         }
-    }
-
-    @Override
-    public int peek(int timeoutMs) throws IOException {
-        Integer val = inputQueue.peek(); // TODO: we just return if nothing in the queue - do we need to wait?
-        return val == null ? -2 : val;
     }
 
     /**
