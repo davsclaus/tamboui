@@ -66,26 +66,27 @@ class MarkdownViewOverflowTest {
     }
 
     @Test
-    @DisplayName("WRAP_CHARACTER keeps a too-wide ZWJ emoji on one line")
-    void wrapCharacterKeepsZwjEmojiWhole() {
-        assertZwjEmojiStaysWhole(Overflow.WRAP_CHARACTER);
+    @DisplayName("WRAP_CHARACTER keeps a too-wide grapheme on one line")
+    void wrapCharacterKeepsGraphemeWhole() {
+        assertClusterStaysWhole(Overflow.WRAP_CHARACTER);
     }
 
     @Test
-    @DisplayName("WRAP_WORD keeps a too-wide ZWJ emoji on one line")
-    void wrapWordKeepsZwjEmojiWhole() {
-        assertZwjEmojiStaysWhole(Overflow.WRAP_WORD);
+    @DisplayName("WRAP_WORD keeps a too-wide grapheme on one line")
+    void wrapWordKeepsGraphemeWhole() {
+        assertClusterStaysWhole(Overflow.WRAP_WORD);
     }
 
-    private static void assertZwjEmojiStaysWhole(Overflow overflow) {
-        String emoji = "👩‍💻";
-        List<Line> lines = MarkdownInlineRenderer.render(
-            Parser.builder().build().parse(emoji + "X").getFirstChild(),
-            Style.EMPTY, 1, MarkdownStyles.DEFAULTS, overflow);
+    private static void assertClusterStaysWhole(Overflow overflow) {
+        for (String cluster : new String[] {"👩‍💻", "🇫🇷"}) {
+            List<Line> lines = MarkdownInlineRenderer.render(
+                Parser.builder().build().parse(cluster + "X").getFirstChild(),
+                Style.EMPTY, 1, MarkdownStyles.DEFAULTS, overflow);
 
-        assertThat(lines).hasSize(2);
-        assertThat(lines.get(0).spans()).extracting(Span::content).containsExactly(emoji);
-        assertThat(lines.get(1).spans()).extracting(Span::content).containsExactly("X");
+            assertThat(lines).hasSize(2);
+            assertThat(lines.get(0).spans()).extracting(Span::content).containsExactly(cluster);
+            assertThat(lines.get(1).spans()).extracting(Span::content).containsExactly("X");
+        }
     }
 
     @Test

@@ -183,6 +183,22 @@ class CharWidthTest {
     }
 
     @Test
+    @DisplayName("Width truncation keeps emoji and combining graphemes whole from either end")
+    void substringByWidthKeepsGraphemeClusters() {
+        for (String cluster : new String[] {"👩‍💻", "🇫🇷", "👋🏻", "⌨️", "e\u0301"}) {
+            int width = CharWidth.of(cluster);
+            assertThat(CharWidth.substringByWidth(cluster + "X", width)).isEqualTo(cluster);
+            assertThat(CharWidth.substringByWidthFromEnd("X" + cluster, width)).isEqualTo(cluster);
+            if (width > 1) {
+                assertThat(CharWidth.substringByWidth(cluster + "X", width - 1)).isEmpty();
+                assertThat(CharWidth.substringByWidthFromEnd("X" + cluster, width - 1)).isEmpty();
+            }
+        }
+        assertThat(CharWidth.substringByWidth("🇫🇷🇬🇱", 2)).isEqualTo("🇫🇷");
+        assertThat(CharWidth.substringByWidthFromEnd("🇫🇷🇬🇱", 2)).isEqualTo("🇬🇱");
+    }
+
+    @Test
     @DisplayName("Already-wide emoji with VS16 stays width 2")
     void alreadyWideEmojiWithVariationSelectorWidth() {
         // 🖥️ = U+1F5A5 (already 2-wide) + U+FE0F must not become 4-wide

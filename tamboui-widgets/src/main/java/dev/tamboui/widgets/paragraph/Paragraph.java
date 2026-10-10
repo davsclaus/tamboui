@@ -21,6 +21,7 @@ import dev.tamboui.style.StandardProperties;
 import dev.tamboui.style.Style;
 import dev.tamboui.style.StylePropertyResolver;
 import dev.tamboui.text.CharWidth;
+import dev.tamboui.text.GraphemeClusters;
 import dev.tamboui.text.Line;
 import dev.tamboui.text.Span;
 import dev.tamboui.text.Text;
@@ -603,8 +604,7 @@ public final class Paragraph implements Widget {
     }
 
     private static String firstTooWideCluster(String text) {
-        String cluster = CharWidth.substringByWidth(text, 2);
-        return cluster.isEmpty() ? text.substring(0, Character.charCount(text.codePointAt(0))) : cluster;
+        return text.substring(0, GraphemeClusters.clusterEnd(text, 0));
     }
 
     /**

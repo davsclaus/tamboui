@@ -2,14 +2,14 @@
  * Copyright TamboUI Contributors
  * SPDX-License-Identifier: MIT
  */
-package dev.tamboui.widgets.input;
+package dev.tamboui.text;
 
 /**
- * Utilities for navigating grapheme clusters in a {@link StringBuilder}.
+ * Utilities for navigating grapheme clusters in a {@link CharSequence}.
  * <p>
  * A grapheme cluster is the smallest user-perceived unit of text and may span
  * multiple Unicode code points. This class implements a pragmatic subset of
- * UAX #29 sufficient for typing, deletion and cursor movement in interactive
+ * UAX #29 used for wrapping, truncation and cursor movement in interactive
  * widgets. The following extension cases are recognized:
  * <ul>
  *   <li>Combining marks of categories Mn (non-spacing), Mc (spacing combining)
@@ -24,7 +24,7 @@ package dev.tamboui.widgets.input;
  * cluster shapes; for those, the algorithm falls back to per-code-point
  * navigation.
  */
-final class GraphemeClusters {
+public final class GraphemeClusters {
 
     private static final int ZWJ = 0x200D;
     private static final int RI_FIRST = 0x1F1E6;
@@ -36,15 +36,18 @@ final class GraphemeClusters {
     }
 
     /**
-     * Returns the char offset of the start of the grapheme cluster whose last
-     * code point ends at {@code pos}.
+     * Returns the UTF-16 offset of the start of the grapheme cluster ending at {@code pos}.
+     *
+     * @param text the text to navigate
+     * @param pos an offset after a grapheme, between 1 and {@code text.length()}
+     * @return the offset of the cluster's start
      */
-    static int clusterStart(StringBuilder text, int pos) {
+    public static int clusterStart(CharSequence text, int pos) {
         int start = prevCpStart(text, pos);
         boolean changed = true;
         while (changed && start > 0) {
             changed = false;
-            int currCp = text.codePointAt(start);
+            int currCp = Character.codePointAt(text, start);
 
             // Combining marks, variation selectors, skin tone modifiers extend backward.
             if (isExtender(currCp)) {
@@ -65,7 +68,7 @@ final class GraphemeClusters {
 
             // ZWJ-joined element: walk back over the joiner and the preceding element.
             int prevStart = prevCpStart(text, start);
-            if (text.codePointAt(prevStart) == ZWJ && prevStart > 0) {
+            if (prevStart > 0 && Character.codePointAt(text, prevStart) == ZWJ) {
                 start = prevCpStart(text, prevStart);
                 changed = true;
             }
@@ -74,23 +77,26 @@ final class GraphemeClusters {
     }
 
     /**
-     * Returns the char offset past the end of the grapheme cluster that starts
-     * at {@code pos}.
+     * Returns the UTF-16 offset past the end of the grapheme cluster starting at {@code pos}.
+     *
+     * @param text the text to navigate
+     * @param pos an offset at the start of a grapheme, between 0 and {@code text.length() - 1}
+     * @return the offset past the cluster's end
      */
-    static int clusterEnd(StringBuilder text, int pos) {
-        int cp = text.codePointAt(pos);
+    public static int clusterEnd(CharSequence text, int pos) {
+        int cp = Character.codePointAt(text, pos);
         int end = pos + Character.charCount(cp);
 
         // Regional Indicator pair (flag): consume the second RI as part of the cluster.
         if (isRegionalIndicator(cp) && end < text.length()) {
-            int nextCp = text.codePointAt(end);
+            int nextCp = Character.codePointAt(text, end);
             if (isRegionalIndicator(nextCp)) {
                 return end + Character.charCount(nextCp);
             }
         }
 
         while (end < text.length()) {
-            int nextCp = text.codePointAt(end);
+            int nextCp = Character.codePointAt(text, end);
             if (isExtender(nextCp)) {
                 end += Character.charCount(nextCp);
             } else if (nextCp == ZWJ) {
@@ -98,7 +104,7 @@ final class GraphemeClusters {
                 if (afterZwj >= text.length()) {
                     break;
                 }
-                int joinedCp = text.codePointAt(afterZwj);
+                int joinedCp = Character.codePointAt(text, afterZwj);
                 end = afterZwj + Character.charCount(joinedCp);
             } else {
                 break;
@@ -121,12 +127,12 @@ final class GraphemeClusters {
         return cp >= RI_FIRST && cp <= RI_LAST;
     }
 
-    private static int countRegionalIndicatorsBefore(StringBuilder text, int pos) {
+    private static int countRegionalIndicatorsBefore(CharSequence text, int pos) {
         int count = 0;
         int p = pos;
         while (p > 0) {
             int prev = prevCpStart(text, p);
-            if (!isRegionalIndicator(text.codePointAt(prev))) {
+            if (!isRegionalIndicator(Character.codePointAt(text, prev))) {
                 break;
             }
             count++;
@@ -136,7 +142,7 @@ final class GraphemeClusters {
     }
 
     // Returns the char offset of the start of the code point ending just before pos.
-    private static int prevCpStart(StringBuilder text, int pos) {
+    private static int prevCpStart(CharSequence text, int pos) {
         char c = text.charAt(pos - 1);
         if (Character.isLowSurrogate(c) && pos >= 2 && Character.isHighSurrogate(text.charAt(pos - 2))) {
             return pos - 2;

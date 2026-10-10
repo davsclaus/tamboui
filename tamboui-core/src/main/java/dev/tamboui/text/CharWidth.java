@@ -349,9 +349,9 @@ public final class CharWidth {
      * Returns a substring that fits within the given display width,
      * respecting code point and grapheme cluster boundaries.
      * <p>
-     * If a wide character would exceed maxWidth, it is not included.
-     * ZWJ sequences are kept intact - truncation happens at the last
-     * safe break point before the ZWJ sequence if it wouldn't fit.
+     * If a grapheme cluster would exceed maxWidth, it is not included.
+     * ZWJ sequences, flag pairs, variation selectors and combining marks are
+     * kept together.
      *
      * @param s the source string
      * @param maxWidth the maximum display width in columns
@@ -363,129 +363,16 @@ public final class CharWidth {
         }
         int width = 0;
         int i = 0;
-        int lastSafeBreak = 0;
-        int lastSafeWidth = 0;
-        boolean inZwjSequence = false;
-
         while (i < s.length()) {
-            int codePoint = s.codePointAt(i);
-            int charCount = Character.charCount(codePoint);
-            int cpWidth = of(codePoint);
-
-            // Track ZWJ sequences to avoid breaking in the middle
-            if (codePoint == 0x200D) {
-                // ZWJ - we're in a sequence, don't update safe break point
-                inZwjSequence = true;
-                i += charCount;
-                continue;
-            }
-
-            // If we just finished a ZWJ sequence (current char is not ZWJ)
-            // and we're not about to start another one
-            if (inZwjSequence) {
-                // We're processing the character after ZWJ
-                // Skip width contribution (it joins with previous)
-                i += charCount;
-                // Check if next character is also ZWJ to continue sequence
-                if (i >= s.length() || s.codePointAt(i) != 0x200D) {
-                    inZwjSequence = false;
-                    // After exiting ZWJ sequence, this is a safe break point
-                    lastSafeBreak = i;
-                    lastSafeWidth = width;
-                }
-                continue;
-            }
-
-            // Emoji presentation sequence: treat base + VS16 as an atomic 2-wide
-            // unit (mirrors CharWidth.of(String)) so truncation never splits the
-            // base off from its VS16, or under-counts the pair's width.
-            if (cpWidth == 1 && isEmojiVariationBase(codePoint)) {
-                int vsIdx = i + charCount;
-                if (vsIdx < s.length() && s.codePointAt(vsIdx) == 0xFE0F) {
-                    if (width + 2 > maxWidth) {
-                        break;
-                    }
-                    width += 2;
-                    i = vsIdx + 1;
-                    lastSafeBreak = i;
-                    lastSafeWidth = width;
-                    continue;
-                }
-            }
-
-            // Check if adding this character would exceed max width
-            if (width + cpWidth > maxWidth) {
+            int end = GraphemeClusters.clusterEnd(s, i);
+            int clusterWidth = of(s.substring(i, end));
+            if (width + clusterWidth > maxWidth) {
                 break;
             }
-
-            // Check if this starts a ZWJ sequence
-            int nextIdx = i + charCount;
-            if (nextIdx < s.length() && s.codePointAt(nextIdx) == 0x200D) {
-                // This character starts a ZWJ sequence
-                // Only commit to it if we have room
-                int sequenceWidth = measureZwjSequence(s, i);
-                if (width + sequenceWidth > maxWidth) {
-                    // ZWJ sequence won't fit, stop here
-                    break;
-                }
-                // Mark we're entering a ZWJ sequence (safe break was before this char)
-                lastSafeBreak = i;
-                lastSafeWidth = width;
-                inZwjSequence = true;
-            }
-
-            width += cpWidth;
-            i += charCount;
-
-            // Update safe break point for non-ZWJ characters
-            if (!inZwjSequence) {
-                lastSafeBreak = i;
-                lastSafeWidth = width;
-            }
+            width += clusterWidth;
+            i = end;
         }
-
-        // If we broke inside a ZWJ sequence, use the last safe break
-        if (inZwjSequence && lastSafeBreak < i) {
-            return s.substring(0, lastSafeBreak);
-        }
-
         return s.substring(0, i);
-    }
-
-    /**
-     * Measures the display width of a ZWJ sequence starting at the given index.
-     */
-    private static int measureZwjSequence(String s, int start) {
-        int i = start;
-        int width = 0;
-        boolean first = true;
-
-        while (i < s.length()) {
-            int codePoint = s.codePointAt(i);
-            int charCount = Character.charCount(codePoint);
-
-            if (codePoint == 0x200D) {
-                // ZWJ itself has no width
-                i += charCount;
-                continue;
-            }
-
-            if (first) {
-                // First character of sequence contributes width
-                width = of(codePoint);
-                first = false;
-            }
-            // Subsequent characters joined by ZWJ don't add width
-
-            i += charCount;
-
-            // Check if next is ZWJ to continue sequence
-            if (i >= s.length() || s.codePointAt(i) != 0x200D) {
-                break;
-            }
-        }
-
-        return width;
     }
 
     /**
@@ -502,31 +389,13 @@ public final class CharWidth {
         int i = s.length();
         int width = 0;
         while (i > 0) {
-            int codePoint = s.codePointBefore(i);
-            int charCount = Character.charCount(codePoint);
-
-            // Emoji presentation sequence, scanned backward: VS16 immediately
-            // preceded by an emoji-variation base is an atomic 2-wide unit
-            // (mirrors CharWidth.of(String)/substringByWidth).
-            if (codePoint == 0xFE0F && i - charCount > 0) {
-                int baseIdx = i - charCount;
-                int baseCodePoint = s.codePointBefore(baseIdx);
-                if (of(baseCodePoint) == 1 && isEmojiVariationBase(baseCodePoint)) {
-                    if (width + 2 > maxWidth) {
-                        break;
-                    }
-                    width += 2;
-                    i = baseIdx - Character.charCount(baseCodePoint);
-                    continue;
-                }
-            }
-
-            int charWidth = of(codePoint);
-            if (width + charWidth > maxWidth) {
+            int start = GraphemeClusters.clusterStart(s, i);
+            int clusterWidth = of(s.substring(start, i));
+            if (width + clusterWidth > maxWidth) {
                 break;
             }
-            width += charWidth;
-            i -= charCount;
+            width += clusterWidth;
+            i = start;
         }
         return s.substring(i);
     }

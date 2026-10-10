@@ -329,7 +329,10 @@ Using `length()` or `substring()` for display calculations causes:
 
 === CharWidth Utilities
 
-The `CharWidth` class provides display-width-aware string operations:
+The `CharWidth` class provides display-width-aware string operations.
+`CharWidth.substringByWidth()` and `substringByWidthFromEnd()` keep supported grapheme clusters intact, including ZWJ emoji, flag pairs, skin-tone modifiers, variation selectors, and combining marks.
+For cursor movement or wrapping that needs a cluster boundary, use `GraphemeClusters.clusterEnd(text, start)` and `GraphemeClusters.clusterStart(text, end)` from `tamboui-core`; offsets are UTF-16 indices, not display columns.
+These utilities implement a practical subset of Unicode grapheme rules, not the complete UAX #29 algorithm.
 
 [source,java]
 ----

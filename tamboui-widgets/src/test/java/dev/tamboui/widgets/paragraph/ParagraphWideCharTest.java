@@ -207,27 +207,29 @@ class ParagraphWideCharTest {
     }
 
     @Test
-    @DisplayName("WRAP_CHARACTER keeps a ZWJ emoji together at its display width")
-    void wrapCharacterKeepsZwjEmojiWhole() {
-        assertZwjEmojiStaysWhole(Overflow.WRAP_CHARACTER);
+    @DisplayName("WRAP_CHARACTER keeps graphemes together at their display width")
+    void wrapCharacterKeepsGraphemesWhole() {
+        assertClusterStaysWhole("👩‍💻", Overflow.WRAP_CHARACTER);
+        assertClusterStaysWhole("🇫🇷", Overflow.WRAP_CHARACTER);
     }
 
     @Test
-    @DisplayName("WRAP_WORD keeps a ZWJ emoji together at its display width")
-    void wrapWordKeepsZwjEmojiWhole() {
-        assertZwjEmojiStaysWhole(Overflow.WRAP_WORD);
+    @DisplayName("WRAP_WORD keeps graphemes together at their display width")
+    void wrapWordKeepsGraphemesWhole() {
+        assertClusterStaysWhole("👩‍💻", Overflow.WRAP_WORD);
+        assertClusterStaysWhole("🇫🇷", Overflow.WRAP_WORD);
     }
 
-    private void assertZwjEmojiStaysWhole(Overflow overflow) {
+    private void assertClusterStaysWhole(String cluster, Overflow overflow) {
         Paragraph paragraph = Paragraph.builder()
-                .text(Text.from("👩‍💻X"))
+                .text(Text.from(cluster + "X"))
                 .overflow(overflow)
                 .build();
         Buffer buffer = Buffer.empty(new Rect(0, 0, 2, 3));
         paragraph.render(buffer.area(), buffer);
 
         Buffer expected = Buffer.empty(buffer.area());
-        expected.setString(0, 0, "👩‍💻", Style.EMPTY);
+        expected.setString(0, 0, cluster, Style.EMPTY);
         expected.setString(0, 1, "X", Style.EMPTY);
         BufferAssertions.assertThat(buffer).isEqualTo(expected);
     }

@@ -10,6 +10,7 @@ import java.util.List;
 
 import dev.tamboui.style.Overflow;
 import dev.tamboui.text.CharWidth;
+import dev.tamboui.text.GraphemeClusters;
 
 /**
  * State for a TextArea widget, tracking multi-line text, cursor position, and scroll offset.

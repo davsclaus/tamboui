@@ -25,6 +25,7 @@ import dev.tamboui.markdown.MarkdownStyles;
 import dev.tamboui.style.Overflow;
 import dev.tamboui.style.Style;
 import dev.tamboui.text.CharWidth;
+import dev.tamboui.text.GraphemeClusters;
 import dev.tamboui.text.Line;
 import dev.tamboui.text.Span;
 
@@ -214,8 +215,7 @@ public final class MarkdownInlineRenderer {
 
     /** Takes one grapheme wider than the available column, without splitting a ZWJ sequence. */
     private static String firstTooWideCluster(String text) {
-        String cluster = CharWidth.substringByWidth(text, 2);
-        return cluster.isEmpty() ? text.substring(0, Character.charCount(text.codePointAt(0))) : cluster;
+        return text.substring(0, GraphemeClusters.clusterEnd(text, 0));
     }
 
     private static Line clipSpans(List<Span> spans, int maxWidth) {

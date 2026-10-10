@@ -4,6 +4,8 @@
  */
 package dev.tamboui.widgets.input;
 
+import dev.tamboui.text.GraphemeClusters;
+
 /**
  * State for a TextInput widget, tracking the input text and cursor position.
  */
