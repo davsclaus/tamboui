@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import dev.tamboui.layout.Rect;
+import dev.tamboui.style.Color;
 import dev.tamboui.style.Style;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -465,5 +466,71 @@ class BufferWideCharTest {
         }
         assertThat(hasCell0).isTrue();
         assertThat(hasCell1).isTrue();
+    }
+
+    @Test
+    @DisplayName("Narrow char over the left half of a wide char leaves a space, not a stray continuation")
+    void narrowCharOverLeftHalfOfWideChar() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 4, 1));
+        Style blue = Style.EMPTY.bg(Color.BLUE);
+        buffer.setString(0, 0, "世界", blue);
+        buffer.setString(2, 0, "a", Style.EMPTY);
+
+        assertThat(buffer.get(3, 0).isContinuation()).isFalse();
+        assertThat(buffer.get(3, 0).style().bg()).contains(Color.BLUE); // keeps the background
+        assertThat(printed(buffer)).isEqualTo("世a ");
+    }
+
+    @Test
+    @DisplayName("Wide char over halves of two wide chars leaves spaces for both")
+    void wideCharOverHalvesOfTwoWideChars() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 4, 1));
+        buffer.setString(0, 0, "世界", Style.EMPTY);
+        // "中" takes the right half of "世" and the left half of "界"
+        buffer.setString(1, 0, "中", Style.EMPTY);
+
+        assertThat(buffer.get(3, 0).isContinuation()).isFalse();
+        assertThat(printed(buffer)).isEqualTo(" 中 ");
+    }
+
+    @Test
+    @DisplayName("Popup edge on the right half of a wide char (cells set one by one, as Clear does)")
+    void popupLeftEdgeOnRightHalfOfWideChar() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 8, 1));
+        buffer.setString(0, 0, "ab🐪cdef", Style.EMPTY);
+        for (int x = 3; x < 7; x++) {
+            buffer.set(x, 0, Cell.EMPTY);
+        }
+        buffer.setString(3, 0, "|xy|", Style.EMPTY);
+
+        assertThat(printed(buffer)).isEqualTo("ab |xy|f");
+    }
+
+    @Test
+    @DisplayName("Popup edge on the left half of a wide char (fill)")
+    void popupRightEdgeOnLeftHalfOfWideChar() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 8, 1));
+        buffer.setString(0, 0, "abcd🐪ef", Style.EMPTY);
+        buffer.fill(new Rect(1, 0, 4, 1), Cell.EMPTY);
+        buffer.setString(1, 0, "|xy|", Style.EMPTY);
+
+        assertThat(printed(buffer)).isEqualTo("a|xy| ef");
+    }
+
+    @Test
+    @DisplayName("Styling wide chars keeps them whole")
+    void styleOverWideCharsKeepsThemWhole() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 4, 1));
+        buffer.setString(0, 0, "世界", Style.EMPTY);
+        buffer.setStyle(new Rect(0, 0, 4, 1), Style.EMPTY.bold());
+
+        assertThat(buffer.get(1, 0).isContinuation()).isTrue();
+        assertThat(buffer.get(3, 0).isContinuation()).isTrue();
+        assertThat(printed(buffer)).isEqualTo("世界");
+    }
+
+    /** The text a terminal receives for a one-row buffer: its ANSI output without the style codes. */
+    private static String printed(Buffer buffer) {
+        return buffer.toAnsiString().replaceAll("\u001b\\[[0-9;]*m", "");
     }
 }
