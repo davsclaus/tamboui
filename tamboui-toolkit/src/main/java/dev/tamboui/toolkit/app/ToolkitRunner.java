@@ -78,7 +78,8 @@ public final class ToolkitRunner implements AutoCloseable {
     private final DefaultRenderContext renderContext;
     private final boolean faultTolerant;
     private final List<ToolkitPostRenderProcessor> postRenderProcessors;
-    private volatile Duration lastElapsed = Duration.ZERO;
+    /** Tick time not yet passed to the post-render processors. */
+    private volatile Duration pendingElapsed = Duration.ZERO;
 
     private ToolkitRunner(TuiRunner tuiRunner,
                           Bindings bindings,
@@ -169,9 +170,12 @@ public final class ToolkitRunner implements AutoCloseable {
                     }
                 }
 
-                // Apply post-render processors (e.g., effects, overlays)
+                // Apply post-render processors (e.g., effects, overlays). A tick's time goes to
+                // the first frame after it only: a redraw between two ticks passes zero
+                Duration elapsed = pendingElapsed;
+                pendingElapsed = Duration.ZERO;
                 for (ToolkitPostRenderProcessor processor : postRenderProcessors) {
-                    processor.process(frame, elementRegistry, styledAreaRegistry, focusManager, lastElapsed);
+                    processor.process(frame, elementRegistry, styledAreaRegistry, focusManager, elapsed);
                 }
             }
         );
@@ -189,7 +193,7 @@ public final class ToolkitRunner implements AutoCloseable {
     private boolean handleEvent(Event event) {
         // Tick events trigger a redraw for animations
         if (event instanceof TickEvent) {
-            lastElapsed = ((TickEvent) event).elapsed();
+            pendingElapsed = ((TickEvent) event).elapsed();
             return true;
         }
 

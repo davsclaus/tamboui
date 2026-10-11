@@ -66,14 +66,18 @@ import dev.tamboui.tui.event.TickEvent;
 public final class ToolkitEffects {
 
     private final ElementEffectRegistry registry;
-    private Duration lastElapsed;
+    /**
+     * Tick time not yet applied to the effects. The next render takes it, so a redraw
+     * between two ticks, for example after a key press, does not advance the effects again.
+     */
+    private Duration pendingElapsed;
 
     /**
      * Creates a new ToolkitEffects instance.
      */
     public ToolkitEffects() {
         this.registry = new ElementEffectRegistry();
-        this.lastElapsed = Duration.ZERO;
+        this.pendingElapsed = Duration.ZERO;
     }
 
     /**
@@ -176,7 +180,7 @@ public final class ToolkitEffects {
         return (event, runner) -> {
             // Capture elapsed time from tick events
             if (event instanceof TickEvent) {
-                lastElapsed = ((TickEvent) event).elapsed();
+                pendingElapsed = ((TickEvent) event).elapsed();
             }
 
             // Delegate to wrapped handler
@@ -198,7 +202,8 @@ public final class ToolkitEffects {
      * <ul>
      *   <li>Calls the wrapped renderer first</li>
      *   <li>Expands pending selector effects to element and styled area instances</li>
-     *   <li>Processes all active effects on the buffer with dynamic area lookup</li>
+     *   <li>Processes all active effects on the buffer with dynamic area lookup, advancing
+     *       them by the time of the last tick only on the first render after it</li>
      * </ul>
      * <p>
      * When a StyledAreaRegistry is provided, effects can target styled spans
@@ -223,9 +228,11 @@ public final class ToolkitEffects {
             // Expand pending selector effects
             registry.expandSelectors(elementRegistry, styledAreaRegistry);
 
-            // Process effects on the buffer with dynamic area lookup
+            // Process effects on the buffer with dynamic area lookup, with the tick time not applied yet
+            Duration elapsed = pendingElapsed;
+            pendingElapsed = Duration.ZERO;
             if (registry.isRunning()) {
-                TFxDuration delta = TFxDuration.fromJavaDuration(lastElapsed);
+                TFxDuration delta = TFxDuration.fromJavaDuration(elapsed);
                 registry.processEffects(delta, frame.buffer(), frame.area(), elementRegistry, styledAreaRegistry, focusManager);
             }
         };

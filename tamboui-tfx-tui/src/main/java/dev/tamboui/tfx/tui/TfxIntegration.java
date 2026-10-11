@@ -48,10 +48,11 @@ public final class TfxIntegration {
 
     private final EffectManager effectManager;
     /**
-     * Last elapsed duration from tick events. Uses AtomicReference for
-     * safe visibility between event handler and renderer.
+     * Tick time not yet applied to the effects. The next render takes it, so a redraw
+     * between two ticks, for example after a key press, does not advance the effects again.
+     * Uses AtomicReference for safe visibility between event handler and renderer.
      */
-    private final AtomicReference<Duration> lastElapsed = new AtomicReference<>(Duration.ZERO);
+    private final AtomicReference<Duration> pendingElapsed = new AtomicReference<>(Duration.ZERO);
 
     /**
      * Creates a new TfxIntegration instance.
@@ -128,7 +129,7 @@ public final class TfxIntegration {
         return (event, runner) -> {
             // Capture elapsed time from tick events
             if (event instanceof TickEvent) {
-                lastElapsed.set(((TickEvent) event).elapsed());
+                pendingElapsed.set(((TickEvent) event).elapsed());
             }
 
             // Delegate to wrapped handler
@@ -149,7 +150,8 @@ public final class TfxIntegration {
      * The wrapper:
      * <ul>
      *   <li>Calls the wrapped renderer first</li>
-     *   <li>Processes all active effects on the buffer</li>
+     *   <li>Processes all active effects on the buffer, advancing them by the time of the
+     *       last tick only on the first render after it</li>
      *   <li>Automatically removes completed effects</li>
      * </ul>
      *
@@ -161,9 +163,10 @@ public final class TfxIntegration {
             // Render the UI first
             renderer.render(frame);
 
-            // Process effects on the buffer
+            // Process effects on the buffer, with the tick time not applied yet
+            Duration elapsed = pendingElapsed.getAndSet(Duration.ZERO);
             if (effectManager.isRunning()) {
-                TFxDuration delta = TFxDuration.fromJavaDuration(lastElapsed.get());
+                TFxDuration delta = TFxDuration.fromJavaDuration(elapsed);
                 effectManager.processEffects(delta, frame.buffer(), frame.area());
             }
         };

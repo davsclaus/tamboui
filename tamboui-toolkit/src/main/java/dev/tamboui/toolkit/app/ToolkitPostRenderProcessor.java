@@ -32,7 +32,9 @@ public interface ToolkitPostRenderProcessor {
      * @param elementRegistry the registry of rendered element areas
      * @param styledAreaRegistry the registry of styled areas (for CSS targeting)
      * @param focusManager the focus manager for pseudo-class state
-     * @param elapsed the time elapsed since the last frame (from TickEvent)
+     * @param elapsed the time to advance animations by: the elapsed time of the TickEvent this
+     *                frame is drawn for, or zero when the frame is redrawn between two ticks, for
+     *                example after a key press
      */
     void process(Frame frame, ElementRegistry elementRegistry, StyledAreaRegistry styledAreaRegistry, FocusManager focusManager, Duration elapsed);
 }
