@@ -88,7 +88,6 @@ public final class TuiRunner implements AutoCloseable {
     private final Thread shutdownHook;
     private final RenderErrorHandler errorHandler;
     private final PrintStream errorOutput;
-    private final AtomicReference<Instant> lastTick;
     private final AtomicReference<Instant> nextTickTime;
     private final AtomicReference<Size> lastSize;
     private final AtomicBoolean resizePending;
@@ -110,7 +109,6 @@ public final class TuiRunner implements AutoCloseable {
         this.resizePending = new AtomicBoolean(false);
         this.activeRenderer = new AtomicReference<>();
         this.frameCount = new AtomicLong(0);
-        this.lastTick = new AtomicReference<>(Instant.now());
         this.nextTickTime = new AtomicReference<>(
             config.tickRate() != null ? Instant.now().plus(config.tickRate()) : null);
         this.errorHandler = config.errorHandler();
@@ -133,8 +131,9 @@ public final class TuiRunner implements AutoCloseable {
                     lastSize.set(newSize);
                     resizePending.set(true);
                 }
-            } catch (IOException e) {
-                // Ignore resize errors
+            } catch (IOException | RuntimeException e) {
+                // Ignore resize errors, unchecked ones too: a backend may call this handler
+                // on the input thread, which must keep running
             }
         });
 
@@ -232,6 +231,9 @@ public final class TuiRunner implements AutoCloseable {
      * Exceptions thrown during rendering are caught and handled according to
      * the configured {@link RenderErrorHandler}. By default, errors are displayed
      * in the UI and the application waits for user dismissal before quitting.
+     * <p>
+     * The loop also ends, as if {@link #quit()} was called, when reading terminal
+     * input keeps failing.
      *
      * @param handler  the event handler
      * @param renderer the UI renderer
@@ -702,8 +704,9 @@ public final class TuiRunner implements AutoCloseable {
             try {
                 Size newSize = backend.size();
                 eventQueue.offer(ResizeEvent.of(newSize.width(), newSize.height()));
-            } catch (IOException e) {
-                // Ignore resize errors
+            } catch (IOException | RuntimeException e) {
+                // Ignore resize errors, unchecked ones too: an exception thrown from here
+                // would cancel this periodic task, and with it all later ticks
             }
         }
 
@@ -713,16 +716,12 @@ public final class TuiRunner implements AutoCloseable {
             Instant targetTime = nextTickTime.get();
 
             if (targetTime != null && !now.isBefore(targetTime)) {
-                // Compute elapsed since last tick for the event
-                Instant previous = lastTick.getAndSet(now);
-                Duration elapsed = Duration.between(previous, now);
-
                 // Schedule next tick from the target time to maintain steady rate
                 // This ensures we don't lose ticks due to scheduler jitter
                 nextTickTime.set(targetTime.plus(config.tickRate()));
 
                 long frame = frameCount.incrementAndGet();
-                eventQueue.offer(TickEvent.of(frame, elapsed));
+                eventQueue.offer(TickEvent.of(frame));
             }
         }
     }
