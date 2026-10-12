@@ -24,7 +24,7 @@ Feedback, issues, and contributions are welcome!
 * *Immediate-mode rendering* - Redraw the entire UI each frame for simple state management
 * *Intermediate buffer system* - Widgets render to a buffer, enabling diff-based terminal updates
 * *Constraint-based layout* - Flexible layout system with percentage, fixed, ratio, and proportional sizing
-* *Multiple backends* - JLine 3, Panama (FFM), and Aesh for cross-platform terminal support
+* *Multiple backends* - JLine 3, JLine 4, Panama (FFM), and Aesh for cross-platform terminal support
 * *High-level TUI framework* - TuiRunner eliminates boilerplate with built-in event handling
 * *Declarative Toolkit DSL* - Fluent API for building UIs with components and focus management
 * *PicoCLI integration* - Optional module for CLI argument parsing
@@ -44,6 +44,9 @@ Feedback, issues, and contributions are welcome!
 
 |`{jline-module}`
 |JLine 3 terminal backend
+
+|`tamboui-jline4-backend`
+|JLine 4 terminal backend (Java 11+)
 
 |`tamboui-panama-backend`
 |Panama (FFM) terminal backend for modern JDKs

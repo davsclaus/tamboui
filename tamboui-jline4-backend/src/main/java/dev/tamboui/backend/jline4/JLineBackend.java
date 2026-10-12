@@ -1,0 +1,377 @@
+/*
+ * Copyright TamboUI Contributors
+ * SPDX-License-Identifier: MIT
+ */
+package dev.tamboui.backend.jline4;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Objects;
+
+import org.jline.terminal.Attributes;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.Terminal.Signal;
+import org.jline.terminal.TerminalBuilder;
+import org.jline.utils.InfoCmp;
+import org.jline.utils.NonBlockingReader;
+
+import dev.tamboui.layout.Position;
+import dev.tamboui.layout.Size;
+import dev.tamboui.terminal.AbstractBackend;
+import dev.tamboui.terminal.Mode2027Support;
+
+/**
+ * JLine 4 based backend for terminal operations (Java 11+).
+ * <p>
+ * Two construction modes are supported:
+ * <ul>
+ *   <li>{@link #JLineBackend()} — creates and owns a system terminal;
+ *       {@link #close()} will close it.</li>
+ *   <li>{@link #JLineBackend(Terminal)} — uses an externally provided terminal
+ *       (e.g., from a JLine shell); the caller retains ownership and {@link #close()}
+ *       will <em>not</em> close the terminal.</li>
+ * </ul>
+ */
+public class JLineBackend extends AbstractBackend {
+
+    private static final String ESC = "\033";
+    private static final String CSI = ESC + "[";
+
+    private final Terminal terminal;
+    private final boolean ownTerminal;
+    private final PrintWriter writer;
+    private final NonBlockingReader reader;
+    private Attributes savedAttributes;
+    private boolean inAlternateScreen;
+    private boolean mouseEnabled;
+    private boolean mode2027Enabled;
+
+    /**
+     * Creates a new JLine 4 backend using the system terminal.
+     * <p>
+     * The backend owns the terminal and will close it when {@link #close()} is called.
+     *
+     * @throws IOException if the terminal cannot be opened
+     */
+    public JLineBackend() throws IOException {
+        this(systemTerminalBuilder().build(), true);
+    }
+
+    /**
+     * Creates a new JLine 4 backend using an existing terminal.
+     * <p>
+     * The caller retains ownership of the terminal; it will not be closed
+     * when this backend is closed. This is useful when embedding TamboUI
+     * inside a host application that already owns the terminal (e.g., a JLine shell).
+     *
+     * @param terminal the JLine terminal to use
+     */
+    public JLineBackend(Terminal terminal) {
+        this(terminal, false);
+    }
+
+    /**
+     * Returns the builder for the system terminal.
+     * <p>
+     * JLine 4 by default probes the terminal for grapheme cluster support (mode 2027) while it
+     * builds the terminal: it writes queries and waits for the answers, up to a few hundred
+     * milliseconds on a terminal that does not answer. This backend enables mode 2027 itself,
+     * without a query (see {@link #enableRawMode()}), so the probe is turned off.
+     *
+     * @return a builder for the system terminal
+     */
+    static TerminalBuilder systemTerminalBuilder() {
+        return TerminalBuilder.builder().system(true).graphemeCluster(false);
+    }
+
+    private JLineBackend(Terminal terminal, boolean ownTerminal) {
+        this.terminal = Objects.requireNonNull(terminal, "terminal cannot be null");
+        this.ownTerminal = ownTerminal;
+        this.writer = terminal.writer();
+        this.reader = terminal.reader();
+        this.inAlternateScreen = false;
+        this.mouseEnabled = false;
+        this.mode2027Enabled = false;
+    }
+
+    @Override
+    public void flush() throws IOException {
+        writer.flush();
+    }
+
+    @Override
+    public void clear() throws IOException {
+        writer.print(CSI + "2J");  // Clear entire screen
+        writer.print(CSI + "H");    // Move cursor to home
+        writer.flush();
+    }
+
+    @Override
+    public Size size() throws IOException {
+        return new Size(terminal.getColumns(), terminal.getRows());
+    }
+
+    @Override
+    public void showCursor() throws IOException {
+        writer.print(CSI + "?25h");
+        writer.flush();
+    }
+
+    @Override
+    public void hideCursor() throws IOException {
+        writer.print(CSI + "?25l");
+        writer.flush();
+    }
+
+    @Override
+    public Position getCursorPosition() throws IOException {
+        // JLine doesn't provide a direct way to query cursor position
+        // Return origin as fallback
+        return Position.ORIGIN;
+    }
+
+    @Override
+    public void enterAlternateScreen() throws IOException {
+        terminal.puts(InfoCmp.Capability.enter_ca_mode);
+        writer.flush();
+        inAlternateScreen = true;
+    }
+
+    @Override
+    public void leaveAlternateScreen() throws IOException {
+        terminal.puts(InfoCmp.Capability.exit_ca_mode);
+        writer.flush();
+        inAlternateScreen = false;
+    }
+
+    @Override
+    public void enableRawMode() throws IOException {
+        savedAttributes = terminal.getAttributes();
+        terminal.enterRawMode();
+        // Disable signal generation so Ctrl+C goes through the event system
+        // instead of generating SIGINT. This allows bindings to control quit behavior.
+        Attributes attrs = terminal.getAttributes();
+        attrs.setLocalFlag(Attributes.LocalFlag.ISIG, false);
+        terminal.setAttributes(attrs);
+
+        // Enable Mode 2027 (grapheme cluster mode) unconditionally.
+        // Terminals that don't support it safely ignore the escape sequence.
+        // No DECRQM query — avoids 500ms timeout penalty (#409).
+        Mode2027Support.enable(this);
+        mode2027Enabled = true;
+    }
+
+    @Override
+    public void disableRawMode() throws IOException {
+        // Disable Mode 2027 if it was enabled
+        if (mode2027Enabled) {
+            Mode2027Support.disable(this);
+            mode2027Enabled = false;
+        }
+
+        if (savedAttributes != null) {
+            terminal.setAttributes(savedAttributes);
+        }
+    }
+
+    @Override
+    public void enableMouseCapture() throws IOException {
+        enableMouseCapture(false);
+    }
+
+    @Override
+    public void enableMouseCapture(boolean motion) throws IOException {
+        // Enable mouse tracking modes
+        writer.print(CSI + "?1000h");  // Normal tracking
+        writer.print(CSI + "?1002h");  // Button event tracking
+        if (motion) {
+            writer.print(CSI + "?1003h");  // Any-event tracking (motion without button held)
+        }
+        writer.print(CSI + "?1015h");  // urxvt style
+        writer.print(CSI + "?1006h");  // SGR extended mode
+        writer.flush();
+        mouseEnabled = true;
+    }
+
+    @Override
+    public void disableMouseCapture() throws IOException {
+        writer.print(CSI + "?1006l");
+        writer.print(CSI + "?1015l");
+        // Always clear any-event tracking; harmless if it was never enabled, and
+        // mandatory when it was, or the terminal keeps streaming motion after exit.
+        writer.print(CSI + "?1003l");
+        writer.print(CSI + "?1002l");
+        writer.print(CSI + "?1000l");
+        writer.flush();
+        mouseEnabled = false;
+    }
+
+    @Override
+    public void beginSynchronizedUpdate() throws IOException {
+        writer.print(MODE_2026_BSU);
+    }
+
+    @Override
+    public void endSynchronizedUpdate() throws IOException {
+        writer.print(MODE_2026_ESU);
+    }
+
+    @Override
+    public void scrollUp(int lines) throws IOException {
+        writer.print(CSI + lines + "S");
+        writer.flush();
+    }
+
+    @Override
+    public void scrollDown(int lines) throws IOException {
+        writer.print(CSI + lines + "T");
+        writer.flush();
+    }
+
+    @Override
+    public void insertLines(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writer.print(CSI + n + "L");
+    }
+
+    @Override
+    public void deleteLines(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writer.print(CSI + n + "M");
+    }
+
+    @Override
+    public void moveCursorUp(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writer.print(CSI + n + "A");
+    }
+
+    @Override
+    public void moveCursorDown(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writer.print(CSI + n + "B");
+    }
+
+    @Override
+    public void moveCursorRight(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writer.print(CSI + n + "C");
+    }
+
+    @Override
+    public void moveCursorLeft(int n) throws IOException {
+        if (n <= 0) {
+            return;
+        }
+        writer.print(CSI + n + "D");
+    }
+
+    @Override
+    public void eraseToEndOfLine() throws IOException {
+        writer.print(CSI + "K");
+    }
+
+    @Override
+    public void carriageReturn() throws IOException {
+        writer.print("\r");
+    }
+
+    @Override
+    public void writeRaw(byte[] data) throws IOException {
+        terminal.output().write(data);
+    }
+
+    @Override
+    public void writeRaw(String data) {
+        writer.print(data);
+    }
+
+    @Override
+    public void onResize(Runnable handler) {
+        terminal.handle(Signal.WINCH, signal -> handler.run());
+    }
+
+    // Cached code point from a previous peek(); -2 means empty.
+    private int peekedCodePoint = -2;
+
+    @Override
+    public int read(int timeoutMs) throws IOException {
+        if (peekedCodePoint != -2) {
+            int v = peekedCodePoint;
+            peekedCodePoint = -2;
+            return v;
+        }
+        return readCodePoint(timeoutMs);
+    }
+
+    @Override
+    public int peek(int timeoutMs) throws IOException {
+        if (peekedCodePoint == -2) {
+            peekedCodePoint = readCodePoint(timeoutMs);
+        }
+        return peekedCodePoint;
+    }
+
+    private int readCodePoint(int timeoutMs) throws IOException {
+        int c = reader.read(timeoutMs);
+        if (c < 0 || !Character.isHighSurrogate((char) c)) {
+            return c;
+        }
+        // Surrogate pair: read the low surrogate with a short timeout
+        int low = reader.read(50);
+        if (low >= 0 && Character.isLowSurrogate((char) low)) {
+            return Character.toCodePoint((char) c, (char) low);
+        }
+        // Unpaired high surrogate — return as-is
+        return c;
+    }
+
+    /**
+     * Closes this backend, resetting terminal state (mouse capture, alternate screen,
+     * cursor visibility, raw mode).
+     * <p>
+     * If this backend owns the terminal (created via {@link #JLineBackend()}), the
+     * terminal is closed. If an external terminal was provided via
+     * {@link #JLineBackend(Terminal)}, it is left open for the caller to manage.
+     */
+    @Override
+    public void close() throws IOException {
+        // Reset state
+        writer.print(CSI + "0m");  // Reset style
+
+        if (mouseEnabled) {
+            disableMouseCapture();
+        }
+
+        if (inAlternateScreen) {
+            leaveAlternateScreen();
+        }
+
+        showCursor();
+        disableRawMode();
+
+        writer.flush();
+        if (ownTerminal) {
+            terminal.close();
+        }
+    }
+
+    /**
+     * Returns the underlying JLine terminal for advanced operations.
+     *
+     * @return the JLine terminal instance
+     */
+    public Terminal jlineTerminal() {
+        return terminal;
+    }
+}

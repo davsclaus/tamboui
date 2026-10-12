@@ -18,6 +18,10 @@ via `ServiceLoader`, so adding one is just a dependency:
 |JLine 3 based backend; the reliable default on all platforms
 |Java 8+
 
+|`tamboui-jline4-backend`
+|JLine 4 based backend
+|Java 11+
+
 |`tamboui-panama-backend`
 |Panama (FFM) backend with no third-party dependencies
 |Java 22+
@@ -30,6 +34,30 @@ via `ServiceLoader`, so adding one is just a dependency:
 An application can ship several backends at once. `tamboui-panama-backend` is safe to include
 in applications that also run on older JVMs: on a runtime older than Java 22 its provider is
 skipped during discovery.
+
+== JLine 3 or JLine 4
+
+`tamboui-jline4-backend` is the JLine backend built on JLine 4, for applications that run on
+Java 11 or later. Use it instead of `tamboui-jline3-backend`: JLine 3 and JLine 4 cannot be on
+the classpath together.
+
+[source,xml,subs="+attributes"]
+----
+<dependency>
+    <groupId>{maven-group}</groupId>
+    <artifactId>tamboui-jline4-backend</artifactId>
+</dependency>
+----
+
+[source,kotlin,subs="+attributes"]
+----
+implementation("{maven-group}:tamboui-jline4-backend")
+----
+
+If both modules end up on the classpath, the build resolves one JLine version for both: Gradle
+picks JLine 4, Maven the version of the backend declared first. With JLine 4 both providers work,
+and `-Dtamboui.backend=jline4` selects this one. With JLine 3, `tamboui-jline4-backend` fails with
+a `NoSuchMethodError`.
 
 == Selecting a backend
 
