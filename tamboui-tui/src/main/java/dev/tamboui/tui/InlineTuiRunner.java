@@ -82,6 +82,7 @@ public final class InlineTuiRunner implements AutoCloseable {
     private final AtomicLong frameCount;
     private final Thread shutdownHook;
     private final AtomicReference<Instant> nextTickTime;
+    private final AtomicBoolean tickQueued = new AtomicBoolean(false);
     private final AtomicReference<Size> lastSize;
     private final TerminalInputReader inputReader;
 
@@ -275,7 +276,12 @@ public final class InlineTuiRunner implements AutoCloseable {
                 return event;
             }
 
-            return eventQueue.poll(timeout.toMillis(), TimeUnit.MILLISECONDS);
+            event = eventQueue.poll(timeout.toMillis(), TimeUnit.MILLISECONDS);
+            if (event instanceof TickEvent) {
+                // The scheduler may queue the next tick again
+                tickQueued.set(false);
+            }
+            return event;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return null;
@@ -464,8 +470,12 @@ public final class InlineTuiRunner implements AutoCloseable {
             if (targetTime != null && !now.isBefore(targetTime)) {
                 nextTickTime.set(targetTime.plus(config.tickRate()));
 
-                long frame = frameCount.incrementAndGet();
-                eventQueue.offer(TickEvent.of(frame));
+                // Only one tick waits in the queue: while it is not handled yet, the periods
+                // that pass add no ticks of their own
+                if (tickQueued.compareAndSet(false, true)) {
+                    long frame = frameCount.incrementAndGet();
+                    eventQueue.offer(TickEvent.of(frame));
+                }
             }
         }
     }
