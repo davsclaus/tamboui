@@ -12,12 +12,14 @@ import java.util.Arrays;
  * Terminals render characters at different widths:
  * <ul>
  *   <li><b>2-wide</b>: CJK ideographs, Hangul syllables, fullwidth forms, most emoji</li>
- *   <li><b>0-wide</b>: Combining marks, zero-width joiners, variation selectors</li>
- *   <li><b>1-wide</b>: Latin, Cyrillic, Arabic, and most other characters</li>
+ *   <li><b>0-wide</b>: Non-spacing and enclosing marks of every script, zero-width joiners,
+ *       variation selectors</li>
+ *   <li><b>1-wide</b>: Latin, Cyrillic, Arabic, and most other characters, including the
+ *       spacing marks of scripts such as Burmese and Bengali</li>
  * </ul>
  * <p>
- * Uses a pre-computed lookup table for BMP characters (O(1)) and binary search
- * for supplementary plane characters.
+ * Uses a pre-computed lookup table for BMP characters (O(1)), and binary search and the
+ * Unicode general category for supplementary plane characters.
  */
 public final class CharWidth {
 
@@ -60,51 +62,19 @@ public final class CharWidth {
     };
 
     static {
-        // Initialize all BMP code points to width 1 (default)
-        Arrays.fill(BMP_WIDTHS, (byte) 1);
+        // Filled through a local variable: in a static initializer, each access to the class's
+        // own static fields takes the JVM's slow path
+        byte[] widths = BMP_WIDTHS;
 
-        // Mark zero-width BMP ranges
+        // Initialize all BMP code points to width 1 (default)
+        Arrays.fill(widths, (byte) 1);
+
+        // Mark zero-width BMP ranges. The non-spacing and enclosing marks of every script are
+        // added below from their Unicode category; the blocks of combining marks are listed whole
+        // so that marks newer than the JDK's Unicode version are zero width too.
         int[][] zeroWidthRanges = {
                 {0x00AD, 0x00AD},   // Soft hyphen
                 {0x0300, 0x036F},   // Combining Diacritical Marks
-                {0x0483, 0x0489},   // Cyrillic combining marks
-                {0x0591, 0x05BD},   // Hebrew combining marks
-                {0x05BF, 0x05BF},
-                {0x05C1, 0x05C2},
-                {0x05C4, 0x05C5},
-                {0x05C7, 0x05C7},
-                {0x0610, 0x061A},   // Arabic combining marks
-                {0x064B, 0x065F},
-                {0x0670, 0x0670},
-                {0x06D6, 0x06DC},
-                {0x06DF, 0x06E4},
-                {0x06E7, 0x06E8},
-                {0x06EA, 0x06ED},
-                {0x0711, 0x0711},   // Syriac
-                {0x0730, 0x074A},
-                {0x0900, 0x0902},   // Devanagari combining marks
-                {0x093A, 0x093A},
-                {0x093C, 0x093C},
-                {0x0941, 0x0948},
-                {0x094D, 0x094D},
-                {0x0951, 0x0957},
-                {0x0962, 0x0963},
-                {0x0981, 0x0981},   // Bengali combining marks
-                {0x09BC, 0x09BC},
-                {0x09C1, 0x09C4},
-                {0x09CD, 0x09CD},
-                {0x09E2, 0x09E3},
-                {0x0A01, 0x0A02},   // Gurmukhi combining marks
-                {0x0A3C, 0x0A3C},
-                {0x0A41, 0x0A42},
-                {0x0A47, 0x0A48},
-                {0x0A4B, 0x0A4D},
-                {0x0A51, 0x0A51},
-                {0x0A70, 0x0A71},
-                {0x0A75, 0x0A75},
-                {0x0E31, 0x0E31},   // Thai combining marks
-                {0x0E34, 0x0E3A},
-                {0x0E47, 0x0E4E},
                 {0x1AB0, 0x1AFF},   // Combining Diacritical Marks Extended
                 {0x1DC0, 0x1DFF},   // Combining Diacritical Marks Supplement
                 {0x200B, 0x200F},   // Zero-width space, ZWNJ, ZWJ, directional marks
@@ -118,7 +88,7 @@ public final class CharWidth {
         };
         for (int[] range : zeroWidthRanges) {
             for (int cp = range[0]; cp <= range[1]; cp++) {
-                BMP_WIDTHS[cp] = 0;
+                widths[cp] = 0;
             }
         }
 
@@ -175,7 +145,18 @@ public final class CharWidth {
         };
         for (int[] range : wideRanges) {
             for (int cp = range[0]; cp <= range[1]; cp++) {
-                BMP_WIDTHS[cp] = 2;
+                widths[cp] = 2;
+            }
+        }
+
+        // Mark the non-spacing and enclosing marks of every script zero width, the same test as
+        // isNonSpacingMark (written out, as on Java 11 and older each call to the class's own static
+        // methods takes the slow path here too). This comes after the wide ranges, which hold some
+        // marks too, such as U+3099, the voiced sound mark of a decomposed が.
+        for (int cp = 0; cp < widths.length; cp++) {
+            int type = Character.getType(cp);
+            if (type == Character.NON_SPACING_MARK || type == Character.ENCLOSING_MARK) {
+                widths[cp] = 0;
             }
         }
     }
@@ -192,7 +173,8 @@ public final class CharWidth {
         }
 
         // Supplementary plane: check zero-width first (skin tones overlap with emoji ranges)
-        if (inRanges(codePoint, SUPPLEMENTARY_ZERO_STARTS, SUPPLEMENTARY_ZERO_ENDS)) {
+        if (inRanges(codePoint, SUPPLEMENTARY_ZERO_STARTS, SUPPLEMENTARY_ZERO_ENDS)
+                || isNonSpacingMark(codePoint)) {
             return 0;
         }
 
@@ -201,6 +183,17 @@ public final class CharWidth {
         }
 
         return 1;
+    }
+
+    /**
+     * Returns true if the code point is a non-spacing (Mn) or enclosing (Me) mark. Such a mark
+     * is drawn on the character before it and takes no column of its own, as glibc's
+     * {@code wcwidth} counts it. A spacing mark (Mc), such as the Burmese vowel sign AA, takes
+     * its own column.
+     */
+    private static boolean isNonSpacingMark(int codePoint) {
+        int type = Character.getType(codePoint);
+        return type == Character.NON_SPACING_MARK || type == Character.ENCLOSING_MARK;
     }
 
     /**

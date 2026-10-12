@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Style;
+import dev.tamboui.text.CharWidth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -119,6 +120,22 @@ class BufferWideCharTest {
         assertThat(buffer.get(0, 0).symbol()).isEqualTo("e\u0301");
         // Column 1 should still be empty (combining mark doesn't advance)
         assertThat(buffer.get(1, 0).symbol()).isEqualTo(" ");
+    }
+
+    @Test
+    @DisplayName("Non-spacing marks of every script join their letter's cell, e.g. Tibetan")
+    void nonSpacingMarksJoinTheirLettersCell() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 10, 1));
+        // ཟླ་ = ZA + subjoined LA (U+0FB3) + tsheg, then the ZWJ emoji 👩‍💻
+        String text = "\u0F5F\u0FB3\u0F0B\uD83D\uDC69\u200D\uD83D\uDCBB";
+        int endCol = buffer.setString(0, 0, text, Style.EMPTY);
+
+        assertThat(buffer.get(0, 0).symbol()).isEqualTo("\u0F5F\u0FB3");
+        assertThat(buffer.get(1, 0).symbol()).isEqualTo("\u0F0B");
+        assertThat(buffer.get(2, 0).symbol()).isEqualTo("\uD83D\uDC69\u200D\uD83D\uDCBB");
+        assertThat(buffer.get(3, 0).isContinuation()).isTrue();
+        // The buffer takes as many columns as CharWidth measures
+        assertThat(endCol).isEqualTo(4).isEqualTo(CharWidth.of(text));
     }
 
     @Test

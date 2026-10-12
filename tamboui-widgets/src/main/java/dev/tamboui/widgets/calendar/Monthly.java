@@ -228,7 +228,7 @@ public final class Monthly implements Widget {
         }
 
         // The day cell is as wide as the widest weekday label (three columns for some scripts, such as
-        // Burmese or Tibetan), but at least two columns for the day numbers. Every column uses this width,
+        // Burmese or Manipuri), but at least two columns for the day numbers. Every column uses this width,
         // so the weekday header lines up with the days below it.
         String[] labels = weekdaysHeaderStyle != null ? weekdayLabels(locale) : null;
         int dayWidth = labels != null ? dayWidth(labels) : MIN_DAY_WIDTH;
@@ -446,7 +446,7 @@ public final class Monthly implements Widget {
     /**
      * Returns the width of a day cell: the width of the widest weekday label, but at least
      * {@link #MIN_DAY_WIDTH} for the day numbers. A script whose shortest weekday name is three
-     * columns wide (such as Burmese or Tibetan) gives three-column cells, so the header stays aligned.
+     * columns wide (such as Burmese or Manipuri) gives three-column cells, so the header stays aligned.
      *
      * @param labels the fitted weekday labels
      * @return the day cell width in columns

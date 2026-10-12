@@ -438,9 +438,24 @@ class MonthlyTest {
 
     @Test
     void fitToDayWidthKeepsAGraphemeClusterWiderThanTwoColumnsWhole() {
-        // Tibetan for Saturday starts with a stacked letter that is three columns wide
-        // for CharWidth: it is kept whole rather than cut, or dropped for a blank label
-        assertThat(Monthly.fitToDayWidth("\u0F66\u0FA4\u0F7A\u0F53")).isEqualTo("\u0F66\u0FA4\u0F7A");
+        // Burmese for Thursday starts with a letter and two spacing marks, a grapheme cluster
+        // three columns wide: it is kept whole rather than cut, or dropped for a blank label
+        assertThat(Monthly.fitToDayWidth("\u1000\u103C\u102C\u101E\u1015\u1010\u1031\u1038"))
+            .isEqualTo("\u1000\u103C\u102C");
+    }
+
+    @Test
+    void tibetanWeekdaysAreWholeSyllablesInTwoColumnCells() {
+        // Tibetan vowel signs and subjoined letters are drawn on their letter, taking no column of
+        // their own, so each weekday fits two columns as a whole syllable, like ཟླ་ for ཟླ་བ་ (Monday)
+        BufferAssertions.assertThat(renderOctober2025(Locale.forLanguageTag("bo"))).hasContent(
+            "   ཟླ་བ་བཅུ་པ་ 2025   ",
+            "ཟླ་ མིག ལྷག ཕུར པ་ སྤེན ཉི་",
+            "       1  2  3  4  5",
+            " 6  7  8  9 10 11 12",
+            "13 14 15 16 17 18 19",
+            "20 21 22 23 24 25 26",
+            "27 28 29 30 31      ");
     }
 
     @Test

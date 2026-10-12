@@ -320,6 +320,45 @@ class CharWidthTest {
     }
 
     @Test
+    @DisplayName("Non-spacing marks are zero width in every script, spacing marks take a column")
+    void nonSpacingMarksOfEveryScriptAreZeroWidth() {
+        // Tibetan སྤེ = SA + subjoined PA (U+0FA4) + vowel sign E (U+0F7A): one stacked letter
+        assertThat(CharWidth.of("\u0F66\u0FA4\u0F7A")).isEqualTo(1);
+        // Tibetan ཟླ = ZA + subjoined LA (U+0FB3)
+        assertThat(CharWidth.of("\u0F5F\u0FB3")).isEqualTo(1);
+        // Myanmar ဗု = BA + vowel sign U (U+102F)
+        assertThat(CharWidth.of("\u1017\u102F")).isEqualTo(1);
+        // Tamil ந் = NA + virama (U+0BCD)
+        assertThat(CharWidth.of("\u0BA8\u0BCD")).isEqualTo(1);
+        // Khmer ក៏ = KA + sign ahsda (U+17CF)
+        assertThat(CharWidth.of("\u1780\u17CF")).isEqualTo(1);
+        // Myanmar ကြာ = KA + medial RA (U+103C) + vowel sign AA (U+102C): both are spacing
+        // marks, which take a column each, as glibc's wcwidth counts them
+        assertThat(CharWidth.of("\u1000\u103C\u102C")).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("Combining marks inside wide blocks are zero width, e.g. a decomposed が")
+    void combiningMarksInsideWideBlocksAreZeroWidth() {
+        // が decomposed (NFD, as in macOS file names) = か + combining voiced sound mark (U+3099)
+        assertThat(CharWidth.of("\u304B\u3099")).isEqualTo(2);
+        // ぱ decomposed = は + combining semi-voiced sound mark (U+309A)
+        assertThat(CharWidth.of("\u306F\u309A")).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Non-spacing marks outside the BMP are zero width, e.g. Chakma, and emoji keep their width")
+    void supplementaryNonSpacingMarksAreZeroWidth() {
+        // U+11100 = Chakma sign candrabindu
+        assertThat(CharWidth.of(0x11100)).isEqualTo(0);
+        // 𑄟𑄧𑄁 = Chakma MAA + vowel sign A (U+11127) + sign anusvara (U+11101)
+        assertThat(CharWidth.of("\uD804\uDD1F\uD804\uDD27\uD804\uDD01")).isEqualTo(1);
+        // Emoji take the same supplementary-plane path: 👩‍💻 and 👨‍👩‍👧 stay 2 columns
+        assertThat(CharWidth.of("\uD83D\uDC69\u200D\uD83D\uDCBB")).isEqualTo(2);
+        assertThat(CharWidth.of("\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67")).isEqualTo(2);
+    }
+
+    @Test
     @DisplayName("ZWJ family emoji has width 2")
     void zwjFamilyEmojiHasWidth2() {
         // 👨‍👦 = man (U+1F468) + ZWJ (U+200D) + boy (U+1F466)
