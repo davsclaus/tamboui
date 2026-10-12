@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import dev.tamboui.layout.Rect;
 import dev.tamboui.tfx.Effect;
+import dev.tamboui.tfx.EffectClock;
 import dev.tamboui.tfx.EffectManager;
 import dev.tamboui.tfx.TFxDuration;
 import dev.tamboui.tui.EventHandler;
@@ -53,6 +54,8 @@ public final class TfxIntegration {
      * Uses AtomicReference for safe visibility between event handler and renderer.
      */
     private final AtomicReference<Duration> pendingElapsed = new AtomicReference<>(Duration.ZERO);
+    /** Turns tick time into effect time, without losing the part below a millisecond. */
+    private final EffectClock effectClock = new EffectClock();
 
     /**
      * Creates a new TfxIntegration instance.
@@ -166,7 +169,7 @@ public final class TfxIntegration {
             // Process effects on the buffer, with the tick time not applied yet
             Duration elapsed = pendingElapsed.getAndSet(Duration.ZERO);
             if (effectManager.isRunning()) {
-                TFxDuration delta = TFxDuration.fromJavaDuration(elapsed);
+                TFxDuration delta = effectClock.advance(elapsed);
                 effectManager.processEffects(delta, frame.buffer(), frame.area());
             }
         };

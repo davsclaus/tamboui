@@ -8,6 +8,7 @@ import java.time.Duration;
 
 import dev.tamboui.style.StyledAreaRegistry;
 import dev.tamboui.tfx.Effect;
+import dev.tamboui.tfx.EffectClock;
 import dev.tamboui.tfx.TFxDuration;
 import dev.tamboui.toolkit.app.ToolkitPostRenderProcessor;
 import dev.tamboui.toolkit.element.Element;
@@ -71,6 +72,8 @@ public final class ToolkitEffects {
      * between two ticks, for example after a key press, does not advance the effects again.
      */
     private Duration pendingElapsed;
+    /** Turns tick time into effect time, without losing the part below a millisecond. */
+    private final EffectClock effectClock;
 
     /**
      * Creates a new ToolkitEffects instance.
@@ -78,6 +81,7 @@ public final class ToolkitEffects {
     public ToolkitEffects() {
         this.registry = new ElementEffectRegistry();
         this.pendingElapsed = Duration.ZERO;
+        this.effectClock = new EffectClock();
     }
 
     /**
@@ -232,7 +236,7 @@ public final class ToolkitEffects {
             Duration elapsed = pendingElapsed;
             pendingElapsed = Duration.ZERO;
             if (registry.isRunning()) {
-                TFxDuration delta = TFxDuration.fromJavaDuration(elapsed);
+                TFxDuration delta = effectClock.advance(elapsed);
                 registry.processEffects(delta, frame.buffer(), frame.area(), elementRegistry, styledAreaRegistry, focusManager);
             }
         };
@@ -271,7 +275,7 @@ public final class ToolkitEffects {
 
             // Process effects on the buffer with dynamic area lookup
             if (registry.isRunning()) {
-                TFxDuration delta = TFxDuration.fromJavaDuration(elapsed);
+                TFxDuration delta = effectClock.advance(elapsed);
                 registry.processEffects(delta, frame.buffer(), frame.area(), elementRegistry, styledAreaRegistry, focusManager);
             }
         };

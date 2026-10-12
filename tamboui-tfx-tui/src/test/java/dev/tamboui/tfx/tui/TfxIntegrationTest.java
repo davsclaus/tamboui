@@ -51,4 +51,23 @@ class TfxIntegrationTest {
         renderer.render(frame);
         assertThat(timer.remaining().asMillis()).isEqualTo(968);
     }
+
+    @Test
+    @DisplayName("ticks that are not whole milliseconds advance a running effect by all of their time")
+    void ticksAdvanceEffectsByAllOfTheirTime() {
+        EffectTimer timer = EffectTimer.fromMs(1000, Interpolation.Linear);
+        TfxIntegration tfx = new TfxIntegration();
+        tfx.addEffect(Effect.of(FadeShader.fadeTo(Color.WHITE, Color.CYAN, timer)));
+        EventHandler handler = tfx.wrapHandler((event, runner) -> false);
+        Renderer renderer = tfx.wrapRenderer(f -> {
+        });
+
+        // 60 ticks of 16.5 ms are 990 ms
+        for (int i = 1; i <= 60; i++) {
+            handler.handle(TickEvent.of(i, Duration.ofNanos(16_500_000)), null);
+            renderer.render(frame);
+        }
+
+        assertThat(timer.remaining().asMillis()).isEqualTo(10);
+    }
 }

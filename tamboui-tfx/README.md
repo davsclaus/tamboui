@@ -33,10 +33,10 @@ import dev.tamboui.style.Color;
 import dev.tamboui.tui.TuiRunner;
 import dev.tamboui.tui.TuiConfig;
 import dev.tamboui.terminal.Frame;
-import java.time.Instant;
 
 public class EffectDemo {
-    private Instant lastFrame = Instant.now();
+    private long lastFrame = System.nanoTime();
+    private EffectClock effectClock = new EffectClock();
     private EffectManager effectManager = new EffectManager();
     
     public static void main(String[] args) throws Exception {
@@ -67,12 +67,11 @@ public class EffectDemo {
                     // Render your widgets first
                     renderContent(frame);
                     
-                    // Then apply effects
-                    Instant now = Instant.now();
-                    long deltaMs = java.time.Duration.between(lastFrame, now).toMillis();
+                    // Then apply effects, advanced by the time since the last frame
+                    long now = System.nanoTime();
+                    TFxDuration delta = effectClock.advance(java.time.Duration.ofNanos(now - lastFrame));
                     lastFrame = now;
                     
-                    TFxDuration delta = TFxDuration.fromMillis(deltaMs);
                     effectManager.processEffects(delta, frame.buffer(), frame.area());
                 }
             );
