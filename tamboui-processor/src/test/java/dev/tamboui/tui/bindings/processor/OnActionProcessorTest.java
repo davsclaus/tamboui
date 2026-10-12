@@ -184,6 +184,29 @@ class OnActionProcessorTest {
     }
 
     @Test
+    void rejectsMethodWithNonEventParameter() {
+        JavaFileObject source = JavaFileObjects.forSourceString(
+                "test.MyHandler",
+                "package test;\n" +
+                "\n" +
+                "import dev.tamboui.annotations.bindings.OnAction;\n" +
+                "\n" +
+                "public class MyHandler {\n" +
+                "    @OnAction(\"action\")\n" +
+                "    void handle(int value) {}\n" +
+                "}\n"
+        );
+
+        Compilation compilation = javac()
+                .withProcessors(new OnActionProcessor())
+                .compile(source);
+
+        assertThat(compilation).failed();
+        assertThat(compilation)
+                .hadErrorContaining("@OnAction method parameter must be of type Event or a subtype");
+    }
+
+    @Test
     void usesConstantValueForActionName() {
         // When @OnAction uses a constant like Actions.QUIT, the processor
         // should resolve the string value
