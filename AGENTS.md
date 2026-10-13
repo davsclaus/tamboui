@@ -1,11 +1,12 @@
 # AGENTS.md
 
-This file provides guidance to AI coding agents when working with code in this repository.
-See [agents.md](https://agents.md/) for the specification.
+This file provides guidance to AI coding agents when contributing to code in this repository.
+
+If you are learning to use or write applications with TamboUI check out https://tamboui.dev/llms.txt instead.
 
 ## Project Overview
 
-TamboUI is a Java library for building modern terminal user interfaces, inspired by Rust's ratatui and Go's bubbletea. It uses immediate-mode rendering with an intermediate buffer system for diff-based terminal updates.
+TamboUI is a Java library for building modern terminal user interfaces, inspired by Rust's ratatui, Go's bubbletea and Python's Textual. It uses immediate-mode rendering with an intermediate buffer system for diff-based terminal updates, while also providing a higher-level toolkit for easy component-based rendering.
 
 ## Build and Test Commands
 
@@ -284,7 +285,7 @@ throw new RuntimeException("Error", e);
 
 ## Fixing Bugs
 
-- Fix the root cause, where the design puts it. TamboUI follows ratatui (widgets, buffer), tachyonfx (effects measure time at the render with `RenderClock`) and bubbletea: check how they solve the problem before adding a workaround
+- Fix the root cause, where the design puts it. TamboUI is ported from ratatui (widgets, buffer) and tachyonfx (effects measure time at the render with `RenderClock`), and is inspired by Textual (CSS, bbcode/markup) and in some places bubbletea: check how they and other terminal frameworks solve the problem before adding a workaround
 - Do not end a protocol sequence with a timeout or a heuristic: a bracketed paste is read until its end marker, as other terminal libraries do. Correctness comes before latency
 - Search sibling code for the same class of bug. Fix the identical cases in the same PR and list the related ones in the description. Known families:
   - text wrapping: `Paragraph`, `MarkdownInlineRenderer.applyOverflow`, `TextAreaState.computeDisplayRows` (to be unified, see #462)
@@ -295,7 +296,7 @@ throw new RuntimeException("Error", e);
 
 ## Code Style Guidelines
 
-- You MUST use Java 8 source compatibility for library modules
+- You MUST use Java 8 source compatibility for core library modules; a module MAY require a higher level only when unavoidable (e.g. the FFM backend needs Java 22+) — use multi-release JARs where it helps.
 - You SHOULD use Java 21 for demo applications
 - You MUST use JUnit 5 for testing
 - You SHOULD Use immutable data structures as much as possible
