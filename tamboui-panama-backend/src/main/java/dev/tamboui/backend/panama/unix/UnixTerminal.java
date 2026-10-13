@@ -71,7 +71,7 @@ public final class UnixTerminal implements PlatformTerminal {
     private final int ttyFd;
     private final Charset charset;
 
-    private final Utf8Decoder decoder = new Utf8Decoder(this::readInternal);
+    private final InputDecoder decoder;
 
     private boolean rawModeEnabled;
     private int peekedChar = -2;
@@ -99,6 +99,7 @@ public final class UnixTerminal implements PlatformTerminal {
         }
         this.ttyFd = fd;
         this.charset = detectCharset();
+        this.decoder = new InputDecoder(this::readInternal, charset);
 
         this.arena = Arena.ofShared();
         this.savedTermios = LibC.allocateTermios(arena);
