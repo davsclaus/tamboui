@@ -4,6 +4,8 @@
  */
 package dev.tamboui.export.html;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -14,6 +16,7 @@ import java.util.TreeSet;
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.buffer.Cell;
 import dev.tamboui.export.ExportProperties;
+import dev.tamboui.internal.export.ExportTemplate;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.Modifier;
@@ -46,13 +49,14 @@ public final class HtmlExporter {
      * @param region  the rectangle to export (empty produces minimal HTML)
      * @param options export options
      * @param out     where to append the HTML
+     * @throws UncheckedIOException if appending to {@code out} fails
      */
     static void encode(Buffer buffer, Rect region, HtmlOptions options, Appendable out) {
         String html = buildHtml(buffer, region, options);
         try {
             out.append(html);
-        } catch (java.io.IOException e) {
-            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to write the HTML export: " + e.getMessage(), e);
         }
     }
 
@@ -153,14 +157,7 @@ public final class HtmlExporter {
             }
         }
 
-        String foreground = toHex(defaultForeground);
-        String background = toHex(defaultBackground);
-
-        return DEFAULT_HTML_FORMAT
-            .replace("{code}", code.toString())
-            .replace("{stylesheet}", stylesheet.toString())
-            .replace("{foreground}", foreground)
-            .replace("{background}", background);
+        return fillTemplate(code.toString(), stylesheet.toString(), defaultForeground, defaultBackground);
     }
 
     /**
@@ -205,13 +202,15 @@ public final class HtmlExporter {
     }
 
     private static String minimalHtml(Color.Rgb defaultFg, Color.Rgb defaultBg) {
-        String fg = toHex(defaultFg);
-        String bg = toHex(defaultBg);
-        return DEFAULT_HTML_FORMAT
-            .replace("{code}", "")
-            .replace("{stylesheet}", "")
-            .replace("{foreground}", fg)
-            .replace("{background}", bg);
+        return fillTemplate("", "", defaultFg, defaultBg);
+    }
+
+    private static String fillTemplate(String code, String stylesheet, Color.Rgb defaultFg, Color.Rgb defaultBg) {
+        return ExportTemplate.fill(DEFAULT_HTML_FORMAT,
+            "code", code,
+            "stylesheet", stylesheet,
+            "foreground", toHex(defaultFg),
+            "background", toHex(defaultBg));
     }
 
     private static String styleToHtmlCss(Style style, Color.Rgb defaultFg, Color.Rgb defaultBg) {

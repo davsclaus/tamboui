@@ -20,7 +20,6 @@ import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
-import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -29,6 +28,8 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -46,7 +47,6 @@ import dev.tamboui.annotations.bindings.OnAction;
  * META-INF/services entries for automatic discovery via ServiceLoader.
  */
 @SupportedAnnotationTypes("dev.tamboui.annotations.bindings.OnAction")
-@SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class OnActionProcessor extends AbstractProcessor {
 
     /**
@@ -76,6 +76,21 @@ public class OnActionProcessor extends AbstractProcessor {
         }
     }
 
+    /**
+     * Returns the latest source version that the running compiler supports.
+     * <p>
+     * The processor only looks at the annotated methods and the classes that
+     * declare them, which every source version models alike. Declaring an older
+     * version makes javac warn on every compilation at a newer source level, such
+     * as {@code --release 21}, and that warning fails a {@code -Werror} build.
+     *
+     * @return {@link SourceVersion#latestSupported()}
+     */
+    @Override
+    public SourceVersion getSupportedSourceVersion() {
+        return SourceVersion.latestSupported();
+    }
+
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         if (roundEnv.processingOver()) {
@@ -99,9 +114,14 @@ public class OnActionProcessor extends AbstractProcessor {
             TypeElement enclosingClass = (TypeElement) method.getEnclosingElement();
             OnAction annotation = method.getAnnotation(OnAction.class);
 
+            TypeMirror parameterType = method.getParameters().get(0).asType();
+            String eventSubtype = eventSubtypeOf(parameterType);
+
             methodsByClass
                     .computeIfAbsent(enclosingClass, k -> new ArrayList<>())
-                    .add(new MethodInfo(method.getSimpleName().toString(), annotation.value()));
+                    .add(new MethodInfo(method.getSimpleName().toString(), annotation.value(),
+                            eventSubtype, eventSubtype != null && hasTypeArguments(parameterType),
+                            !typeUtils.isSameType(parameterType, typeUtils.erasure(parameterType))));
         }
 
         // Generate registrar for each class
@@ -135,9 +155,15 @@ public class OnActionProcessor extends AbstractProcessor {
             return false;
         }
 
+        // The generated registrar, in the same package, must be able to name the class
+        if (isInPrivateClass(method)) {
+            error(method, "@OnAction methods must not be in a private class");
+            return false;
+        }
+
         // Check return type is void
         if (!typeUtils.isSameType(method.getReturnType(),
-                typeUtils.getNoType(javax.lang.model.type.TypeKind.VOID))) {
+                typeUtils.getNoType(TypeKind.VOID))) {
             error(method, "@OnAction methods must return void");
             return false;
         }
@@ -162,14 +188,63 @@ public class OnActionProcessor extends AbstractProcessor {
         return true;
     }
 
+    private static boolean isInPrivateClass(ExecutableElement method) {
+        Element enclosing = method.getEnclosingElement();
+        while (enclosing instanceof TypeElement) {
+            if (enclosing.getModifiers().contains(Modifier.PRIVATE)) {
+                return true;
+            }
+            enclosing = enclosing.getEnclosingElement();
+        }
+        return false;
+    }
+
+    /**
+     * Returns the qualified name of the parameter type when it is a subtype of
+     * {@code Event}, which a method reference can't take, or {@code null} when
+     * the method takes any event.
+     */
+    private String eventSubtypeOf(TypeMirror parameterType) {
+        TypeMirror erasure = typeUtils.erasure(parameterType);
+        if (eventType == null || typeUtils.isAssignable(eventType, erasure)) {
+            return null;
+        }
+        return ((TypeElement) typeUtils.asElement(erasure)).getQualifiedName().toString();
+    }
+
+    private static boolean hasTypeArguments(TypeMirror type) {
+        return type.getKind() == TypeKind.DECLARED && !((DeclaredType) type).getTypeArguments().isEmpty();
+    }
+
+    /**
+     * Whether the class is generic, or an inner class of a generic class, so that the
+     * registrar, which names it without type arguments, uses it as a raw type.
+     */
+    private static boolean isGeneric(TypeElement type) {
+        TypeMirror current = type.asType();
+        while (current.getKind() == TypeKind.DECLARED) {
+            DeclaredType declared = (DeclaredType) current;
+            if (!declared.getTypeArguments().isEmpty()) {
+                return true;
+            }
+            current = declared.getEnclosingType();
+        }
+        return false;
+    }
+
     private String generateRegistrar(TypeElement targetClass, List<MethodInfo> methods)
             throws IOException {
         String packageName = getPackageName(targetClass);
-        String className = targetClass.getSimpleName().toString();
-        String registrarClassName = className + "_ActionHandlerRegistrar";
+        // Outer.Inner for a nested class: how the class is named from its package
+        String qualifiedClassName = targetClass.getQualifiedName().toString();
+        String className = packageName.isEmpty()
+                ? qualifiedClassName
+                : qualifiedClassName.substring(packageName.length() + 1);
+        String registrarClassName = className.replace('.', '_') + "_ActionHandlerRegistrar";
         String qualifiedName = packageName.isEmpty()
                 ? registrarClassName
                 : packageName + "." + registrarClassName;
+        boolean rawTarget = isGeneric(targetClass);
 
         JavaFileObject sourceFile = filer.createSourceFile(qualifiedName, targetClass);
         try (Writer writer = new BufferedWriter(sourceFile.openWriter())) {
@@ -188,15 +263,33 @@ public class OnActionProcessor extends AbstractProcessor {
             writer.write(" * <p>\n");
             writer.write(" * This class is generated by the annotation processor and should not be modified.\n");
             writer.write(" */\n");
+            if (rawTarget) {
+                writer.write("@SuppressWarnings(\"rawtypes\")\n");
+            }
             writer.write("public final class " + registrarClassName + "\n");
             writer.write("        implements ActionHandlerRegistrar<" + className + "> {\n\n");
 
             // register method
             writer.write("    @Override\n");
+            // A cast to a parameterized subtype is unchecked, and so is a call through the raw type
+            // to a method taking a type variable or a parameterized type
+            if (methods.stream().anyMatch(method -> method.uncheckedCast || (rawTarget && method.genericParameter))) {
+                writer.write("    @SuppressWarnings(\"unchecked\")\n");
+            }
             writer.write("    public void register(" + className + " target, ActionHandler handler) {\n");
             for (MethodInfo method : methods) {
-                writer.write("        handler.on(\"" + escapeString(method.actionName)
-                        + "\", target::" + method.methodName + ");\n");
+                String action = "\"" + escapeString(method.actionName) + "\"";
+                if (method.eventSubtype == null) {
+                    writer.write("        handler.on(" + action + ", target::" + method.methodName + ");\n");
+                } else {
+                    // A method taking a subtype such as KeyEvent is only called for events of that type
+                    writer.write("        handler.on(" + action + ", event -> {\n");
+                    writer.write("            if (event instanceof " + method.eventSubtype + ") {\n");
+                    writer.write("                target." + method.methodName
+                            + "((" + method.eventSubtype + ") event);\n");
+                    writer.write("            }\n");
+                    writer.write("        });\n");
+                }
             }
             writer.write("    }\n\n");
 
@@ -253,10 +346,20 @@ public class OnActionProcessor extends AbstractProcessor {
     private static class MethodInfo {
         final String methodName;
         final String actionName;
+        // The Event subtype the method takes, or null when it takes any Event
+        final String eventSubtype;
+        // Whether the cast to the subtype is unchecked, as for ActionEvent<Void>
+        final boolean uncheckedCast;
+        // Whether the parameter type is not its own erasure, as for a type variable or ActionEvent<Void>
+        final boolean genericParameter;
 
-        MethodInfo(String methodName, String actionName) {
+        MethodInfo(String methodName, String actionName, String eventSubtype, boolean uncheckedCast,
+                boolean genericParameter) {
             this.methodName = methodName;
             this.actionName = actionName;
+            this.eventSubtype = eventSubtype;
+            this.uncheckedCast = uncheckedCast;
+            this.genericParameter = genericParameter;
         }
     }
 }

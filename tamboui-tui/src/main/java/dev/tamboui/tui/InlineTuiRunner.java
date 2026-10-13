@@ -6,7 +6,6 @@ package dev.tamboui.tui;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -81,8 +80,8 @@ public final class InlineTuiRunner implements AutoCloseable {
     private final ScheduledFuture<?> schedulerTask;
     private final AtomicLong frameCount;
     private final Thread shutdownHook;
-    private final AtomicReference<Instant> lastTick;
-    private final AtomicReference<Instant> nextTickTime;
+    private final TickTimer tickTimer;
+    private final AtomicBoolean tickQueued = new AtomicBoolean(false);
     private final AtomicReference<Size> lastSize;
     private final TerminalInputReader inputReader;
 
@@ -94,9 +93,7 @@ public final class InlineTuiRunner implements AutoCloseable {
         this.running = new AtomicBoolean(true);
         this.cleanedUp = new AtomicBoolean(false);
         this.frameCount = new AtomicLong(0);
-        this.lastTick = new AtomicReference<>(Instant.now());
-        this.nextTickTime = new AtomicReference<>(
-                config.tickRate() != null ? Instant.now().plus(config.tickRate()) : null);
+        this.tickTimer = config.tickRate() != null ? new TickTimer(config.tickRate()) : null;
         this.lastSize = new AtomicReference<>(readCurrentSize(backend));
 
         backend.onResize(() -> {
@@ -106,8 +103,9 @@ public final class InlineTuiRunner implements AutoCloseable {
                 if (!newSize.equals(previous)) {
                     eventQueue.offer(ResizeEvent.of(newSize.width(), newSize.height()));
                 }
-            } catch (IOException e) {
-                // Ignore resize errors
+            } catch (IOException | RuntimeException e) {
+                // Ignore resize errors, unchecked ones too: a backend may call this handler
+                // on the input thread, which must keep running
             }
         });
 
@@ -139,9 +137,10 @@ public final class InlineTuiRunner implements AutoCloseable {
      *
      * @param height the number of lines for the inline display
      * @return a new InlineTuiRunner
-     * @throws Exception if terminal initialization fails
+     * @throws RuntimeIOException if terminal initialization fails
+     * @throws dev.tamboui.terminal.BackendException if no backend is available
      */
-    public static InlineTuiRunner create(int height) throws Exception {
+    public static InlineTuiRunner create(int height) {
         return create(InlineTuiConfig.defaults(height));
     }
 
@@ -150,13 +149,28 @@ public final class InlineTuiRunner implements AutoCloseable {
      *
      * @param config the configuration to use
      * @return a new InlineTuiRunner
-     * @throws Exception if terminal initialization fails
+     * @throws RuntimeIOException if terminal initialization fails
+     * @throws dev.tamboui.terminal.BackendException if no backend is available
      */
-    public static InlineTuiRunner create(InlineTuiConfig config) throws Exception {
-        return create(BackendFactory.create(), config);
+    public static InlineTuiRunner create(InlineTuiConfig config) {
+        Backend backend;
+        try {
+            backend = BackendFactory.create();
+        } catch (IOException e) {
+            throw new RuntimeIOException("Failed to create backend: " + e.getMessage(), e);
+        }
+        return create(backend, config);
     }
 
-    static InlineTuiRunner create(Backend backend, InlineTuiConfig config) throws Exception {
+    /**
+     * Creates an InlineTuiRunner on the given backend, for embedding or testing.
+     *
+     * @param backend the backend to render to
+     * @param config  the configuration to use
+     * @return a new InlineTuiRunner
+     * @throws RuntimeIOException if initialization fails
+     */
+    public static InlineTuiRunner create(Backend backend, InlineTuiConfig config) {
         InlineDisplay display;
 
         try {
@@ -174,13 +188,26 @@ public final class InlineTuiRunner implements AutoCloseable {
 
             InlineViewport viewport = new InlineViewport(display);
             return new InlineTuiRunner(backend, viewport, config);
-        } catch (Exception e) {
-            try {
-                backend.disableRawMode();
-            } catch (Exception ignored) {
-            }
-            backend.close();
+        } catch (IOException e) {
+            closeQuietly(backend);
+            throw new RuntimeIOException("Failed to create inline runner: " + e.getMessage(), e);
+        } catch (RuntimeException e) {
+            // e.g. BackendException, already an unchecked TamboUIException
+            closeQuietly(backend);
             throw e;
+        }
+    }
+
+    private static void closeQuietly(Backend backend) {
+        try {
+            backend.disableRawMode();
+        } catch (IOException ignored) {
+            // best effort during cleanup
+        }
+        try {
+            backend.close();
+        } catch (IOException ignored) {
+            // best effort during cleanup
         }
     }
 
@@ -189,6 +216,9 @@ public final class InlineTuiRunner implements AutoCloseable {
      * <p>
      * The event handler is called for each event (key, mouse, tick).
      * The renderer is called to update the display when the handler returns true.
+     * <p>
+     * The loop also ends, as if {@link #quit()} was called, when reading terminal
+     * input keeps failing.
      *
      * @param handler  the event handler
      * @param renderer the UI renderer
@@ -244,7 +274,12 @@ public final class InlineTuiRunner implements AutoCloseable {
                 return event;
             }
 
-            return eventQueue.poll(timeout.toMillis(), TimeUnit.MILLISECONDS);
+            event = eventQueue.poll(timeout.toMillis(), TimeUnit.MILLISECONDS);
+            if (event instanceof TickEvent) {
+                // The scheduler may queue the next tick again
+                tickQueued.set(false);
+            }
+            return event;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return null;
@@ -426,18 +461,12 @@ public final class InlineTuiRunner implements AutoCloseable {
             return;
         }
 
-        if (config.ticksEnabled() && config.tickRate() != null) {
-            Instant now = Instant.now();
-            Instant targetTime = nextTickTime.get();
-
-            if (targetTime != null && !now.isBefore(targetTime)) {
-                Instant previous = lastTick.getAndSet(now);
-                Duration elapsed = Duration.between(previous, now);
-
-                nextTickTime.set(targetTime.plus(config.tickRate()));
-
+        if (config.ticksEnabled() && config.tickRate() != null && tickTimer.periodPassed()) {
+            // Only one tick waits in the queue: while it is not handled yet, the periods
+            // that pass add no ticks of their own
+            if (tickQueued.compareAndSet(false, true)) {
                 long frame = frameCount.incrementAndGet();
-                eventQueue.offer(TickEvent.of(frame, elapsed));
+                eventQueue.offer(TickEvent.of(frame));
             }
         }
     }

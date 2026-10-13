@@ -1,11 +1,12 @@
 # AGENTS.md
 
-This file provides guidance to AI coding agents when working with code in this repository.
-See [agents.md](https://agents.md/) for the specification.
+This file provides guidance to AI coding agents when contributing to code in this repository.
+
+If you are learning to use or write applications with TamboUI check out https://tamboui.dev/llms.txt instead.
 
 ## Project Overview
 
-TamboUI is a Java library for building modern terminal user interfaces, inspired by Rust's ratatui and Go's bubbletea. It uses immediate-mode rendering with an intermediate buffer system for diff-based terminal updates.
+TamboUI is a Java library for building modern terminal user interfaces, inspired by Rust's ratatui, Go's bubbletea and Python's Textual. It uses immediate-mode rendering with an intermediate buffer system for diff-based terminal updates, while also providing a higher-level toolkit for easy component-based rendering.
 
 ## Build and Test Commands
 
@@ -99,6 +100,7 @@ class MyApp extends ToolkitApp {
 
 - `TuiRunner` provides the main event loop with `EventHandler` callback
 - Event types: `KeyEvent`, `MouseEvent`, `TickEvent`, `ResizeEvent`, `UiRunnable`
+- `TickEvent` is a redraw pulse that carries no time; at most one waits in the queue (ticks do not pile up). To advance an animation by real time, measure it at the render with `RenderClock` (monotonic, sub-millisecond carry, clamps long gaps); to step once per tick, use `TickEvent.frameCount()`. tfx effects use `RenderClock`, mirroring ratatui's tachyonfx (the host measures elapsed at the draw, not from a tick).
 - `KeyEvent` provides semantic methods (`isQuit()`, `isUp()`, `isDown()`, `isSelect()`, etc.) that respect configured bindings
 - Bindings map physical inputs to semantic actions; use `BindingSets.standard()`, `BindingSets.vim()`, or custom bindings
 - `@OnAction` annotation on Component methods handles actions; use annotation processor for compile-time generation
@@ -121,7 +123,7 @@ class MyApp extends ToolkitApp {
 - `dev.tamboui.style` - Style, Color, Modifier
 - `dev.tamboui.text` - Text, Span, Line for styled text
 - `dev.tamboui.widgets.*` - Widget implementations (block, paragraph, list, table, chart, canvas, sparkline, etc.)
-- `dev.tamboui.tui` - TuiRunner, TuiConfig, RenderThread, event types
+- `dev.tamboui.tui` - TuiRunner, TuiConfig, RenderThread, RenderClock, event types
 - `dev.tamboui.tui.bindings` - Bindings, BindingSets, KeyTrigger, MouseTrigger, ActionHandler, @OnAction
 - `dev.tamboui.toolkit` - Toolkit DSL factory methods, Element interface, element implementations
 - `dev.tamboui.css` - StyleEngine, CssParser, selectors, cascade resolution
@@ -173,6 +175,15 @@ CharWidth.substringByWidth(s, maxWidth)   // Truncate by display width
 CharWidth.substringByWidthFromEnd(s, w)   // Truncate from end
 CharWidth.truncateWithEllipsis(s, w, pos) // Truncate with "..."
 ```
+
+### Grapheme Clusters
+
+One visible character can be several code points: a ZWJ emoji (`👩‍💻`), a flag (`🇫🇷`), a letter with combining marks.
+
+- **NEVER** move a cursor, wrap or cut text by `char` or by code point
+- **ALWAYS** step through text with `GraphemeClusters.clusterEnd(text, pos)` and `GraphemeClusters.clusterStart(text, pos)` (`dev.tamboui.text`)
+- `CharWidth.substringByWidth` already cuts on cluster boundaries: use it instead of a loop of your own
+- Tests for text handling MUST include a ZWJ sequence (written with `\u200D`), a flag and a CJK character
 
 ### Reference Implementation
 
@@ -272,9 +283,20 @@ throw new RuntimeException("Error", e);
 - Default handler displays errors in the UI with scrollable stack traces
 - See `RenderErrorHandlers` for pre-built handlers
 
+## Fixing Bugs
+
+- Fix the root cause, where the design puts it. TamboUI is ported from ratatui (widgets, buffer) and tachyonfx (effects measure time at the render with `RenderClock`), and is inspired by Textual (CSS, bbcode/markup) and in some places bubbletea: check how they and other terminal frameworks solve the problem before adding a workaround
+- Do not end a protocol sequence with a timeout or a heuristic: a bracketed paste is read until its end marker, as other terminal libraries do. Correctness comes before latency
+- Search sibling code for the same class of bug. Fix the identical cases in the same PR and list the related ones in the description. Known families:
+  - text wrapping: `Paragraph`, `MarkdownInlineRenderer.applyOverflow`, `TextAreaState.computeDisplayRows` (to be unified, see #462)
+  - cutting with an ellipsis: `Paragraph`, `Block` titles, markdown
+  - scrollbars that reserve a column: `ListWidget`, `MarkupTextAreaElement`, `RichTextAreaElement`
+  - `TuiRunner` and `InlineTuiRunner` share scheduler and event-queue code (see #494): change both
+- Before starting, look for open PRs and issues on the same code (`gh pr list --search`, `gh issue list --search`) and link them
+
 ## Code Style Guidelines
 
-- You MUST use Java 8 source compatibility for library modules
+- You MUST use Java 8 source compatibility for core library modules; a module MAY require a higher level only when unavoidable (e.g. the FFM backend needs Java 22+) — use multi-release JARs where it helps.
 - You SHOULD use Java 21 for demo applications
 - You MUST use JUnit 5 for testing
 - You SHOULD Use immutable data structures as much as possible
@@ -288,6 +310,9 @@ throw new RuntimeException("Error", e);
 - You MUST NOT add comments in source which cannot be understood without context
 - Tests SHOULD use the `BufferAssertions` test fixtures as much as possible
 - You CAN improve test fixtures to make tests more readable
+- You MUST reuse existing helpers (`CharWidth`, `GraphemeClusters`, `BufferAssertions`, a module's shared package-private helpers) instead of adding a private copy: search before writing one
+- You MUST NOT add public API, builder options or toggles without a concrete use case: removing them later is a breaking change, so propose new API in an issue first
+- You MUST NOT use the wall clock (`System.currentTimeMillis()`, `Instant.now()`) to schedule or animate: use `System.nanoTime()` (compared by difference) or `RenderClock`
 
 ## Testing Instructions
 
@@ -299,6 +324,11 @@ throw new RuntimeException("Error", e);
 - Run `./gradlew -q uJB` to update the JBang demo catalog when a demo is added
 - Before calling something done, run `./gradlew -q javadoc` to ensure no javadoc warnings are emitted
 - Use `BufferAssertions` for testing buffer contents in tests
+- A bug fix MUST include a test that fails without the fix
+- Test the inputs that must be rejected, not only the ones that work
+- For locale- or script-dependent code, run the change over `Locale.getAvailableLocales()` (or every affected script) and say in the PR what still fails
+- Drive time-dependent code with a fake clock (a `LongSupplier`, as `RenderClock` takes) rather than `Thread.sleep`
+- Run `./gradlew spotlessApply` before committing; CI runs `spotlessCheck` (import order, unused imports)
 
 ## Documentation
 
@@ -316,6 +346,7 @@ throw new RuntimeException("Error", e);
 - after `# Setup` put `# Recording` and do the necessary `Type` and `Sleep` actions
 - keep each .tape short and focus. 
 - Try cover all demo features, but be aware they should not be too long as then the `.svg` renderings gets too big.
+- A fix or feature that can be seen should show up in the matching demo: add the case (a wide or ZWJ line, a blank spacer item, a readout) and update its `.tape`
 
 ## CSS-Compatible Elements
 
@@ -386,3 +417,18 @@ Add a JavaDoc section to each Element class documenting its CSS child selectors:
 - Do not commit automatically; wait for human review
 - Do not include agent instruction files (CLAUDE.md, AGENTS.md) in commits
 - Review your own code changes before finishing work
+- Keep one root cause per PR, keep it minimal, and scope the title to what changed ("Paragraph", not "wrapping")
+- Show the bug: a before/after image or sketch, and a reproducer the reviewer can run
+- Prefer a **self-contained JBang reproducer**: a single `.java` file (e.g. a gist) with the dependencies and runtime declared *in the file*, so a reviewer runs it with just `jbang <url>` and no flags to remember. Put the directives in the source rather than on the command line:
+
+```java
+///usr/bin/env jbang "$0" "$@" ; exit $?
+//JAVA 21
+//DEPS dev.tamboui:tamboui-toolkit:LATEST
+//DEPS dev.tamboui:tamboui-aesh-backend:LATEST
+//RUNTIME_OPTIONS --enable-native-access=ALL-UNNAMED  // only when using the Panama (FFM) backend
+```
+
+  So `jbang https://gist.github.com/.../Repro.java` just works, instead of `jbang --deps ... --java 21 <url>`. Use `LATEST` for released behaviour, or a `-SNAPSHOT` / local build when reproducing an unreleased fix.
+- Say what the PR leaves out on purpose
+- Send PRs one at a time, most important first, and wait for review before sending more

@@ -11,6 +11,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.VarHandle;
 import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Locale;
@@ -148,9 +149,9 @@ public final class UnixTerminal implements PlatformTerminal {
      * Parses a charset from a locale string like "en_US.UTF-8" or "C.UTF-8".
      *
      * @param locale the locale string
-     * @return the parsed charset, or null if not found or not supported
+     * @return the parsed charset, or null if not found, not supported or not a legal charset name
      */
-    private static Charset parseCharsetFromLocale(String locale) {
+    static Charset parseCharsetFromLocale(String locale) {
         var upper = locale.toUpperCase(Locale.ROOT);
 
         // Handle common UTF-8 patterns
@@ -169,8 +170,8 @@ public final class UnixTerminal implements PlatformTerminal {
             }
             try {
                 return Charset.forName(charsetPart);
-            } catch (UnsupportedCharsetException e) {
-                // Fall through to default
+            } catch (IllegalCharsetNameException | UnsupportedCharsetException e) {
+                // An empty ("xx.@euro"), malformed or unknown codeset: fall through to default
             }
         }
 
@@ -267,7 +268,28 @@ public final class UnixTerminal implements PlatformTerminal {
                 return new Size(cols, rows);
             }
         }
-        throw new RuntimeIOException("Failed to get terminal size (errno=" + LibC.getLastErrno() + ")");
+        // The ioctl can succeed yet report a 0x0 size (a pipe, CI, or some ptys), or fail outright.
+        // Fall back to COLUMNS/LINES, then a standard 80x24, rather than failing to start the app.
+        return fallbackSize();
+    }
+
+    private static Size fallbackSize() {
+        return new Size(envInt("COLUMNS", 80), envInt("LINES", 24));
+    }
+
+    private static int envInt(String name, int defaultValue) {
+        String value = System.getenv(name);
+        if (value != null) {
+            try {
+                int parsed = Integer.parseInt(value.trim());
+                if (parsed > 0) {
+                    return parsed;
+                }
+            } catch (NumberFormatException ignored) {
+                // fall through to the default
+            }
+        }
+        return defaultValue;
     }
 
     /**
