@@ -15,6 +15,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class BufferWideCharTest {
 
+    // 👩‍💻 = woman (U+1F469) + ZWJ (U+200D) + laptop (U+1F4BB): one 2-column cell whose symbol is 5 chars
+    private static final String TECHNOLOGIST = "\uD83D\uDC69\u200D\uD83D\uDCBB";
+    // 🇫🇷 = Regional Indicator F (U+1F1EB) + Regional Indicator R (U+1F1F7): 4 chars
+    private static final String FRANCE = "\uD83C\uDDEB\uD83C\uDDF7";
+
     @Test
     @DisplayName("CJK character occupies 2 cells with continuation")
     void cjkCharPlacesContinuation() {
@@ -527,6 +532,64 @@ class BufferWideCharTest {
         assertThat(buffer.get(1, 0).isContinuation()).isTrue();
         assertThat(buffer.get(3, 0).isContinuation()).isTrue();
         assertThat(printed(buffer)).isEqualTo("世界");
+    }
+
+    @Test
+    @DisplayName("Narrow char over the left half of a ZWJ emoji leaves a space")
+    void narrowCharOverLeftHalfOfZwjEmoji() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 4, 1));
+        buffer.setString(0, 0, TECHNOLOGIST + "ab", Style.EMPTY);
+        buffer.setString(0, 0, "x", Style.EMPTY);
+
+        assertThat(buffer.get(1, 0).isContinuation()).isFalse();
+        assertThat(printed(buffer)).isEqualTo("x ab");
+    }
+
+    @Test
+    @DisplayName("Narrow char over the right half of a ZWJ emoji leaves a space")
+    void narrowCharOverRightHalfOfZwjEmoji() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 4, 1));
+        buffer.setString(0, 0, "a" + TECHNOLOGIST + "b", Style.EMPTY);
+        buffer.setString(2, 0, "x", Style.EMPTY);
+
+        assertThat(buffer.get(1, 0).symbol()).isEqualTo(" ");
+        assertThat(printed(buffer)).isEqualTo("a xb");
+    }
+
+    @Test
+    @DisplayName("Narrow char over the left half of a flag leaves a space")
+    void narrowCharOverLeftHalfOfFlag() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 4, 1));
+        buffer.setString(0, 0, FRANCE + "ab", Style.EMPTY);
+        buffer.setString(0, 0, "x", Style.EMPTY);
+
+        assertThat(buffer.get(1, 0).isContinuation()).isFalse();
+        assertThat(printed(buffer)).isEqualTo("x ab");
+    }
+
+    @Test
+    @DisplayName("Narrow char over the right half of a flag leaves a space")
+    void narrowCharOverRightHalfOfFlag() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 4, 1));
+        buffer.setString(0, 0, "a" + FRANCE + "b", Style.EMPTY);
+        buffer.setString(2, 0, "x", Style.EMPTY);
+
+        assertThat(buffer.get(1, 0).symbol()).isEqualTo(" ");
+        assertThat(printed(buffer)).isEqualTo("a xb");
+    }
+
+    @Test
+    @DisplayName("The same emoji written over itself keeps its continuation")
+    void sameEmojiOverEmojiKeepsItsContinuation() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 4, 1));
+        buffer.setString(0, 0, TECHNOLOGIST + "ab", Style.EMPTY);
+        // only the first cell is written again, in a new style, as when a row is highlighted
+        Style highlighted = Style.EMPTY.bg(Color.BLUE);
+        buffer.set(0, 0, new Cell(TECHNOLOGIST, highlighted));
+
+        assertThat(buffer.get(0, 0).style().bg()).contains(Color.BLUE);
+        assertThat(buffer.get(1, 0).isContinuation()).isTrue();
+        assertThat(printed(buffer)).isEqualTo(TECHNOLOGIST + "ab");
     }
 
     /** The text a terminal receives for a one-row buffer: its ANSI output without the style codes. */

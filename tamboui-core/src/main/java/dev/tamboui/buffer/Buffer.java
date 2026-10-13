@@ -230,6 +230,8 @@ public final class Buffer {
      * half that is left is turned into a space with its style kept.
      */
     private void keepWideCharsWhole(int i, int x, Cell old, Cell cell) {
+        // Assumes a cell is at most 2 columns wide (CharWidth caps a cluster at 2), so a wide
+        // character has exactly one continuation. length() counts chars, not columns: 5 for a ZWJ emoji.
         String oldSymbol = old.symbol();
         int length = oldSymbol.length();
         if (length == 0) {
