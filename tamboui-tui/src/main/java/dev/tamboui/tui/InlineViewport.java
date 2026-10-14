@@ -146,7 +146,8 @@ final class InlineViewport {
     }
 
     /**
-     * Releases the display and moves the cursor below the viewport.
+     * Releases the display: moves the cursor below the viewport, or to its first
+     * line when the viewport is cleared on close.
      */
     void release() {
         display.release();

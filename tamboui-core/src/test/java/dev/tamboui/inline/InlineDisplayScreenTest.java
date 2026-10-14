@@ -40,6 +40,43 @@ class InlineDisplayScreenTest {
     }
 
     @Test
+    @DisplayName("release() with clearOnClose() leaves the cursor where the display started, for the next output")
+    void clearOnCloseNextOutputStartsWhereDisplayWas() throws IOException {
+        TerminalScreen screen = new TerminalScreen(30, 10);
+        screen.writeRaw("$ new-project\r\n");
+        InlineDisplay display = InlineDisplay.withBackend(3, 30, screen).clearOnClose();
+        display.render((area, buf) -> {
+            buf.setString(0, 0, "New project", Style.EMPTY);
+            buf.setString(0, 1, "Name: my-app", Style.EMPTY);
+            buf.setString(0, 2, "[Enter] create", Style.EMPTY);
+        }, 3, 12, 1);
+
+        display.release();
+        screen.writeRaw("Created my-app\r\n");
+
+        assertThat(screen.lines()).containsExactly("$ new-project", "Created my-app");
+    }
+
+    @Test
+    @DisplayName("release() without clearOnClose() keeps the display and moves the cursor below it")
+    void withoutClearOnCloseNextOutputGoesBelowDisplay() throws IOException {
+        TerminalScreen screen = new TerminalScreen(30, 10);
+        screen.writeRaw("$ new-project\r\n");
+        InlineDisplay display = InlineDisplay.withBackend(3, 30, screen);
+        display.render((area, buf) -> {
+            buf.setString(0, 0, "New project", Style.EMPTY);
+            buf.setString(0, 1, "Name: my-app", Style.EMPTY);
+            buf.setString(0, 2, "[Enter] create", Style.EMPTY);
+        }, 3, 12, 1);
+
+        display.release();
+        screen.writeRaw("Created my-app\r\n");
+
+        assertThat(screen.lines())
+                .containsExactly("$ new-project", "New project", "Name: my-app", "[Enter] create", "Created my-app");
+    }
+
+    @Test
     @DisplayName("println() prints every line of a multi-line message above the display")
     void printlnPrintsEveryLineOfMultiLineMessage() throws IOException {
         TerminalScreen screen = new TerminalScreen(30, 4);

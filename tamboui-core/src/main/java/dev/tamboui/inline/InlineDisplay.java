@@ -178,6 +178,8 @@ public final class InlineDisplay implements AutoCloseable {
     /**
      * Configures the display to clear the display area when closed.
      * By default, the display area content remains visible after close.
+     * When cleared, the cursor is left at the start of the area's first line,
+     * so subsequent output reuses the lines the display occupied.
      *
      * @return this display for chaining
      */
@@ -358,7 +360,9 @@ public final class InlineDisplay implements AutoCloseable {
 
     /**
      * Explicitly releases the display before close().
-     * Moves the cursor below the display area and optionally clears it.
+     * By default, moves the cursor to the line below the display area, leaving its
+     * content visible. With {@link #clearOnClose()}, erases the display area and leaves
+     * the cursor at the start of its first line, so subsequent output takes its place.
      */
     public void release() {
         if (released) {
@@ -370,16 +374,20 @@ public final class InlineDisplay implements AutoCloseable {
         }
 
         try {
-            // Move cursor to after the display area and restore cursor visibility
+            // Restore cursor visibility, and move after the display area unless it was cleared
             backend.carriageReturn();
-            int toBottom = currentHeight - 1 - lastCursorY;
-            if (toBottom > 0) {
-                backend.moveCursorDown(toBottom);
+            if (!shouldClearOnClose) {
+                int toBottom = currentHeight - 1 - lastCursorY;
+                if (toBottom > 0) {
+                    backend.moveCursorDown(toBottom);
+                }
             }
             out.print(AnsiStringBuilder.RESET);  // Reset style
             backend.showCursor();
             out.print("\u001b[0 q");  // Reset cursor to default style
-            out.println();
+            if (!shouldClearOnClose) {
+                out.println();
+            }
             out.flush();
         } catch (IOException e) {
             // PrintWriter swallows exceptions, match that behavior
